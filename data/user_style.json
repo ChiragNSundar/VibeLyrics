@@ -12,24 +12,25 @@
   },
   "vocabulary": {
     "favorite_words": [
-      "hustle",
-      "grind",
-      "rise",
-      "elevate",
-      "legacy",
       "vision",
       "dream",
-      "manifest"
+      "elevate",
+      "rise",
+      "grind",
+      "hustle",
+      "manifest",
+      "legacy"
     ],
     "favorite_slangs": [
-      "no cap",
-      "valid",
-      "bet",
-      "highkey",
-      "goated",
       "lowkey",
-      "bussin",
-      "fire"
+      "highkey",
+      "fire",
+      "valid",
+      "shi",
+      "bet",
+      "goated",
+      "no cap",
+      "bussin"
     ],
     "avoided_words": [],
     "word_frequency": {
