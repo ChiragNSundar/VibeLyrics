@@ -52,6 +52,14 @@ class SyllableCounter:
             "aye": 1,
             "ayy": 1,
         }
+
+    def count_syllables(self, word: str) -> int:
+        """Alias for count_word_syllables"""
+        return self.count_word_syllables(word)
+
+    def count_syllables_phrase(self, phrase: str) -> int:
+        """Alias for count_line_syllables"""
+        return self.count_line_syllables(phrase)
     
     def count_word_syllables(self, word: str) -> int:
         """Count syllables in a single word"""

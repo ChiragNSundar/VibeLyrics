@@ -387,20 +387,50 @@ def lookup_tool():
             }
         except Exception as e:
             results = {"perfect": [], "error": str(e)}
-        
+
     elif lookup_type == 'synonym':
         try:
             from nltk.corpus import wordnet
             synonyms = set()
+            antonyms = set()
+            
             for syn in wordnet.synsets(word):
                 for lemma in syn.lemmas():
-                    if lemma.name().lower() != word:
-                        synonyms.add(lemma.name().replace('_', ' '))
+                    name = lemma.name().replace('_', ' ')
+                    if name.lower() != word:
+                        synonyms.add(name)
+                        if lemma.antonyms():
+                            for ant in lemma.antonyms():
+                                antonyms.add(ant.name().replace('_', ' '))
             
-            results = list(synonyms)[:15]
+            # Enrich with syllable counts
+            syllable_counter = SyllableCounter()
+            
+            def enrich(word_list):
+                enriched = []
+                for w in word_list:
+                    enriched.append({
+                        'word': w,
+                        'syllables': syllable_counter.count_syllables_phrase(w) if ' ' in w else syllable_counter.count_syllables(w)
+                    })
+                # Sort by syllable count then length
+                return sorted(enriched, key=lambda x: (x['syllables'], len(x['word'])))
+
+            results = {
+                'synonyms': enrich(list(synonyms)[:30]), # Limit results
+                'antonyms': enrich(list(antonyms)[:15])
+            }
+            
         except Exception as e:
-            results = ["Error loading synonyms"]
+            results = {"error": f"Error loading data: {e}"}
             print(f"Synonym error: {e}")
+            
+    return jsonify({
+        "success": True,
+        "word": word,
+        "type": lookup_type,
+        "results": results
+    })
             
     return jsonify({
         "success": True,

@@ -439,6 +439,14 @@ async function showWordTools(word, x, y) {
         <div class="wt-tabs">
             <button class="active" onclick="switchWtTab(this, 'rhymes')">Rhymes</button>
             <button onclick="switchWtTab(this, 'synonyms')">Synonyms</button>
+            <button onclick="switchWtTab(this, 'antonyms')">Antonyms</button>
+        </div>
+        <div class="wt-filters">
+            <span>Syl:</span>
+            <button class="active" onclick="filterWt(this, 'all')">All</button>
+            <button onclick="filterWt(this, 1)">1</button>
+            <button onclick="filterWt(this, 2)">2</button>
+            <button onclick="filterWt(this, 3)">3+</button>
         </div>
         <div class="wt-content loading">Loading...</div>
     `;
@@ -459,51 +467,104 @@ async function showWordTools(word, x, y) {
     await loadWtContent(word, 'rhyme', popup);
 }
 
+// Global cache for current popup data to support filtering
+let currentWtData = [];
+
 // Switch Tab
 async function switchWtTab(btn, type) {
     const popup = btn.closest('.word-tools-popup');
     popup.querySelectorAll('.wt-tabs button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
+    // Reset filters
+    popup.querySelectorAll('.wt-filters button').forEach(b => b.classList.remove('active'));
+    popup.querySelector('.wt-filters button:first-of-type').classList.add('active');
+
     const word = popup.querySelector('.wt-header strong').textContent;
-    await loadWtContent(word, type === 'rhymes' ? 'rhyme' : 'synonym', popup);
+    let apiType = 'rhyme';
+    if (type === 'synonyms' || type === 'antonyms') apiType = 'synonym';
+
+    await loadWtContent(word, apiType, popup, type);
+}
+
+function filterWt(btn, sylCount) {
+    const popup = btn.closest('.word-tools-popup');
+    popup.querySelectorAll('.wt-filters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    renderWtGrid(currentWtData, popup, sylCount);
 }
 
 // Load Content
-async function loadWtContent(word, type, popup) {
+async function loadWtContent(word, apiType, popup, tabContext = 'rhymes') {
     const content = popup.querySelector('.wt-content');
     content.innerHTML = '<div class="spinner small"></div>';
 
     try {
-        const result = await apiCall(`/api/tools/lookup?word=${word}&type=${type}`);
+        const result = await apiCall(`/api/tools/lookup?word=${word}&type=${apiType}`);
 
+        let items = [];
         if (result.results) {
-            let items = [];
-            if (type === 'rhyme') {
-                if (result.results.perfect) items = result.results.perfect;
-                // Handle dict vs list structure if changed in API
-                else if (Array.isArray(result.results)) items = result.results;
+            if (apiType === 'rhyme') {
+                if (result.results.perfect) {
+                    items = result.results.perfect.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                } else if (Array.isArray(result.results)) {
+                    items = result.results.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                }
             } else {
-                items = result.results;
-            }
-
-            if (items.length === 0) {
-                content.innerHTML = '<div class="wt-empty">No results found</div>';
-            } else {
-                content.innerHTML = `
-                    <div class="wt-grid">
-                        ${items.map(item => `<span class="wt-chip" onclick="useSuggestion('${item.replace(/'/g, "\\'")}')">${item}</span>`).join('')}
-                    </div>
-                `;
+                // Synonyms/Antonyms (returns dict keys: synonyms, antonyms)
+                if (tabContext === 'synonyms') items = result.results.synonyms || [];
+                else if (tabContext === 'antonyms') items = result.results.antonyms || [];
             }
         }
+
+        currentWtData = items;
+        renderWtGrid(items, popup, 'all');
+
     } catch (e) {
         content.innerHTML = '<div class="wt-error">Error loading</div>';
+        console.error(e);
     }
 }
-// ... 
 
-// ... (previous functions match getWordAtClick)
+function renderWtGrid(items, popup, filterSyl) {
+    const content = popup.querySelector('.wt-content');
+
+    let filtered = items;
+    if (filterSyl !== 'all') {
+        if (filterSyl === 3) {
+            filtered = items.filter(i => i.syllables >= 3);
+        } else {
+            filtered = items.filter(i => i.syllables === filterSyl);
+        }
+    }
+
+    if (filtered.length === 0) {
+        content.innerHTML = '<div class="wt-empty">No results found</div>';
+        return;
+    }
+
+    content.innerHTML = `
+        <div class="wt-grid">
+            ${filtered.map(item => `
+                <span class="wt-chip" onclick="useSuggestion('${item.word.replace(/'/g, "\\'")}')">
+                    ${item.word} 
+                    <small style="opacity:0.5; font-size:0.7em; margin-left:4px;">${item.syllables || '?'}</small>
+                </span>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Simple Client-side syllable guess for rhymes since RhymeDictionary returns plain strings
+function countSyllablesClient(word) {
+    word = word.toLowerCase();
+    if (word.length <= 3) return 1;
+    word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+    word = word.replace(/^y/, '');
+    const vowels = word.match(/[aeiouy]{1,2}/g);
+    return vowels ? vowels.length : 1;
+}
 
 // Handle Input context menu (for textboxes)
 function handleInputRightClick(event) {
