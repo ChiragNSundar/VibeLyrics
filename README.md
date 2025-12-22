@@ -6,18 +6,26 @@
 
 ## 🌟 Key Features
 
+### 🌐 Real-Time Multiplayer Collaboration
+- **Live Co-Writing**: Invite friends to your session and write together in real-time.
+- **Instant Sync**: Updates appear instantly on all collaborators' screens.
+- **Collaborative Flow**: Adding lines or editing bars happens seamlessly without refreshing.
+
 ### 📝 Smart Lyric Editor
-- **Distraction-free interface** for focused writing.
-- **Song Structure Blocks**: Organize lyrics into Verses, Choruses, and Bridges.
-- **Built-in Power Tools**: Right-click any word for instant Rhyme and Synonym lookups.
-- **AI Assistance** for generating rhymes, metaphors, and continuing bars.
+- **Distraction-free interface** for focused writing with song structure blocks.
+- **Smart Dictionary**: Right-click *any* word (or type in the input box) for a powerful lookup tool.
+    - **Rhymes**: Improved engine detecting slant rhymes and slang.
+    - **Synonyms & Antonyms**: powered by NLTK WordNet.
+    - **Syllable Filtering**: Filter rhymes by 1, 2, or 3+ syllables to fit your pocket perfectly.
+- **AI Assistance**: Get suggestions for next lines or improvements.
 
 ### 🎵 Studio Mode & Audio
 - **Beat Player**: Upload and play instrumental tracks directly in your session.
-- **Flow Visualization**: specific Real-time bar charts to visualize syllable density and rhythm.
+- **Flow Visualization**: Real-time bar charts visualize syllable density and rhythm.
 
 ### 🧠 Advanced Analysis Engine
 - **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis.
+- **Slang Heuristic Engine**: Intelligently handles modern slang ("thicc", "vibez") phonetic analysis.
 - **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
 - **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.
 
@@ -29,17 +37,14 @@
 - **Genius Integration**: Search and import lyrics directly from Genius.com.
 - **Study Mode**: Analyze your favorite artists' tracks to understand their patterns.
 
-### 📓 Journal & Learning
-- **Daily Journaling**: Track your writing habit and creative thoughts.
-- **Learning Modules**: (Coming Soon) Interactive lessons on poetic devices.
-
 ---
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Python 3.10+ with Flask
+- **Backend**: Python 3.10+ with Flask & **Flask-SocketIO** (for Websockets)
 - **Frontend**: HTML5, CSS3 (Custom Design System), JavaScript (ES6)
 - **Data**: JSON-based local storage (no heavy database setup required for local use)
+- **NLP**: CMU Dict (Pronouncing), NLTK (WordNet)
 - **AI Integration**: Support for OpenAI GPT-4, Google Gemini, and Perplexity AI
 - **Testing**: Pytest
 
@@ -94,6 +99,11 @@ vibelyrics/
     pip install -r requirements.txt
     ```
 
+4.  **Download NLTK Data** (Required for Smart Dictionary):
+    ```bash
+    python -m nltk.downloader wordnet
+    ```
+
 ### Configuration
 
 VibeLyrics relies on environment variables for API keys and configuration.
@@ -116,7 +126,7 @@ VibeLyrics relies on environment variables for API keys and configuration.
 
 ## 🏃‍♂️ Running the Application
 
-To start the local development server:
+To start the local development server (with WebSocket support):
 
 ```bash
 python run.py
@@ -138,11 +148,6 @@ We use `pytest` to ensure the core analysis logic remains accurate.
 2.  **Run with coverage report**:
     ```bash
     pytest --cov=app tests/
-    ```
-
-3.  **Test specific component**:
-    ```bash
-    pytest tests/test_analysis.py
     ```
 
 ---
