@@ -51,15 +51,22 @@ def edit_session(session_id):
     lines = session.lines.all()
     profile = UserProfile.get_or_create_default()
     
-    # Highlight Rhymes
+    # Highlight Rhymes and Calculate Heatmap
     if lines:
         rhyme_detector = RhymeDetector()
         text_lines = [l.final_version or l.user_input for l in lines]
+        
+        # 1. Highlights
         highlighted_texts = rhyme_detector.highlight_lyrics(text_lines)
         
+        # 2. Heatmap
+        heatmap_data = rhyme_detector.get_density_heatmap(text_lines)
+        
         # Attach to line objects transiently
-        for line, html in zip(lines, highlighted_texts):
+        for line, html, hm in zip(lines, highlighted_texts, heatmap_data):
             setattr(line, 'highlighted_html', html)
+            setattr(line, 'heatmap_class', f"heatmap-{hm['color']}")
+            setattr(line, 'heatmap_score', hm['density'])
     
     # Get BPM info
     bpm_calc = BPMCalculator()
@@ -97,7 +104,7 @@ def update_session(session_id):
     return jsonify({"success": True})
 @workspace_bp.route('/session/<int:session_id>/upload_audio', methods=['POST'])
 def upload_audio(session_id):
-    """Upload an audio file for the beat player"""
+    """Upload an audio file for the beat player and detect BPM"""
     session = LyricSession.query.get_or_404(session_id)
     
     if 'audio_file' not in request.files:
@@ -110,61 +117,29 @@ def upload_audio(session_id):
     if file:
         import os
         from werkzeug.utils import secure_filename
+        from app.analysis.audio_analyzer import detect_bpm
         
         # Ensure directory exists
         upload_folder = os.path.join('app', 'static', 'uploads', 'audio')
         os.makedirs(upload_folder, exist_ok=True)
         
         filename = secure_filename(f"session_{session_id}_{file.filename}")
-        file.save(os.path.join(upload_folder, filename))
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
         
         session.audio_path = f"uploads/audio/{filename}"
-        db.session.commit()
         
-        return jsonify({"success": True, "audio_path": url_for('static', filename=session.audio_path)})
-
-
-@workspace_bp.route('/session/<int:session_id>/upload_recording', methods=['POST'])
-def upload_recording(session_id):
-    """Upload a vocal recording"""
-    session = LyricSession.query.get_or_404(session_id)
-    
-    if 'recording_file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-        
-    file = request.files['recording_file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-        
-    if file:
-        import os
-        import json
-        from werkzeug.utils import secure_filename
-        
-        # Ensure directory exists
-        upload_folder = os.path.join('app', 'static', 'uploads', 'recordings')
-        os.makedirs(upload_folder, exist_ok=True)
-        
-        # Use timestamp in filename
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = secure_filename(f"rec_{session_id}_{timestamp}.webm")
-        file.save(os.path.join(upload_folder, filename))
-        
-        # Update session recordings list
-        try:
-            recordings = json.loads(session.recordings)
-        except:
-            recordings = []
+        # Auto-Detect BPM
+        bpm = detect_bpm(file_path)
+        if bpm > 0:
+            session.bpm = bpm
             
-        recordings.append(f"uploads/recordings/{filename}")
-        session.recordings = json.dumps(recordings)
         db.session.commit()
         
         return jsonify({
             "success": True, 
-            "recording_path": url_for('static', filename=recordings[-1]),
-            "filename": filename
+            "audio_path": url_for('static', filename=session.audio_path),
+            "detected_bpm": bpm
         })
         
 

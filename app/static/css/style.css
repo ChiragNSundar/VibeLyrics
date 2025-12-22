@@ -2000,3 +2000,8 @@ textarea.input {
 .typing-indicator {
     position: fixed; bottom: 20px; left: 20px; background: var(--bg-card); padding: 8px 12px; border-radius: 20px; font-size: 0.85em; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.1); color: var(--accent-primary);
 }
+
+/* Heatmap */
+.line-row.heatmap-high { border-left: 3px solid #ff4444; background: linear-gradient(90deg, rgba(255,68,68,0.08) 0%, transparent 60%); }
+.line-row.heatmap-medium { border-left: 3px solid #ffbb33; background: linear-gradient(90deg, rgba(255,187,51,0.08) 0%, transparent 60%); }
+.line-row.heatmap-low { border-left: 3px solid transparent; }

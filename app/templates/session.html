@@ -32,10 +32,6 @@
             </select>
             <a href="{{ url_for('workspace.export_print', session_id=session.id) }}" target="_blank"
                 class="btn btn-secondary">📄 Export</a>
-            <div style="display:inline-flex; align-items:center;">
-                <button id="record-btn" class="btn btn-primary small" onclick="toggleRecording()">🎙️ Record</button>
-                <span id="record-status" style="margin-left:5px; font-size:12px; color:red;"></span>
-            </div>
         </div>
     </div>
 
@@ -58,7 +54,8 @@
                     <span class="section-label">{{ line.section }}</span>
                 </div>
                 {% endif %}
-                <div class="line-row" data-line-id="{{ line.id }}" data-line-number="{{ line.line_number }}">
+                <div class="line-row {{ line.heatmap_class }}" data-line-id="{{ line.id }}"
+                    data-line-number="{{ line.line_number }}">
                     <span class="line-number">{{ line.line_number }}</span>
                     <div class="line-content">
                         <span class="line-text" oncontextmenu="handleWordRightClick(event)">{{ line.highlighted_html |
@@ -237,61 +234,10 @@
         });
         const data = await res.json();
         if (data.success) {
-            location.reload();
-        }
-    }
-
-    // Voice Recording Logic
-    let mediaRecorder;
-    let audioChunks = [];
-
-    async function toggleRecording() {
-        const btn = document.getElementById('record-btn');
-        const status = document.getElementById('record-status');
-
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-            mediaRecorder.stop();
-            btn.innerHTML = "🎙️ Record";
-            btn.classList.remove('recording-active');
-            status.textContent = "Processing...";
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
-
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    await uploadRecording(audioBlob);
-                    status.textContent = "";
-                };
-
-                mediaRecorder.start();
-                btn.innerHTML = "⏹ Stop";
-                btn.classList.add('recording-active');
-                status.textContent = "Recording...";
-            } catch (e) {
-                alert("Microphone access denied or not available.");
+            if (data.detected_bpm > 0) {
+                alert(`Beat uploaded! Auto-detected BPM: ${data.detected_bpm}`);
             }
-        }
-    }
-
-    async function uploadRecording(blob) {
-        const formData = new FormData();
-        formData.append('recording_file', blob, 'recording.webm');
-
-        const res = await fetch(`/session/${SESSION_ID}/upload_recording`, {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-        if (data.success) {
-            // Add to list dynamically (mock)
-            alert("Recording saved! Refresh to see in Takes list (Real-time update pending)");
+            location.reload();
         }
     }
 </script>

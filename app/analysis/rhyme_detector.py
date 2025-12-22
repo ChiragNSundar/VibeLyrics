@@ -522,3 +522,68 @@ class RhymeDetector:
                         result["rhymes_with_previous"].append(i)
         
         return result
+
+    def get_density_heatmap(self, lines: List[str]) -> List[Dict]:
+        """
+        Calculate rhyme density for each line to generate a heatmap.
+        Density = (Syllables in rhyming words) / (Total Syllables)
+        """
+        heatmap = []
+        # Local import to avoid circular dependency if any
+        from app.analysis.syllable_counter import SyllableCounter
+        counter = SyllableCounter()
+        
+        for line in lines:
+            line_words = self._extract_words(line)
+            if not line_words:
+                heatmap.append({"density": 0, "color": "none"})
+                continue
+                
+            total_syl = counter.count_syllables_phrase(line)
+            if total_syl == 0:
+                heatmap.append({"density": 0, "color": "none"})
+                continue
+
+            # 1. find internal rhymes
+            internal = self.detect_internal_rhymes(line)
+            rhyming_words = set()
+            for w1, w2, _, _ in internal:
+                rhyming_words.add(w1.lower())
+                rhyming_words.add(w2.lower())
+                
+            # 2. check end rhyme (with ANY other line in the batch)
+            # This is O(N^2) but N is small (lines in view)
+            last_word = line_words[-1].lower()
+            if last_word not in rhyming_words:
+                for other_line in lines:
+                    if other_line == line: continue
+                    other_words = self._extract_words(other_line)
+                    if other_words and self.words_rhyme(last_word, other_words[-1], strict=False):
+                        rhyming_words.add(last_word)
+                        break
+            
+            # Calculate rhyming syllables
+            rhyme_syl = 0
+            # To be accurate we must map words back to the line to avoid overcounting duplicates 
+            # if they appear multiple times but only rhyme once? 
+            # Simpler: just iterate the words in the line and check if they are in rhyming_words set
+            for w in line_words:
+                if w.lower() in rhyming_words:
+                    rhyme_syl += counter.count_syllables(w)
+            
+            density = min(1.0, rhyme_syl / total_syl)
+            
+            # Color scale
+            color = "none"
+            if density > 0.6: color = "high"    # Red/Hot
+            elif density > 0.4: color = "medium" # Orange
+            elif density > 0.2: color = "low"    # Yellow
+            
+            heatmap.append({
+                "density": round(density, 2),
+                "color": color,
+                "rhyme_syl": rhyme_syl,
+                "total_syl": total_syl
+            })
+            
+        return heatmap
