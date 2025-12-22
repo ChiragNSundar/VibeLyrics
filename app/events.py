@@ -9,14 +9,29 @@ def on_join(data):
     session_id = data.get('session_id')
     room = f"session_{session_id}"
     join_room(room)
-    # emit('status', {'msg': f'User has entered the room {room}.'}, room=room)
-
+    
+    # Simple presence tracking (in-memory, per worker if scaled need Redis)
+    # We use request.sid as identifier
+    user_id = request.sid
+    # Broadcast join
+    emit('user_joined', {'id': user_id, 'name': f'User {user_id[:4]}'}, room=room)
+    
 @socketio.on('leave')
 def on_leave(data):
     session_id = data.get('session_id')
     room = f"session_{session_id}"
     leave_room(room)
-    # emit('status', {'msg': 'User has left the room.'}, room=room)
+    emit('user_left', {'id': request.sid}, room=room)
+
+@socketio.on('typing')
+def on_typing(data):
+    session_id = data.get('session_id')
+    emit('user_typing', {'id': request.sid, 'name': f'User {request.sid[:4]}'}, room=f"session_{session_id}", include_self=False)
+
+@socketio.on('stop_typing')
+def on_stop_typing(data):
+    session_id = data.get('session_id')
+    emit('user_stop_typing', {'id': request.sid}, room=f"session_{session_id}", include_self=False)
 
 @socketio.on('update_line')
 def handle_update_line(data):
@@ -36,18 +51,16 @@ def handle_update_line(data):
         
         # Recalculate basic stats
         counter = SyllableCounter()
-        line.syllable_count = counter.count_syllables(content)
+        analysis = counter.analyze_flow(content)
+        line.syllable_count = analysis['total_syllables']
         db.session.commit()
         
-        # Broadcast to room (exclude sender ideally, but for simplicity broadcast all)
-        # Using broadcast=True sends to everyone including sender, helpful for confirmation
-        # But for text input, echo can be annoying. 
-        # Better: broadcast=True, include_self=False
         socketio.emit('line_updated', {
             'line_id': line_id,
             'content': content,
-            'syllable_count': line.syllable_count
-        }, room=f"session_{session_id}", include_self=False)
+            'syllable_count': line.syllable_count,
+            'stress_pattern': analysis['stress_pattern']
+        }, room=f"session_{session_id}", include_self=True)
 
 @socketio.on('new_line')
 def handle_new_line(data):
@@ -65,29 +78,23 @@ def handle_new_line(data):
         next_num = (last_line.line_number + 1) if last_line else 1
         
         counter = SyllableCounter()
+        analysis = counter.analyze_flow(content)
         
         new_line = LyricLine(
             session_id=session_id,
             line_number=next_num,
             user_input=content,
             section=section,
-            syllable_count=counter.count_syllables(content)
+            syllable_count=analysis['total_syllables']
         )
         db.session.add(new_line)
         db.session.commit()
-        
-        # Real-time rhyme highlighting for the new line?
-        # To do this robustly, we'd need to re-analyze context.
-        # For now, let's just send the raw line and let client render or simple hgihlight
-        
-        # BUT wait, user wants robustness. Let's do a quick highlight check against previous line
-        # This is hard to do perfectly on single line isolated, but we can try.
-        # Better: Just send the data, client reloads or appends.
         
         socketio.emit('line_added', {
             'id': new_line.id,
             'line_number': new_line.line_number,
             'content': content,
             'section': section,
-            'syllable_count': new_line.syllable_count
+            'syllable_count': new_line.syllable_count,
+            'stress_pattern': analysis['stress_pattern']
         }, room=f"session_{session_id}")

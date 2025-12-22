@@ -381,9 +381,42 @@ def lookup_tool():
         try:
             dictionary = RhymeDictionary()
             info = dictionary.get_rhyme_info(word)
+            perfect_rhymes = info.get('exact_rhymes', [])
+            
+            topic = request.args.get('topic', '').strip()
+            topic_rhymes = []
+            
+            if topic and perfect_rhymes:
+                try:
+                    from nltk.corpus import wordnet
+                    topic_syns = wordnet.synsets(topic)
+                    
+                    scored_rhymes = []
+                    for r_word in perfect_rhymes:
+                        r_syns = wordnet.synsets(r_word)
+                        if not r_syns: continue
+                        
+                        max_score = 0
+                        for t_syn in topic_syns:
+                            for r_syn in r_syns:
+                                # wup_similarity is often better for semantic relatedness than path_similarity
+                                score = t_syn.wup_similarity(r_syn)
+                                if score and score > max_score:
+                                    max_score = score
+                        
+                        if max_score > 0.3: # Threshold
+                            scored_rhymes.append((r_word, max_score))
+                    
+                    # Sort by score desc
+                    scored_rhymes.sort(key=lambda x: x[1], reverse=True)
+                    topic_rhymes = [x[0] for x in scored_rhymes]
+                except ImportError:
+                    pass # NLTK not ready or error
+            
             results = {
-                "perfect": info.get('exact_rhymes', [])[:15],
-                "slant": []  # Placeholder as current dictionary might not support slants explicitly here
+                "perfect": perfect_rhymes[:30], # Standard rhymes
+                "topic_rhymes": topic_rhymes[:15], # Contextual rhymes
+                "slant": []
             }
         except Exception as e:
             results = {"perfect": [], "error": str(e)}

@@ -124,7 +124,20 @@ class SyllableCounter:
             {"word": word, "syllables": self.count_word_syllables(word)}
             for word in words
         ]
-    
+
+    def get_stress_pattern(self, word: str) -> str:
+        """Get stress pattern (0=unstressed, 1=primary, 2=secondary)"""
+        word = word.lower().strip().strip(".,!?;:'\"")
+        phones = pronouncing.phones_for_word(word)
+        if phones:
+            return pronouncing.stresses(phones[0])
+        else:
+            # Fallback: Guess 1 for 1-syl, 10 for 2-syl... very rough
+            count = self.count_word_syllables(word)
+            if count == 1: return "1"
+            if count == 2: return "10" 
+            return "1" + "0" * (count - 1)
+
     def analyze_flow(self, line: str, target_syllables: Optional[int] = None) -> dict:
         """
         Analyze line flow based on syllables
@@ -132,10 +145,16 @@ class SyllableCounter:
         breakdown = self.get_line_breakdown(line)
         total = sum(w["syllables"] for w in breakdown)
         
+        # Calculate stress pattern
+        stress_pattern = ""
+        for w in breakdown:
+            stress_pattern += self.get_stress_pattern(w["word"])
+
         result = {
             "total_syllables": total,
             "word_count": len(breakdown),
             "breakdown": breakdown,
+            "stress_pattern": stress_pattern,
             "avg_syllables_per_word": total / len(breakdown) if breakdown else 0
         }
         

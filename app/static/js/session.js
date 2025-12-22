@@ -31,6 +31,22 @@ socket.on('line_updated', (data) => {
             sylCount.textContent = `${data.syllable_count} syl`;
         }
 
+        // Update stress visualization
+        let stressViz = lineRow.querySelector('.stress-viz');
+        if (!stressViz) {
+            // Create if missing
+            const meta = lineRow.querySelector('.line-meta');
+            if (meta) {
+                stressViz = document.createElement('div');
+                stressViz.className = 'stress-viz';
+                stressViz.title = "Stressed(●)/Unstressed(○) pattern";
+                meta.appendChild(stressViz);
+            }
+        }
+        if (stressViz) {
+            stressViz.innerHTML = renderStressPattern(data.stress_pattern);
+        }
+
         // Update data attributes for buttons
         lineRow.querySelectorAll('[data-line-text]').forEach(btn => {
             btn.dataset.lineText = data.content;
@@ -49,7 +65,8 @@ socket.on('line_added', (data) => {
         line_id: data.id,
         line_number: data.line_number,
         syllable_count: data.syllable_count || 0,
-        has_internal_rhyme: false // simplify for now
+        has_internal_rhyme: false, // simplify for now
+        stress_pattern: data.stress_pattern
     };
 
     const container = document.getElementById('lines-container');
@@ -111,6 +128,7 @@ function createLineElement(data, text) {
             <div class="line-meta">
                 <span class="syllable-count" title="Syllable count">${data.syllable_count} syl</span>
                 ${data.has_internal_rhyme ? '<span class="rhyme-badge" title="Has internal rhyme">🔗</span>' : ''}
+                <div class="stress-viz" title="Stressed(●)/Unstressed(○) pattern">${renderStressPattern(data.stress_pattern)}</div>
             </div>
         </div>
         <div class="line-actions">
@@ -121,6 +139,17 @@ function createLineElement(data, text) {
     `;
 
     return div;
+}
+
+// Render 1010 pattern as dots
+function renderStressPattern(pattern) {
+    if (!pattern) return '';
+    // 1=Primary(●), 2=Secondary(◎), 0=Unstressed(○)
+    return pattern.split('').map(char => {
+        if (char === '1') return '<span class="stress-dot primary">●</span>';
+        if (char === '2') return '<span class="stress-dot secondary">◎</span>';
+        return '<span class="stress-dot unstressed">○</span>';
+    }).join('');
 }
 
 // Update line number in input
@@ -442,18 +471,20 @@ async function showWordTools(word, x, y) {
             <button onclick="switchWtTab(this, 'antonyms')">Antonyms</button>
         </div>
         <div class="wt-filters">
-            <span>Syl:</span>
-            <button class="active" onclick="filterWt(this, 'all')">All</button>
-            <button onclick="filterWt(this, 1)">1</button>
-            <button onclick="filterWt(this, 2)">2</button>
-            <button onclick="filterWt(this, 3)">3+</button>
+            <input type="text" id="wt-topic-input" class="wt-topic-input" placeholder="Topic? (e.g. food)" 
+                   onkeydown="if(event.key==='Enter') searchTopicRhymes(this)">
+            <div class="syl-filters">
+                <button class="active" onclick="filterWt(this, 'all')">All</button>
+                <button onclick="filterWt(this, 1)">1</button>
+                <button onclick="filterWt(this, 2)">2</button>
+                <button onclick="filterWt(this, 3)">3+</button>
+            </div>
         </div>
         <div class="wt-content loading">Loading...</div>
     `;
 
     document.body.appendChild(popup);
 
-    // Close on outside click
     setTimeout(() => {
         document.addEventListener('click', function close(e) {
             if (!popup.contains(e.target)) {
@@ -470,6 +501,18 @@ async function showWordTools(word, x, y) {
 // Global cache for current popup data to support filtering
 let currentWtData = [];
 
+// Search Topic
+async function searchTopicRhymes(input) {
+    const popup = input.closest('.word-tools-popup');
+    const word = popup.querySelector('.wt-header strong').textContent;
+    const topic = input.value.trim();
+    if (!topic) return;
+
+    // Switch to rhymes tab if not active
+    // ...
+    await loadWtContent(word, 'rhyme', popup, 'rhymes', topic);
+}
+
 // Switch Tab
 async function switchWtTab(btn, type) {
     const popup = btn.closest('.word-tools-popup');
@@ -477,8 +520,8 @@ async function switchWtTab(btn, type) {
     btn.classList.add('active');
 
     // Reset filters
-    popup.querySelectorAll('.wt-filters button').forEach(b => b.classList.remove('active'));
-    popup.querySelector('.wt-filters button:first-of-type').classList.add('active');
+    popup.querySelectorAll('.syl-filters button').forEach(b => b.classList.remove('active'));
+    popup.querySelector('.syl-filters button:first-of-type').classList.add('active');
 
     const word = popup.querySelector('.wt-header strong').textContent;
     let apiType = 'rhyme';
@@ -489,37 +532,45 @@ async function switchWtTab(btn, type) {
 
 function filterWt(btn, sylCount) {
     const popup = btn.closest('.word-tools-popup');
-    popup.querySelectorAll('.wt-filters button').forEach(b => b.classList.remove('active'));
+    popup.querySelectorAll('.syl-filters button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
     renderWtGrid(currentWtData, popup, sylCount);
 }
 
 // Load Content
-async function loadWtContent(word, apiType, popup, tabContext = 'rhymes') {
+async function loadWtContent(word, apiType, popup, tabContext = 'rhymes', topic = '') {
     const content = popup.querySelector('.wt-content');
     content.innerHTML = '<div class="spinner small"></div>';
 
-    try {
-        const result = await apiCall(`/api/tools/lookup?word=${word}&type=${apiType}`);
+    let url = `/api/tools/lookup?word=${word}&type=${apiType}`;
+    if (topic) url += `&topic=${topic}`;
 
+    try {
+        const result = await apiCall(url);
         let items = [];
+        let sectionTitle = '';
+
         if (result.results) {
             if (apiType === 'rhyme') {
-                if (result.results.perfect) {
-                    items = result.results.perfect.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
-                } else if (Array.isArray(result.results)) {
-                    items = result.results.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                if (topic && result.results.topic_rhymes && result.results.topic_rhymes.length > 0) {
+                    items = result.results.topic_rhymes.map(w => ({ word: w, syllables: countSyllablesClient(w), isTopic: true }));
+                    sectionTitle = `Rhymes related to "${topic}"`;
+                } else {
+                    if (result.results.perfect) {
+                        items = result.results.perfect.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                    } else if (Array.isArray(result.results)) {
+                        items = result.results.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                    }
                 }
             } else {
-                // Synonyms/Antonyms (returns dict keys: synonyms, antonyms)
                 if (tabContext === 'synonyms') items = result.results.synonyms || [];
                 else if (tabContext === 'antonyms') items = result.results.antonyms || [];
             }
         }
 
         currentWtData = items;
-        renderWtGrid(items, popup, 'all');
+        renderWtGrid(items, popup, 'all', sectionTitle);
 
     } catch (e) {
         content.innerHTML = '<div class="wt-error">Error loading</div>';
@@ -527,7 +578,7 @@ async function loadWtContent(word, apiType, popup, tabContext = 'rhymes') {
     }
 }
 
-function renderWtGrid(items, popup, filterSyl) {
+function renderWtGrid(items, popup, filterSyl, title = '') {
     const content = popup.querySelector('.wt-content');
 
     let filtered = items;
@@ -545,9 +596,10 @@ function renderWtGrid(items, popup, filterSyl) {
     }
 
     content.innerHTML = `
+        ${title ? `<div class="wt-section-title" style="font-size:0.8em; opacity:0.7; grid-column:1/-1; margin-bottom:5px;">${title}</div>` : ''}
         <div class="wt-grid">
             ${filtered.map(item => `
-                <span class="wt-chip" onclick="useSuggestion('${item.word.replace(/'/g, "\\'")}')">
+                <span class="wt-chip ${item.isTopic ? 'topic-match' : ''}" onclick="useSuggestion('${item.word.replace(/'/g, "\\'")}')" style="${item.isTopic ? 'border-color:var(--accent-primary);' : ''}">
                     ${item.word} 
                     <small style="opacity:0.5; font-size:0.7em; margin-left:4px;">${item.syllables || '?'}</small>
                 </span>
@@ -697,3 +749,82 @@ async function deleteLine(lineId) {
         showToast('Error deleting line', 'error');
     }
 }
+
+// ==========================================
+// PRESENCE & TYPING FEATURES
+// ==========================================
+const activeUsers = new Set();
+const typingUsers = new Set();
+
+socket.on('user_joined', (data) => {
+    activeUsers.add(data.id); // Track by ID to allow name changes/dupe names
+    updatePresenceUI();
+    showToast(`${data.name} joined`);
+});
+
+socket.on('user_left', (data) => {
+    activeUsers.delete(data.id);
+    updatePresenceUI();
+});
+
+socket.on('user_typing', (data) => {
+    typingUsers.add(data.id);
+    updateTypingUI(data.name);
+});
+
+socket.on('user_stop_typing', (data) => {
+    typingUsers.delete(data.id);
+    updateTypingUI();
+});
+
+function updatePresenceUI() {
+    let container = document.getElementById('presence-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'presence-container';
+        container.className = 'presence-container';
+        // Insert into header
+        const header = document.querySelector('.session-header');
+        if (header) header.appendChild(container);
+    }
+
+    // Render bubbles
+    // Since we only have IDs mostly, we simulate avatars
+    container.innerHTML = Array.from(activeUsers).map(id =>
+        `<div class="user-avatar" title="User ${id.substr(0, 4)}">👤</div>`
+    ).join('');
+}
+
+function updateTypingUI(typerName = '') {
+    let indicator = document.getElementById('typing-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'typing-indicator';
+        indicator.className = 'typing-indicator';
+        document.body.appendChild(indicator);
+    }
+
+    if (typingUsers.size === 0) {
+        indicator.style.opacity = '0';
+    } else {
+        const count = typingUsers.size;
+        const text = count === 1 ? `${typerName || 'Someone'} is typing...` : `${count} people are typing...`;
+        indicator.textContent = text;
+        indicator.style.opacity = '1';
+    }
+}
+
+// Attach typing emitters
+document.addEventListener('DOMContentLoaded', () => {
+    const mainInput = document.getElementById('new-line-input');
+    if (mainInput) {
+        let typingTimeout;
+        mainInput.addEventListener('input', () => {
+            socket.emit('typing', { session_id: SESSION_ID });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                socket.emit('stop_typing', { session_id: SESSION_ID });
+            }, 1000);
+        });
+    }
+});
