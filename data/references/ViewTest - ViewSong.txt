@@ -1,0 +1,9 @@
+---
+artist: ViewTest
+song: ViewSong
+added: 2025-12-22T16:16:00.010838
+---
+
+Verse 1
+Checking the view
+Making sure it works

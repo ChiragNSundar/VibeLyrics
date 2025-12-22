@@ -1891,18 +1891,20 @@ textarea.input {
         display: none;
     }
 }
+
 /* Word Tools Popup */
 .word-tools-popup {
     position: absolute;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     width: 250px;
     z-index: 1000;
     overflow: hidden;
     backdrop-filter: blur(10px);
 }
+
 .wt-header {
     display: flex;
     justify-content: space-between;
@@ -1911,6 +1913,7 @@ textarea.input {
     background: var(--bg-hover);
     border-bottom: 1px solid var(--border-color);
 }
+
 .wt-header button {
     background: none;
     border: none;
@@ -1918,10 +1921,12 @@ textarea.input {
     cursor: pointer;
     font-size: 1.2rem;
 }
+
 .wt-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-color);
 }
+
 .wt-tabs button {
     flex: 1;
     background: transparent;
@@ -1931,20 +1936,24 @@ textarea.input {
     cursor: pointer;
     font-size: 0.85rem;
 }
+
 .wt-tabs button.active {
     color: var(--accent-primary);
     border-bottom: 2px solid var(--accent-primary);
 }
+
 .wt-content {
     padding: 0.75rem;
     max-height: 200px;
     overflow-y: auto;
 }
+
 .wt-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
 }
+
 .wt-chip {
     background: var(--bg-hover);
     padding: 0.2rem 0.5rem;
@@ -1952,11 +1961,15 @@ textarea.input {
     font-size: 0.85rem;
     cursor: pointer;
 }
+
 .wt-chip:hover {
     background: var(--accent-primary);
     color: white;
 }
-.wt-loading, .wt-error, .wt-empty {
+
+.wt-loading,
+.wt-error,
+.wt-empty {
     text-align: center;
     color: var(--text-muted);
     font-size: 0.85rem;
@@ -1969,39 +1982,108 @@ textarea.input {
     justify-content: center;
     align-items: center;
     gap: 2px;
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
     padding: 2px 6px;
     border-radius: 10px;
     margin-left: 8px;
     height: 18px;
 }
+
 .stress-dot {
     font-size: 8px;
     line-height: 1;
     color: var(--text-muted);
 }
+
 .stress-dot.primary {
     color: var(--accent-primary);
     font-size: 10px;
 }
+
 .stress-dot.secondary {
     color: var(--text-secondary);
 }
+
 .stress-dot.unstressed {
     opacity: 0.5;
 }
 
-.presence-container {
-    display: flex; gap: 5px; margin-left: auto; align-items: center;
-}
-.user-avatar {
-    width: 24px; height: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: help;
-}
-.typing-indicator {
-    position: fixed; bottom: 20px; left: 20px; background: var(--bg-card); padding: 8px 12px; border-radius: 20px; font-size: 0.85em; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.1); color: var(--accent-primary);
-}
 
 /* Heatmap */
-.line-row.heatmap-high { border-left: 3px solid #ff4444; background: linear-gradient(90deg, rgba(255,68,68,0.08) 0%, transparent 60%); }
-.line-row.heatmap-medium { border-left: 3px solid #ffbb33; background: linear-gradient(90deg, rgba(255,187,51,0.08) 0%, transparent 60%); }
-.line-row.heatmap-low { border-left: 3px solid transparent; }
+.line-row.heatmap-high {
+    border-left: 3px solid #ff4444;
+    background: linear-gradient(90deg, rgba(255, 68, 68, 0.08) 0%, transparent 60%);
+}
+
+.line-row.heatmap-medium {
+    border-left: 3px solid #ffbb33;
+    background: linear-gradient(90deg, rgba(255, 187, 51, 0.08) 0%, transparent 60%);
+}
+
+.line-row.heatmap-low {
+    border-left: 3px solid transparent;
+}
+
+/* Session Analysis Modal */
+.analysis-results {
+    padding: 10px;
+}
+
+.analysis-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.overall-score {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent-primary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.stat-bar .fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+.stat-subtext {
+    opacity: 0.6;
+    font-size: 0.8rem;
+}
+
+.dna-sequence {
+    font-family: monospace;
+    font-size: 1.2rem;
+    letter-spacing: 5px;
+    color: var(--accent-secondary);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.analysis-section {
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}

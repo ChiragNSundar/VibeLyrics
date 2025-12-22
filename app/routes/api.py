@@ -415,6 +415,7 @@ def lookup_tool():
             
             results = {
                 "perfect": perfect_rhymes[:30], # Standard rhymes
+                "pocket": dictionary.find_pocket_rhymes(word, max_results=15), # Rhymes that match flow
                 "topic_rhymes": topic_rhymes[:15], # Contextual rhymes
                 "slant": []
             }

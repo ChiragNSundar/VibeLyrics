@@ -404,10 +404,67 @@ async function askAI() {
 
 // Analyze session
 async function analyzeSession() {
-    // ... (Keep existing analyzeSession code - it's long, only showing relevant parts replacment if needed)
-    // For brevity I am not rewriting the whole function if I don't touch it, 
-    // BUT I must respect the tools limitations. I am replacing from top of file.
-    // I will use replace_file_content carefully.
+    openModal('analysis-modal');
+    const content = document.getElementById('analysis-content');
+    content.innerHTML = '<div class="spinner"></div>';
+
+    try {
+        const result = await apiCall(`/api/session/${SESSION_ID}/analyze`);
+        if (result.complexity) {
+            const dims = result.complexity.dimensions;
+            content.innerHTML = `
+                <div class="analysis-results">
+                    <div class="analysis-header">
+                        <div class="overall-score">${result.complexity.overall}</div>
+                        <div class="complexity-label">Level: ${getComplexityLabel(result.complexity.overall)}</div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Internal Rhymes</div>
+                            <div class="stat-bar"><div class="fill" style="width:${dims.internal_rhyme * 100}%"></div></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Vocab Complexity</div>
+                            <div class="stat-bar"><div class="fill" style="width:${dims.vocabulary * 100}%"></div></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Vocab Diversity</div>
+                            <div class="stat-bar"><div class="fill" style="width:${(dims.diversity_score || 0) * 100}%"></div></div>
+                            <small class="stat-subtext">${Math.round((dims.vocabulary_diversity || 0) * 100)}% unique words</small>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Rhyme Connectivity</div>
+                            <div class="stat-bar"><div class="fill" style="width:${dims.rhyme_scheme * 100}%"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-section">
+                        <h4>Rhyme Scheme DNA</h4>
+                        <div class="dna-sequence">${result.rhyme_scheme || 'N/A'}</div>
+                    </div>
+
+                    <div class="analysis-section">
+                        <h4>Expert Suggestions</h4>
+                        <ul class="suggestions-list">
+                            ${(result.improvement_suggestions || []).map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (e) {
+        content.innerHTML = `<p class="error">Error: ${e.message}</p>`;
+        console.error(e);
+    }
+}
+
+function getComplexityLabel(score) {
+    if (score < 0.3) return "Simple";
+    if (score < 0.5) return "Moderate";
+    if (score < 0.7) return "Complex";
+    if (score < 0.85) return "Advanced";
+    return "Expert";
 }
 
 // Handle word click/context menu
@@ -467,6 +524,7 @@ async function showWordTools(word, x, y) {
         </div>
         <div class="wt-tabs">
             <button class="active" onclick="switchWtTab(this, 'rhymes')">Rhymes</button>
+            <button onclick="switchWtTab(this, 'pocket')">Pocket</button>
             <button onclick="switchWtTab(this, 'synonyms')">Synonyms</button>
             <button onclick="switchWtTab(this, 'antonyms')">Antonyms</button>
         </div>
@@ -526,6 +584,7 @@ async function switchWtTab(btn, type) {
     const word = popup.querySelector('.wt-header strong').textContent;
     let apiType = 'rhyme';
     if (type === 'synonyms' || type === 'antonyms') apiType = 'synonym';
+    if (type === 'pocket') apiType = 'rhyme';
 
     await loadWtContent(word, apiType, popup, type);
 }
@@ -553,14 +612,17 @@ async function loadWtContent(word, apiType, popup, tabContext = 'rhymes', topic 
 
         if (result.results) {
             if (apiType === 'rhyme') {
-                if (topic && result.results.topic_rhymes && result.results.topic_rhymes.length > 0) {
-                    items = result.results.topic_rhymes.map(w => ({ word: w, syllables: countSyllablesClient(w), isTopic: true }));
+                if (tabContext === 'pocket') {
+                    items = (result.results.pocket || []).map(w => ({ word: w, syllables: countSyllables(w) }));
+                    sectionTitle = "Fit your pocket (Rhymes with same rhythm)";
+                } else if (topic && result.results.topic_rhymes && result.results.topic_rhymes.length > 0) {
+                    items = result.results.topic_rhymes.map(w => ({ word: w, syllables: countSyllables(w), isTopic: true }));
                     sectionTitle = `Rhymes related to "${topic}"`;
                 } else {
                     if (result.results.perfect) {
-                        items = result.results.perfect.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                        items = result.results.perfect.map(w => ({ word: w, syllables: countSyllables(w) }));
                     } else if (Array.isArray(result.results)) {
-                        items = result.results.map(w => ({ word: w, syllables: countSyllablesClient(w) }));
+                        items = result.results.map(w => ({ word: w, syllables: countSyllables(w) }));
                     }
                 }
             } else {
@@ -750,81 +812,3 @@ async function deleteLine(lineId) {
     }
 }
 
-// ==========================================
-// PRESENCE & TYPING FEATURES
-// ==========================================
-const activeUsers = new Set();
-const typingUsers = new Set();
-
-socket.on('user_joined', (data) => {
-    activeUsers.add(data.id); // Track by ID to allow name changes/dupe names
-    updatePresenceUI();
-    showToast(`${data.name} joined`);
-});
-
-socket.on('user_left', (data) => {
-    activeUsers.delete(data.id);
-    updatePresenceUI();
-});
-
-socket.on('user_typing', (data) => {
-    typingUsers.add(data.id);
-    updateTypingUI(data.name);
-});
-
-socket.on('user_stop_typing', (data) => {
-    typingUsers.delete(data.id);
-    updateTypingUI();
-});
-
-function updatePresenceUI() {
-    let container = document.getElementById('presence-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'presence-container';
-        container.className = 'presence-container';
-        // Insert into header
-        const header = document.querySelector('.session-header');
-        if (header) header.appendChild(container);
-    }
-
-    // Render bubbles
-    // Since we only have IDs mostly, we simulate avatars
-    container.innerHTML = Array.from(activeUsers).map(id =>
-        `<div class="user-avatar" title="User ${id.substr(0, 4)}">👤</div>`
-    ).join('');
-}
-
-function updateTypingUI(typerName = '') {
-    let indicator = document.getElementById('typing-indicator');
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = 'typing-indicator';
-        indicator.className = 'typing-indicator';
-        document.body.appendChild(indicator);
-    }
-
-    if (typingUsers.size === 0) {
-        indicator.style.opacity = '0';
-    } else {
-        const count = typingUsers.size;
-        const text = count === 1 ? `${typerName || 'Someone'} is typing...` : `${count} people are typing...`;
-        indicator.textContent = text;
-        indicator.style.opacity = '1';
-    }
-}
-
-// Attach typing emitters
-document.addEventListener('DOMContentLoaded', () => {
-    const mainInput = document.getElementById('new-line-input');
-    if (mainInput) {
-        let typingTimeout;
-        mainInput.addEventListener('input', () => {
-            socket.emit('typing', { session_id: SESSION_ID });
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                socket.emit('stop_typing', { session_id: SESSION_ID });
-            }, 1000);
-        });
-    }
-});

@@ -1,29 +1,32 @@
 # VibeLyrics 🎤
 
-**VibeLyrics** is a powerful, collaborative hip-hop lyric writing assistant and analysis tool. It combines traditional songwriting tools with advanced algorithmic analysis and AI assistance to help artists craft complex rhymes, study references, and improve their pen game.
+**VibeLyrics** is a powerful hip-hop lyric writing assistant and analysis tool. It combines traditional songwriting tools with advanced algorithmic analysis and AI assistance to help artists craft complex rhymes, study references, and improve their pen game.
 
 ---
 
 ## 🌟 Key Features
 
-### 🌐 Real-Time Multiplayer Collaboration
-- **Live Co-Writing**: Invite friends to your session and write together in real-time.
-- **Instant Sync**: Updates appear instantly on all collaborators' screens.
-- **Collaborative Flow**: Adding lines or editing bars happens seamlessly without refreshing.
+### 🌐 Smart Workspace
+- **Instant Analysis**: Updates appear instantly as you write.
+- **Auto-Sync**: Your progress is saved automatically and synced across your devices.
 
 ### 📝 Smart Lyric Editor
 - **Distraction-free interface** for focused writing with song structure blocks.
-- **Smart Dictionary**: Right-click *any* word (or type in the input box) for a powerful lookup tool.
+- **Smart Dictionary**: Right-click *any* word for a powerful lookup tool.
     - **Rhymes**: Improved engine detecting slant rhymes and slang.
-    - **Synonyms & Antonyms**: powered by NLTK WordNet.
+    - **Topic Filtering**: Find rhymes related to specific concepts (e.g., rhymes for "money" related to "food").
+    - **Synonyms & Antonyms**: Powered by NLTK WordNet.
     - **Syllable Filtering**: Filter rhymes by 1, 2, or 3+ syllables to fit your pocket perfectly.
 - **AI Assistance**: Get suggestions for next lines or improvements.
 
 ### 🎵 Studio Mode & Audio
 - **Beat Player**: Upload and play instrumental tracks directly in your session.
+- **Auto-BPM Detection**: Automatically identifies the tempo (BPM) of uploaded beats using advanced signal processing.
 - **Flow Visualization**: Real-time bar charts visualize syllable density and rhythm.
 
 ### 🧠 Advanced Analysis Engine
+- **Stress Pattern Visualization**: Visual dots (●○) show the rhythmic stress of your lyrics (stressed vs unstressed).
+- **Rhyme Density Heatmap**: Visual glow (Red → Orange → Green) highlighting the technical complexity of your verses.
 - **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis.
 - **Slang Heuristic Engine**: Intelligently handles modern slang ("thicc", "vibez") phonetic analysis.
 - **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
@@ -45,6 +48,7 @@
 - **Frontend**: HTML5, CSS3 (Custom Design System), JavaScript (ES6)
 - **Data**: JSON-based local storage (no heavy database setup required for local use)
 - **NLP**: CMU Dict (Pronouncing), NLTK (WordNet)
+- **Audio Analysis**: **Librosa** & **Numpy** (for BPM detection and signal processing)
 - **AI Integration**: Support for OpenAI GPT-4, Google Gemini, and Perplexity AI
 - **Testing**: Pytest
 
@@ -55,16 +59,53 @@
 ```
 vibelyrics/
 ├── app/
-│   ├── ai/             # AI provider integrations (Gemini, OpenAI, etc.)
-│   ├── analysis/       # Core algorithms for rhyme & complexity analysis
-│   ├── models/         # Data classes (Lyrics, Journal, Corrections)
-│   ├── references/     # Genius scraper and library management
-│   ├── routes/         # Flask blueprints for web endpoints
-│   ├── static/         # CSS, JS, and image assets
-│   └── templates/      # Jinja2 HTML templates
-├── data/               # Local storage for lyrics and journals
-├── tests/              # Pytest suite
-└── run.py              # Application entry point
+│   ├── ai/                 # AI provider integrations (Gemini, OpenAI,Anthropic)
+│   │   ├── __init__.py
+│   │   ├── base.py         # Abstract base class for providers
+│   │   ├── gemini.py       # Google Gemini integration
+│   │   └── openai_prov.py  # OpenAI GPT-4 integration
+│   ├── analysis/           # Core algorithms for rhyme & rhythm analysis
+│   │   ├── __init__.py
+│   │   ├── audio_analyzer.py  # BPM detection using Librosa
+│   │   ├── bpm_calculator.py  # Rhyme pocket & timing logic
+│   │   ├── complexity_scorer.py # SSS, unique word count, diversity metrics
+│   │   ├── rhyme_detector.py # End rhymes, internal rhymes, & heatmap logic
+│   │   ├── rhyme_dictionary.py # CMU Dict based rhyme lookups
+│   │   └── syllable_counter.py # Syllable counting & stress patterns
+│   ├── models/             # Flask-SQLAlchemy data models
+│   │   ├── __init__.py
+│   │   ├── lyrics.py       # LyricSession and LyricLine models
+│   │   └── journal.py      # Journal entry models
+│   ├── routes/             # Flask blueprints
+│   │   ├── __init__.py
+│   │   ├── api.py          # Data endpoints for dictionary & tools
+│   │   ├── workspace.py    # Main writing session routes
+│   │   ├── journal.py      # Journal management
+│   │   └── references.py   # Genius search & study mode
+│   ├── static/             # Frontend assets
+│   │   ├── css/
+│   │   │   └── style.css   # Main design system
+│   │   ├── js/
+│   │   │   ├── app.js      # Global UI logic
+│   │   │   ├── session.js  # Real-time writing & socket logic
+│   │   │   └── flow_viz.js # Canvas rhythm visualization
+│   │   └── uploads/        # User beats and audio
+│   └── templates/          # Jinja2 HTML templates
+│       ├── base.html       # Shared layout
+│       ├── workspace.html  # Session browser/dashboard
+│       ├── session.html    # Core writing interface
+│       ├── journal.html    # Lyric journal
+│       ├── references.html # Genius search results
+│       ├── reference_view.html # Song study mode
+│       ├── settings.html   # User profile & AI config
+│       └── export_print.html # Print-friendly view
+├── data/                   # SQLite database and local exports
+├── tests/                  # Pytest suite
+│   ├── test_analysis.py
+│   └── test_api.py
+├── run.py                  # Entry point with SocketIO support
+├── requirements.txt
+└── .env                    # Environment config
 ```
 
 ---

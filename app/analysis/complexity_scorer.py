@@ -3,6 +3,7 @@ Complexity Scorer
 Rates lyric complexity on multiple dimensions
 """
 from typing import List, Dict
+import re
 from .rhyme_detector import RhymeDetector
 from .syllable_counter import SyllableCounter
 
@@ -113,6 +114,12 @@ class ComplexityScorer:
         
         avg_scores["multisyllabic_rhymes"] = multisyllabic_count
         
+        # Vocabulary Diversity (Unique Words / Total Words)
+        diversity = self.calculate_vocabulary_diversity(lines)
+        avg_scores["vocabulary_diversity"] = diversity
+        # Normalize diversity: 0.2-0.8 typically, map to 0-1
+        avg_scores["diversity_score"] = min(1.0, max(0.0, (diversity - 0.2) / 0.6))
+        
         return {
             "overall": avg_scores["overall"],
             "dimensions": avg_scores,
@@ -120,6 +127,20 @@ class ComplexityScorer:
             "line_count": len(lines),
             "line_scores": line_scores
         }
+    
+    def calculate_vocabulary_diversity(self, lines: List[str]) -> float:
+        """Calculate vocabulary diversity (Type-Token Ratio)"""
+        all_words = []
+        for line in lines:
+            words = [w.lower() for w in re.findall(r'\b[a-zA-Z]+\b', line)]
+            all_words.extend(words)
+        
+        if not all_words:
+            return 0.0
+        
+        unique_words = set(all_words)
+        diversity = len(unique_words) / len(all_words)
+        return round(diversity, 2)
     
     def get_complexity_label(self, score: float) -> str:
         """Convert score to human-readable label"""
@@ -187,7 +208,10 @@ class ComplexityScorer:
             suggestions.append("Mix up your rhyme scheme - try ABAB or ABCABC patterns")
         
         if dims.get("multisyllabic_rhymes", 0) == 0:
-            suggestions.append("Try multi-word rhymes for added complexity")
+            suggestions.append("Try multi-word rhymes (multisyllabic) for added complexity")
+        
+        if dims.get("vocabulary_diversity", 0) < 0.4:
+            suggestions.append("Your vocabulary is a bit repetitive - try using more unique words")
         
         if not suggestions:
             suggestions.append("Your complexity level is solid! Keep developing your style.")

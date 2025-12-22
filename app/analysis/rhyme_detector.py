@@ -250,13 +250,17 @@ class RhymeDetector:
         if coda1 == coda2:
             return True
             
-        # Clean numeric stress if any leaking (shouldn't be)
-        c1 = ''.join(filter(str.isalpha, coda1))
-        c2 = ''.join(filter(str.isalpha, coda2))
+        # Clean numeric stress if any leaking (shouldn't be in coda)
+        # We need to keep spaces to split individual phonemes
+        def clean_coda(c):
+            return "".join(char for char in c if char.isalpha() or char.isspace())
+
+        c1_phones = set(clean_coda(coda1).split())
+        c2_phones = set(clean_coda(coda2).split())
         
         # Empty coda matches S/Z (very common: rhyme / rhymes)
-        if (not c1 and c2 in ['Z', 'S']) or (not c2 and c1 in ['Z', 'S']):
-            return True
+        if not c1_phones and any(p in ['Z', 'S'] for p in c2_phones): return True
+        if not c2_phones and any(p in ['Z', 'S'] for p in c1_phones): return True
             
         # Phonetic families
         families = [
@@ -267,16 +271,13 @@ class RhymeDetector:
             {'L', 'R'} # Liquids
         ]
         
-        c1_set = set(c1.split())
-        c2_set = set(c2.split())
-        
-        # If any sound matches
-        if not c1_set.isdisjoint(c2_set):
+        # 1. If any sound matches exactly
+        if not c1_phones.isdisjoint(c2_phones):
             return True
             
-        # Check families
+        # 2. Check if any phones from c1 match a family that any phones from c2 also match
         for fam in families:
-            if not c1_set.isdisjoint(fam) and not c2_set.isdisjoint(fam):
+            if not c1_phones.isdisjoint(fam) and not c2_phones.isdisjoint(fam):
                 return True
                 
         return False

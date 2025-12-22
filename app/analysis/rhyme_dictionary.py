@@ -132,3 +132,37 @@ class RhymeDictionary:
             "multisyllabic": self.find_multisyllabic_rhymes(word),
             "stresses": pronouncing.stresses(phones[0]) if phones else None
         }
+
+    def find_pocket_rhymes(self, word: str, source_syllables: int = None, source_stresses: str = None, max_results: int = 15) -> List[str]:
+        """Find rhymes that fit the same 'pocket' (syllable count and stress pattern)"""
+        word = word.lower().strip()
+        
+        # If no target pattern provided, get from the word itself
+        if source_syllables is None or source_stresses is None:
+            phones = pronouncing.phones_for_word(word)
+            if not phones:
+                return []
+            source_syllables = pronouncing.syllable_count(phones[0])
+            source_stresses = pronouncing.stresses(phones[0])
+
+        all_rhymes = pronouncing.rhymes(word)
+        pocket_rhymes = []
+        
+        for r_word in all_rhymes:
+            r_phones = pronouncing.phones_for_word(r_word)
+            if not r_phones:
+                continue
+            
+            # Check if any variant matches the pocket
+            for variant in r_phones:
+                r_syl = pronouncing.syllable_count(variant)
+                r_stress = pronouncing.stresses(variant)
+                
+                if r_syl == source_syllables and r_stress == source_stresses:
+                    pocket_rhymes.append(r_word)
+                    break
+            
+            if len(pocket_rhymes) >= max_results:
+                break
+        
+        return pocket_rhymes
