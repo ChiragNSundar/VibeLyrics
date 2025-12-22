@@ -11,8 +11,14 @@
             <h1 class="session-title" contenteditable="true" data-session-id="{{ session.id }}">{{ session.title }}</h1>
             <div class="session-badges">
                 <span class="bpm-badge large">{{ session.bpm }} BPM</span>
-                <span class="syllable-target">Target: {{ bpm_info.min }}-{{ bpm_info.max }} syllables/bar</span>
-                {% if session.mood %}<span class="tag mood-tag">{{ session.mood }}</span>{% endif %}
+                <!-- Audio Player -->
+                {% if session.audio_path %}
+                <audio controls src="{{ url_for('static', filename=session.audio_path) }}" class="beat-player"></audio>
+                {% else %}
+                <button class="btn btn-secondary small" onclick="document.getElementById('audio-upload').click()">🎵 Add
+                    Beat</button>
+                <input type="file" id="audio-upload" style="display:none" accept="audio/*" onchange="uploadAudio(this)">
+                {% endif %}
             </div>
         </div>
         <div class="session-actions">
@@ -27,16 +33,30 @@
         </div>
     </div>
 
+    <!-- Flow Visualization -->
+    <div class="flow-viz-container"
+        style="background:var(--bg-card); border-bottom:1px solid var(--border-color); height:100px; width:100%; position:relative;">
+        <canvas id="flow-canvas" style="width:100%; height:100%; display:block;"></canvas>
+    </div>
+
     <!-- Main Writing Area -->
     <div class="writing-area">
         <!-- Lyrics Panel -->
         <div class="lyrics-panel">
             <div class="lines-container" id="lines-container">
+                {% set current_section = 'Verse' %}
                 {% for line in lines %}
+                {% if loop.first or (line.section and line.section != current_section) %}
+                {% set current_section = line.section %}
+                <div class="section-divider">
+                    <span class="section-label">{{ line.section }}</span>
+                </div>
+                {% endif %}
                 <div class="line-row" data-line-id="{{ line.id }}" data-line-number="{{ line.line_number }}">
                     <span class="line-number">{{ line.line_number }}</span>
                     <div class="line-content">
-                        <span class="line-text">{{ line.final_version or line.user_input }}</span>
+                        <span class="line-text" oncontextmenu="handleWordRightClick(event)">{{ line.final_version or
+                            line.user_input }}</span>
                         <div class="line-meta">
                             <span class="syllable-count" title="Syllable count">{{ line.syllable_count }} syl</span>
                             {% if line.has_internal_rhyme %}<span class="rhyme-badge"
@@ -63,6 +83,15 @@
 
             <!-- Input Area -->
             <div class="input-area">
+                <div class="section-controls" style="margin-bottom:0.5rem; display:flex; gap:0.5rem;">
+                    <select id="section-select" class="input small" style="width:auto;">
+                        <option value="Verse">Verse</option>
+                        <option value="Chorus">Chorus</option>
+                        <option value="Bridge">Bridge</option>
+                        <option value="Intro">Intro</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
                 <div class="input-row">
                     <span class="line-number">{{ (lines|length) + 1 }}</span>
                     <div class="autocomplete-wrapper">
@@ -125,6 +154,15 @@
         </div>
     </div>
 
+    <!-- Power Tools Context Menu -->
+    <div id="context-menu" class="context-menu"
+        style="display:none; position:absolute; z-index:1000; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); width:200px;">
+        <ul style="list-style:none; padding:0; margin:0;">
+            <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('rhyme')">🔍 Find Rhymes</li>
+            <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('synonym')">🔁 Synonyms</li>
+        </ul>
+    </div>
+
     <!-- Analysis Modal -->
     <div class="modal" id="analysis-modal">
         <div class="modal-content">
@@ -146,9 +184,74 @@
     const BPM = parseInt(sessionData.dataset.bpm);
     let currentImprovementType = 'rhyme';
     let currentLineToImprove = null;
+    let selectedWord = "";
+
+    function handleWordRightClick(e) {
+        e.preventDefault();
+        const selection = window.getSelection();
+        selectedWord = selection.toString().trim();
+        if (!selectedWord) return;
+
+        const menu = document.getElementById('context-menu');
+        menu.style.display = 'block';
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+    }
+
+    document.addEventListener('click', () => {
+        document.getElementById('context-menu').style.display = 'none';
+    });
+
+    async function lookupWord(type) {
+        if (!selectedWord) return;
+        // Call global function or handle here. 
+        // Ideally we show a popup. For now let's alert or integrate.
+        // Let's perform a fetch and show in a small popup instead of alert
+        const res = await fetch(`/api/tools/lookup?word=${selectedWord}&type=${type}`);
+        const data = await res.json();
+
+        let msg = "";
+        if (type === 'rhyme') {
+            msg = "Perfect Rhymes:\n" + (data.results.perfect || []).join(', ');
+        } else {
+            msg = "Synonyms:\n" + data.results.join(', ');
+        }
+        alert(msg); // Simple placeholder implementation
+    }
+
+    async function uploadAudio(input) {
+        if (!input.files[0]) return;
+        const formData = new FormData();
+        formData.append('audio_file', input.files[0]);
+
+        const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        }
+    }
 </script>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/flow_viz.js') }}"></script>
 <script src="{{ url_for('static', filename='js/session.js') }}"></script>
+<script>
+    // Init Flow Viz
+    const viz = new FlowVisualizer('flow-canvas');
+    // Pre-populate with existing line data (server-side would be better but this works for demo)
+    // Use data from hidden JSON block for safety
+    const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
+    viz.update(linesData);
+</script>
+<script type="application/json" id="lines-data-json">
+[
+    {% for line in lines %}
+    { "syllable_count": {{ line.syllable_count or 0 }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
 {% endblock %}

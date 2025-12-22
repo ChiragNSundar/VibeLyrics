@@ -364,3 +364,36 @@ def get_categories():
         "categories": dictionary.get_all_categories()
     })
 
+
+@api_bp.route('/tools/lookup', methods=['GET'])
+def lookup_tool():
+    """Combined lookup for rhymes and synonyms"""
+    word = request.args.get('word', '').lower().strip()
+    lookup_type = request.args.get('type', 'rhyme')  # rhyme or synonym
+    
+    if not word:
+        return jsonify({"error": "No word provided"}), 400
+        
+    results = []
+    
+    if lookup_type == 'rhyme':
+        # Use existing RhymeDictionary
+        try:
+            dictionary = RhymeDictionary()
+            info = dictionary.get_rhyme_info(word)
+            results = {
+                "perfect": info.get('exact_rhymes', [])[:15],
+                "slant": []  # Placeholder as current dictionary might not support slants explicitly here
+            }
+        except Exception as e:
+            results = {"perfect": [], "error": str(e)}
+        
+    elif lookup_type == 'synonym':
+        # Placeholder for synonyms
+        results = ["(Synonyms require ext. API)"]
+        
+    return jsonify({
+        "word": word,
+        "type": lookup_type,
+        "results": results
+    })

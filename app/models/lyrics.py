@@ -25,6 +25,10 @@ class LyricSession(db.Model, TimestampMixin):
     
     # Context from journal entries used (stored as JSON of entry IDs)
     journal_context_ids = db.Column(db.Text, default="[]")
+
+    # Audio Integration
+    audio_path = db.Column(db.String(500), nullable=True)  # Path to uploaded instrumental
+
     
     def __repr__(self):
         return f"<LyricSession '{self.title}' @ {self.bpm}bpm>"
@@ -45,6 +49,8 @@ class LyricLine(db.Model, TimestampMixin):
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey('lyric_sessions.id'), nullable=False)
     line_number = db.Column(db.Integer, nullable=False)
+    section = db.Column(db.String(50), default="Verse")  # Verse, Chorus, Bridge, Intro, Outro
+
     
     # Content versions
     user_input = db.Column(db.Text, nullable=False)  # What user originally wrote

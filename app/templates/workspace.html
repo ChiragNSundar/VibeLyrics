@@ -9,6 +9,27 @@
         <p class="subtitle">Create a new session or continue an existing one</p>
     </div>
 
+    <!-- Gamification Dashboard -->
+    <div class="card stats-dashboard" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; text-align: center;">
+        <div class="stat-item">
+            <h3 style="margin:0; font-size:2rem; color:var(--accent-primary);">{{ profile.current_streak }} 🔥</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Day Streak</p>
+        </div>
+        <div class="stat-item">
+            <h3 style="margin:0; font-size:2rem; color:var(--accent-secondary);">{{ profile.total_lines_written }} ✍️</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Lines Dropped</p>
+        </div>
+        <div class="stat-item">
+            <h3 style="margin:0; font-size:2rem; color:var(--accent-warning);">{{ profile.longest_streak }} 🏆</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Best Streak</p>
+        </div>
+        <div class="stat-item">
+             <h3 style="margin:0; font-size:2rem; color:var(--accent-success);">{{ profile.total_sessions }} 📀</h3>
+             <p style="color:var(--text-muted); font-size:0.9rem;">Projects</p>
+        </div>
+    </div>
+
+
     <!-- New Session Form -->
     <div class="card new-session-card">
         <h2>New Session</h2>

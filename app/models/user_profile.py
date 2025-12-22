@@ -25,6 +25,36 @@ class UserProfile(db.Model, TimestampMixin):
     total_sessions = db.Column(db.Integer, default=0)
     total_lines_written = db.Column(db.Integer, default=0)
     total_corrections = db.Column(db.Integer, default=0)
+
+    # Gamification Stats
+    current_streak = db.Column(db.Integer, default=0)
+    longest_streak = db.Column(db.Integer, default=0)
+    last_active_date = db.Column(db.Date, nullable=True)
+    words_written_today = db.Column(db.Integer, default=0)
+    
+    def update_streak(self):
+        """Update streak logic based on activity today"""
+        from datetime import date
+        today = date.today()
+        
+        if self.last_active_date == today:
+            return  # Already active today
+            
+        if self.last_active_date:
+            delta = (today - self.last_active_date).days
+            if delta == 1:
+                self.current_streak += 1
+            else:
+                self.current_streak = 1
+        else:
+            self.current_streak = 1
+            
+        if self.current_streak > self.longest_streak:
+            self.longest_streak = self.current_streak
+            
+        self.last_active_date = today
+        # Reset daily counter if it's a new day (handled by logic consuming this)
+
     
     def __repr__(self):
         return f"<UserProfile {self.name}>"

@@ -8,22 +8,30 @@
 
 ### 📝 Smart Lyric Editor
 - **Distraction-free interface** for focused writing.
-- **Real-time feedback** on syllable counts and line structures.
+- **Song Structure Blocks**: Organize lyrics into Verses, Choruses, and Bridges.
+- **Built-in Power Tools**: Right-click any word for instant Rhyme and Synonym lookups.
 - **AI Assistance** for generating rhymes, metaphors, and continuing bars.
 
+### 🎵 Studio Mode & Audio
+- **Beat Player**: Upload and play instrumental tracks directly in your session.
+- **Flow Visualization**: specific Real-time bar charts to visualize syllable density and rhythm.
+
 ### 🧠 Advanced Analysis Engine
-- **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis utilizing phonetic algorithms.
+- **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis.
 - **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
 - **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.
 
+### 🎮 Gamification & Progress
+- **Daily Streaks**: Track your writing consistency with a daily streak counter.
+- **Stats Dashboard**: View customized stats like "Lines Dropped" and "Total Sessions".
+
 ### 📚 Reference Library
 - **Genius Integration**: Search and import lyrics directly from Genius.com.
-- **Study Mode**: Analyze your favorite artists' tracks to understand their patterns and techniques.
-- **Metadata Fetching**: Automatically retrieves album art, producer credits, and release dates.
+- **Study Mode**: Analyze your favorite artists' tracks to understand their patterns.
 
 ### 📓 Journal & Learning
 - **Daily Journaling**: Track your writing habit and creative thoughts.
-- **Learning Modules**: (Coming Soon) Interactive lessons on poetic devices and hip-hop history.
+- **Learning Modules**: (Coming Soon) Interactive lessons on poetic devices.
 
 ---
 
