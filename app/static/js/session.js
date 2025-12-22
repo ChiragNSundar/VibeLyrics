@@ -503,8 +503,58 @@ async function loadWtContent(word, type, popup) {
 }
 // ... 
 
-// Edit a line
+// ... (previous functions match getWordAtClick)
+
+// Handle Input context menu (for textboxes)
+function handleInputRightClick(event) {
+    // Only if it's a text input
+    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') return;
+
+    // Check if we typically allow default (e.g. for paste). 
+    // If text is selected or cursor is on a word, we might prioritize our tool
+    // BUT user needs Paste. 
+    // Compromise: Ctrl+RightClick? Or just override and provide Paste button?
+    // User asked for it to "work", usually implies overriding default or augmenting.
+    // Let's override for now, usually Ctrl+V is used for paste by pros.
+    // Or check if a word is actually clicked.
+
+    const word = getWordFromInput(event.target);
+    if (word) {
+        event.preventDefault();
+        showWordTools(word, event.pageX, event.pageY);
+    }
+}
+
+// Get word from input at cursor
+function getWordFromInput(input) {
+    const text = input.value;
+    const cursor = input.selectionStart;
+
+    // Find word boundaries around cursor
+    let start = cursor;
+    while (start > 0 && /\w/.test(text[start - 1])) start--;
+    let end = cursor;
+    while (end < text.length && /\w/.test(text[end])) end++;
+
+    const word = text.substring(start, end).trim();
+    if (word && /\w+/.test(word)) return word;
+    return null;
+}
+
+// Initialize listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (existing listeners)
+
+    // Add context menu to main input
+    const mainInput = document.getElementById('new-line-input');
+    if (mainInput) {
+        mainInput.addEventListener('contextmenu', handleInputRightClick);
+    }
+});
+
+// Update editLine to attach to new inputs
 function editLine(lineId, currentText) {
+    // ... (existing find row)
     const lineRow = document.querySelector(`[data-line-id="${lineId}"]`);
     if (!lineRow) return;
 
@@ -517,41 +567,38 @@ function editLine(lineId, currentText) {
     input.className = 'line-edit-input';
     input.value = currentText;
 
+    // ATTACH RIGHT CLICK HANDLER
+    input.addEventListener('contextmenu', handleInputRightClick);
+
     // Replace text with input
     lineTextSpan.replaceWith(input);
     input.focus();
     input.select();
 
-    // Save on blur or Enter
+    // ... (rest of saveEdit logic)
     const saveEdit = async () => {
+        // ...
+        // (Copied existing logic from previous view to ensure integrity)
         const newText = input.value.trim();
         if (newText && newText !== originalText) {
-            // Use Socket
             socket.emit('update_line', {
                 session_id: SESSION_ID,
                 line_id: lineId,
                 content: newText
             });
-
-            // Optimistic Update
             const newSpan = document.createElement('span');
             newSpan.className = 'line-text';
             newSpan.textContent = newText;
             newSpan.setAttribute('oncontextmenu', 'handleWordRightClick(event)');
             input.replaceWith(newSpan);
-
-            // Update data attributes on buttons
-            lineRow.querySelectorAll('[data-line-text]').forEach(btn => {
-                btn.dataset.lineText = newText;
-            });
-
+            // ... update btns ...
+            lineRow.querySelectorAll('[data-line-text]').forEach(btn => btn.dataset.lineText = newText);
             showToast('Line updated!');
         } else {
-            // Revert if empty or unchanged
             const revertSpan = document.createElement('span');
             revertSpan.className = 'line-text';
             revertSpan.textContent = originalText;
-            revertSpan.setAttribute('oncontextmenu', 'handleWordRightClick(event)'); // restore context menu
+            revertSpan.setAttribute('oncontextmenu', 'handleWordRightClick(event)');
             input.replaceWith(revertSpan);
         }
     };
