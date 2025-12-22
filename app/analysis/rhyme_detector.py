@@ -30,6 +30,79 @@ class RhymeDetector:
             "vibin": ["V AY1 B IH0 N"],
         }
     
+    def _guess_pronunciation(self, word: str) -> List[str]:
+        """
+        Heuristic G2P (Grapheme-to-Phoneme) for unknown slang words.
+        Very basic rule-based approximation for hip-hop slang.
+        """
+        word = word.lower()
+        phones = []
+        
+        # 1. Handle common endings
+        if word.endswith("ing"):
+            phones = ["IH", "NG"]
+            stem = word[:-3]
+        elif word.endswith("er"):
+            phones = ["ER"]
+            stem = word[:-2]
+        else:
+            stem = word
+            
+        # 2. Map vowel groups to likely sounds
+        # This is primitive but handles many cases better than raw spelling
+        vowel_map = {
+            "ee": "IY", "ea": "IY", "oo": "UW", "oa": "OW",
+            "ai": "EY", "ay": "EY", "ei": "EY",
+            "ie": "AY", "uy": "AY", "y": "AY", # at end usually
+            "ou": "AW", "ow": "AW",
+            "oi": "OY", "oy": "OY",
+            "a": "AE", "e": "EH", "i": "IH", "o": "AA", "u": "AH"
+        }
+        
+        # Simple scan (not perfect, but a safety net)
+        # Check double vowels first
+        found_vowel = False
+        i = 0
+        while i < len(stem):
+            char = stem[i]
+            next_char = stem[i+1] if i+1 < len(stem) else ""
+            bigram = char + next_char
+            
+            if bigram in vowel_map:
+                phones.append(vowel_map[bigram] + "1") # Assume stress
+                found_vowel = True
+                i += 2
+                continue
+                
+            if char in vowel_map:
+                # Magic E rule (simple version): "ite" -> AY T
+                if char in ['a','e','i','o','u'] and next_char not in ['a','e','i','o','u'] and (i+2 < len(stem) and stem[i+2] == 'e'):
+                     long_vowels = {'a':'EY', 'e':'IY', 'i':'AY', 'o':'OW', 'u':'UW'}
+                     if char in long_vowels:
+                         phones.append(long_vowels[char] + "1")
+                         found_vowel = True
+                         phones.append(next_char.upper()) # The consonant
+                         i += 3 # Skip vowel, consonant, E
+                         continue
+                
+                phones.append(vowel_map[char] + "1")
+                found_vowel = True
+                i += 1
+                continue
+            
+            # Consonants
+            if char.isalpha() and char not in ['a','e','i','o','u']:
+                # Map some easy ones, ignore hard ones for now or map 1:1
+                c_map = {'c': 'K', 'q': 'K', 'x': 'K S', 'j': 'JH'}
+                phones.append(c_map.get(char, char.upper()))
+            
+            i += 1
+            
+        if not found_vowel:
+             return []
+             
+        return [" ".join(phones)]
+
     def get_pronunciation(self, word: str) -> List[str]:
         """Get list of possible pronunciations for a word"""
         word = word.lower().strip()
@@ -40,21 +113,24 @@ class RhymeDetector:
         if phones:
             return phones
             
-        # Fallback: Plural handling (s, es)
+        # Fallback 1: Plural handling (s, es)
         if word.endswith('s'):
             # Try removing 's' (Cornflakes -> Cornflake)
             sing_phones = pronouncing.phones_for_word(word[:-1])
             if sing_phones:
-                # Append Z sound (common for plurals)
                 return [p + " Z" for p in sing_phones]
                 
             if word.endswith('es'):
-                # Try removing 'es' (Boxes -> Box)
                 sing_phones = pronouncing.phones_for_word(word[:-2])
                 if sing_phones:
-                    # Append IH0 Z or just Z depending on context, using IH0 Z is safer for 'es'
                     return [p + " IH0 Z" for p in sing_phones]
-                    
+        
+        # Fallback 2: Heuristic Guessing (Slang)
+        # If we still know nothing, try to guess the sounds
+        guessed = self._guess_pronunciation(word)
+        if guessed:
+            return guessed
+            
         return []
     
     def get_rhyme_part(self, pronunciation: str) -> str:
