@@ -31,16 +31,31 @@ class RhymeDetector:
         }
     
     def get_pronunciation(self, word: str) -> List[str]:
-        """Get phonetic pronunciation(s) for a word"""
+        """Get list of possible pronunciations for a word"""
         word = word.lower().strip()
+        word = re.sub(r"[^a-z']", "", word)
         
-        # Check custom dict first
-        if word in self.custom_pronunciations:
-            return self.custom_pronunciations[word]
-        
-        # Try CMU dictionary
+        # Try CMU dictionary directly
         phones = pronouncing.phones_for_word(word)
-        return phones if phones else []
+        if phones:
+            return phones
+            
+        # Fallback: Plural handling (s, es)
+        if word.endswith('s'):
+            # Try removing 's' (Cornflakes -> Cornflake)
+            sing_phones = pronouncing.phones_for_word(word[:-1])
+            if sing_phones:
+                # Append Z sound (common for plurals)
+                return [p + " Z" for p in sing_phones]
+                
+            if word.endswith('es'):
+                # Try removing 'es' (Boxes -> Box)
+                sing_phones = pronouncing.phones_for_word(word[:-2])
+                if sing_phones:
+                    # Append IH0 Z or just Z depending on context, using IH0 Z is safer for 'es'
+                    return [p + " IH0 Z" for p in sing_phones]
+                    
+        return []
     
     def get_rhyme_part(self, pronunciation: str) -> str:
         """Extract the rhyming part (from last stressed vowel to end)"""
@@ -63,7 +78,8 @@ class RhymeDetector:
         pron2_list = self.get_pronunciation(word2)
         
         if not pron1_list or not pron2_list:
-            # Fallback to suffix matching if no pronunciation
+            # Fallback to suffix matching ONLY if strictly necessary
+            # and verify it's not a weak suffix match
             return self._suffix_rhyme(word1, word2)
         
         for pron1 in pron1_list:
@@ -89,11 +105,32 @@ class RhymeDetector:
         
         if not w1 or not w2:
             return False
+            
+        # Avoid weak suffix detection (just 's', 'es', 'ed', 'd')
+        # If the match length is small, ensure it's not a common grammatical suffix
+        # that doesn't carry the rhyme sound (Trees / Flakes)
         
-        # Exact suffix match
-        for length in range(min(len(w1), len(w2)), min_match - 1, -1):
+        match_len = 0
+        max_len = min(len(w1), len(w2))
+        for length in range(1, max_len + 1):
             if w1[-length:] == w2[-length:]:
-                return True
+                match_len = length
+            else:
+                break
+                
+        if match_len >= min_match:
+            suffix = w1[-match_len:]
+            # Blacklist weak suffixes if that's ALL that matches
+            weak_suffixes = ['s', 'es', 'ed', 'ly', 'y'] 
+            # Note: 'ing' rhymes usually involve the vowel (Sing/Ring), so suffix='ing' is actually OK.
+            # But 'es' is bad (Trees/Cakes). 
+            
+            if suffix in ['s', 'es', 'ed', 'd', 'ly', 'y']:
+                # Require more context (longer match) to confirm rhyme
+                # e.g. "happiness" vs "sadness" (ness) is ok?
+                if match_len < 3: 
+                    return False
+            return True
         
         # Common rhyming endings (hip-hop focused)
         rhyme_families = [
@@ -202,11 +239,12 @@ class RhymeDetector:
         coda2 = self._get_coda(phones2)
         
         # Stricter check for Open vs Closed rhymes involving S/Z
+        # REMOVED: In hip-hop, unstressed endings (Whitney) often rhyme with stressed (Trees)
         # "Pay" (1) vs "Days" (1) -> OK
-        # "Whitney" (0) vs "Trees" (1) -> NO
-        is_open_closed_mix = (not coda1 and coda2) or (not coda2 and coda1)
-        if is_open_closed_mix and last_stress1 != last_stress2:
-            return False
+        # "Whitney" (0) vs "Trees" (1) -> OK (Relaxes previous constraint)
+        # is_open_closed_mix = (not coda1 and coda2) or (not coda2 and coda1)
+        # if is_open_closed_mix and last_stress1 != last_stress2:
+        #     return False
         
         # Allow match if codas are compatible
         if self._coda_compatible(coda1, coda2):

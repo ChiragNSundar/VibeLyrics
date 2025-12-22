@@ -51,6 +51,16 @@ def edit_session(session_id):
     lines = session.lines.all()
     profile = UserProfile.get_or_create_default()
     
+    # Highlight Rhymes
+    if lines:
+        rhyme_detector = RhymeDetector()
+        text_lines = [l.final_version or l.user_input for l in lines]
+        highlighted_texts = rhyme_detector.highlight_lyrics(text_lines)
+        
+        # Attach to line objects transiently
+        for line, html in zip(lines, highlighted_texts):
+            setattr(line, 'highlighted_html', html)
+    
     # Get BPM info
     bpm_calc = BPMCalculator()
     bpm_info = bpm_calc.get_syllable_target(session.bpm)

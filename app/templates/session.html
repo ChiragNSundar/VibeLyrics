@@ -61,8 +61,9 @@
                 <div class="line-row" data-line-id="{{ line.id }}" data-line-number="{{ line.line_number }}">
                     <span class="line-number">{{ line.line_number }}</span>
                     <div class="line-content">
-                        <span class="line-text" oncontextmenu="handleWordRightClick(event)">{{ line.final_version or
-                            line.user_input }}</span>
+                        <span class="line-text" oncontextmenu="handleWordRightClick(event)">{{ line.highlighted_html |
+                            default(line.final_version or
+                            line.user_input) | safe }}</span>
                         <div class="line-meta">
                             <span class="syllable-count" title="Syllable count">{{ line.syllable_count }} syl</span>
                             {% if line.has_internal_rhyme %}<span class="rhyme-badge"
