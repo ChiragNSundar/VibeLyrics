@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Thought Feed - VibeLyrics{% endblock %}
+
+{% block content %}
+<div class="journal-container">
+    <div class="page-header">
+        <h1>💭 Thought Feed</h1>
+        <p class="subtitle">Drop your intrusive thoughts, random bars, observations — AI uses these for inspiration</p>
+    </div>
+
+    <!-- Quick Post (Twitter-style) -->
+    <div class="thought-composer">
+        <div class="composer-avatar">💡</div>
+        <div class="composer-input">
+            <textarea id="quick-thought" class="thought-input"
+                placeholder="What's on your mind? A metaphor, a punchline, a raw feeling..." rows="2"></textarea>
+            <div class="composer-actions">
+                <div class="composer-options">
+                    <button type="button" class="mood-btn" onclick="toggleMoodPicker()" title="Add mood">😊</button>
+                    <span id="selected-mood" class="selected-mood"></span>
+                </div>
+                <div class="composer-submit">
+                    <span class="char-count" id="char-count">0 chars</span>
+                    <button class="btn btn-primary" onclick="postThought()" id="post-btn">
+                        <span>Drop 💭</span>
+                    </button>
+                </div>
+            </div>
+            <div class="mood-picker" id="mood-picker" style="display:none;">
+                <button class="mood-option" data-mood="🔥 hype" onclick="selectMood('🔥', 'hype')">🔥 Hype</button>
+                <button class="mood-option" data-mood="😤 angry" onclick="selectMood('😤', 'angry')">😤 Angry</button>
+                <button class="mood-option" data-mood="😢 sad" onclick="selectMood('😢', 'sad')">😢 Sad</button>
+                <button class="mood-option" data-mood="💪 motivated" onclick="selectMood('💪', 'motivated')">💪
+                    Motivated</button>
+                <button class="mood-option" data-mood="🤔 deep" onclick="selectMood('🤔', 'deep')">🤔 Deep</button>
+                <button class="mood-option" data-mood="😎 confident" onclick="selectMood('😎', 'confident')">😎
+                    Confident</button>
+                <button class="mood-option" data-mood="💔 hurt" onclick="selectMood('💔', 'hurt')">💔 Hurt</button>
+                <button class="mood-option" data-mood="✨ inspired" onclick="selectMood('✨', 'inspired')">✨
+                    Inspired</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="feed-stats">
+        <span class="stat">📝 {{ entries|length }} thoughts</span>
+        <span class="stat">🧠 {{ total_used or 0 }} used in sessions</span>
+    </div>
+
+    <!-- Feed -->
+    <div class="thought-feed" id="thought-feed">
+        {% if entries %}
+        {% for entry in entries %}
+        <div class="thought-card" data-id="{{ entry.id }}">
+            <div class="thought-content">
+                <p>{{ entry.content }}</p>
+            </div>
+            <div class="thought-footer">
+                <div class="thought-meta">
+                    {% if entry.mood %}<span class="mood-badge">{{ entry.mood }}</span>{% endif %}
+                    <span class="thought-time">{{ entry.created_at.strftime('%b %d') if entry.created_at else 'now'
+                        }}</span>
+                    {% if entry.times_used > 0 %}
+                    <span class="used-badge" title="Used {{ entry.times_used }} times by AI">🎤
+                        {{entry.times_used}}</span>
+                    {% endif %}
+                </div>
+                <div class="thought-actions">
+                    <button class="action-btn" data-content="{{ entry.content|e }}"
+                        onclick="useInSession(this.dataset.content)" title="Open in new session">📝</button>
+                    <button class="action-btn" data-content="{{ entry.content|e }}"
+                        onclick="copyThought(this.dataset.content)" title="Copy">📋</button>
+                    <button class="action-btn delete" data-id="{{ entry.id }}" onclick="deleteThought(this.dataset.id)"
+                        title="Delete">🗑️</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-feed">
+            <div class="empty-icon">💭</div>
+            <p>Your thought feed is empty</p>
+            <span>Drop your first intrusive thought above — bars, feelings, observations. The AI will use these as
+                inspiration when suggesting lyrics.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    let selectedMood = '';
+
+    document.getElementById('quick-thought').addEventListener('input', function () {
+        const count = this.value.length;
+        document.getElementById('char-count').textContent = `${count} chars`;
+        document.getElementById('post-btn').disabled = count === 0;
+    });
+
+    document.getElementById('quick-thought').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            postThought();
+        }
+    });
+
+    function toggleMoodPicker() {
+        const picker = document.getElementById('mood-picker');
+        picker.style.display = picker.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function selectMood(emoji, mood) {
+        selectedMood = mood;
+        document.getElementById('selected-mood').textContent = emoji + ' ' + mood;
+        document.getElementById('mood-picker').style.display = 'none';
+    }
+
+    async function postThought() {
+        const input = document.getElementById('quick-thought');
+        const content = input.value.trim();
+        if (!content) return;
+
+        try {
+            const result = await apiCall('/journal/quick-add', 'POST', {
+                content: content,
+                mood: selectedMood
+            });
+
+            if (result.success) {
+                // Add to feed instantly
+                addThoughtToFeed(result.entry);
+                input.value = '';
+                document.getElementById('char-count').textContent = '0/280';
+                selectedMood = '';
+                document.getElementById('selected-mood').textContent = '';
+                showToast('Thought dropped! 💭');
+            }
+        } catch (e) {
+            showToast('Error posting thought', 'error');
+        }
+    }
+
+    function addThoughtToFeed(entry) {
+        const feed = document.getElementById('thought-feed');
+        const empty = feed.querySelector('.empty-feed');
+        if (empty) empty.remove();
+
+        const card = document.createElement('div');
+        card.className = 'thought-card new';
+        card.dataset.id = entry.id;
+        card.innerHTML = `
+        <div class="thought-content">
+            <p>${escapeHtml(entry.content)}</p>
+        </div>
+        <div class="thought-footer">
+            <div class="thought-meta">
+                ${entry.mood ? `<span class="mood-badge">${entry.mood}</span>` : ''}
+                <span class="thought-time">now</span>
+            </div>
+            <div class="thought-actions">
+                <button class="action-btn" onclick="copyThought('${escapeHtml(entry.content)}')" title="Copy">📋</button>
+                <button class="action-btn delete" onclick="deleteThought(${entry.id})" title="Delete">🗑️</button>
+            </div>
+        </div>
+    `;
+        feed.insertBefore(card, feed.firstChild);
+    }
+
+    async function deleteThought(id) {
+        if (!confirm('Delete this thought?')) return;
+        try {
+            await apiCall(`/journal/delete/${id}`, 'POST');
+            document.querySelector(`[data-id="${id}"]`)?.remove();
+            showToast('Thought deleted');
+        } catch (e) {
+            showToast('Error deleting', 'error');
+        }
+    }
+
+    function copyThought(text) {
+        navigator.clipboard.writeText(text);
+        showToast('Copied! 📋');
+    }
+
+    function useInSession(text) {
+        // Store in localStorage and redirect to create new session
+        localStorage.setItem('pendingThought', text);
+        window.location.href = '/workspace';
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

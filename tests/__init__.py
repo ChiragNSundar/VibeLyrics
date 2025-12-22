@@ -1,0 +1,3 @@
+"""
+VibeLyrics Test Suite
+"""

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ filename }} - VibeLyrics{% endblock %}
+
+{% block content %}
+<div class="reference-view-container">
+    <div class="page-header">
+        <a href="{{ url_for('references.index') }}" class="back-link">← Back to Library</a>
+        <h1>{{ parsed.lyrics.artist or 'Unknown' }} - {{ parsed.lyrics.song or filename }}</h1>
+    </div>
+
+    <div class="reference-layout">
+        <!-- Lyrics Panel -->
+        <div class="lyrics-view-panel">
+            <div class="card">
+                <h2>Lyrics</h2>
+                <div class="lyrics-content">
+                    {% for section in parsed.lyrics.sections %}
+                    <div class="lyrics-section">
+                        <h4 class="section-header">[{{ section.name }}]</h4>
+                        {% for line in section.lines %}
+                        <p class="lyric-line">{{ line }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Panel -->
+        <div class="analysis-panel">
+            {% if parsed.metadata %}
+            <div class="card">
+                <h3>Metadata</h3>
+                <dl class="metadata-list">
+                    {% for key, value in parsed.metadata.items() %}
+                    <dt>{{ key|title }}</dt>
+                    <dd>{{ value }}</dd>
+                    {% endfor %}
+                </dl>
+            </div>
+            {% endif %}
+
+            {% if analysis %}
+            <div class="card">
+                <h3>Analysis</h3>
+
+                <div class="analysis-item">
+                    <h4>Rhyme Scheme (first 16 lines)</h4>
+                    <p class="rhyme-scheme-display">{{ analysis.rhyme_scheme }}</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>Complexity Score</h4>
+                    <div class="score-bar">
+                        <div class="score-fill"
+                            style="width: {{ ((analysis.complexity.overall|default(0)) * 100)|int }}%"></div>
+                    </div>
+                    <span class="score-value">{{ ((analysis.complexity.overall|default(0)) * 100)|int }}%</span>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>Structure</h4>
+                    <p>{{ analysis.structure.total_lines }} lines in {{ analysis.structure.total_sections }} sections
+                    </p>
+                    <p>Avg {{ analysis.structure.avg_lines_per_section|round(1) }} lines/section</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <h3>Actions</h3>
+                <div class="action-buttons vertical">
+                    <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copy Lyrics</button>
+                    <form action="{{ url_for('references.delete_file', filename=filename) }}" method="POST">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this file?')">🗑️
+                            Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard() {
+        const lyrics = document.querySelector('.lyrics-content').innerText;
+        navigator.clipboard.writeText(lyrics).then(() => {
+            alert('Lyrics copied!');
+        });
+    }
+</script>
+{% endblock %}

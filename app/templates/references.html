@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}References - VibeLyrics{% endblock %}
+
+{% block content %}
+<div class="references-container">
+    <div class="page-header">
+        <h1>📚 Reference Library</h1>
+        <p class="subtitle">Learn from the greats - {{ stats.total_files }} tracks in library</p>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="actions-bar">
+        <div class="search-bar">
+            <form action="{{ url_for('references.search') }}" method="GET" class="search-form">
+                <input type="text" name="q" class="input search-input" placeholder="Search lyrics..."
+                    value="{{ search_query or '' }}">
+                <button type="submit" class="btn btn-secondary">🔍</button>
+            </form>
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="openModal('upload-modal')">📁 Upload</button>
+            <button class="btn btn-secondary" onclick="openModal('add-modal')">✏️ Add Manual</button>
+            {% if genius_configured %}
+            <button class="btn btn-primary" onclick="openModal('genius-modal')">🎵 Genius Search</button>
+            {% else %}
+            <span class="tooltip" title="Add GENIUS_ACCESS_TOKEN to .env">
+                <button class="btn btn-disabled" disabled>🎵 Genius (Not Configured)</button>
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Files Grid -->
+    <div class="files-grid">
+        {% if files %}
+        {% for file in files %}
+        <a href="{{ url_for('references.view_file', filename=file.relative_path) }}" class="file-card">
+            <div class="file-icon">📄</div>
+            <div class="file-info">
+                <h3>{{ file.name }}</h3>
+                <span class="file-meta">{{ (file.size_bytes / 1024)|round(1) }} KB</span>
+            </div>
+        </a>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state full-width">
+            <p>{% if search_query %}No files found for "{{ search_query }}"{% else %}No reference lyrics yet. Add some
+                to learn from the masters! 🎤{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal" id="upload-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📁 Upload Lyrics File</h2>
+            <button class="btn-icon" onclick="closeModal('upload-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <form action="{{ url_for('references.upload_file') }}" method="POST" enctype="multipart/form-data"
+                id="upload-form">
+                <div class="form-group">
+                    <label>Select File (.txt, .md, .lyrics)</label>
+                    <input type="file" name="file" accept=".txt,.md,.lyrics" class="input" required>
+                </div>
+                <p class="help-text">Name format: "Artist - Song.txt" for auto-detection</p>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Manual Modal -->
+<div class="modal" id="add-modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h2>✏️ Add Lyrics Manually</h2>
+            <button class="btn-icon" onclick="closeModal('add-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <form action="{{ url_for('references.add_manual') }}" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="artist">Artist</label>
+                        <input type="text" name="artist" id="artist" class="input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="song">Song</label>
+                        <input type="text" name="song" id="song" class="input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="lyrics">Lyrics</label>
+                    <textarea name="lyrics" id="lyrics" class="input lyrics-textarea" rows="15"
+                        placeholder="[Verse 1]&#10;Your lyrics here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Save to Library</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Genius Search Modal -->
+<div class="modal" id="genius-modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h2>🎵 Search Genius</h2>
+            <button class="btn-icon" onclick="closeModal('genius-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="search-row">
+                <input type="text" id="genius-search-input" class="input" placeholder="Search artist or song...">
+                <button class="btn btn-primary" onclick="searchGenius()">Search</button>
+            </div>
+            <div class="genius-results" id="genius-results">
+                <p class="placeholder-text">Search for a song to fetch lyrics from Genius</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function searchGenius() {
+        const query = document.getElementById('genius-search-input').value;
+        const resultsDiv = document.getElementById('genius-results');
+
+        if (!query) return;
+
+        resultsDiv.innerHTML = '<p>Searching...</p>';
+
+        try {
+            const response = await fetch('/references/genius/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                resultsDiv.innerHTML = `<p class="error">${data.error}</p>`;
+                return;
+            }
+
+            if (data.results.length === 0) {
+                resultsDiv.innerHTML = '<p>No results found</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = data.results.map(r => `
+            <div class="genius-result">
+                <img src="${r.thumbnail || ''}" alt="" class="result-thumb">
+                <div class="result-info">
+                    <h4>${r.title}</h4>
+                    <p>${r.artist}</p>
+                </div>
+                <button class="btn btn-secondary" onclick="fetchGenius('${r.url}', '${r.artist}', '${r.title}')">
+                    Fetch
+                </button>
+            </div>
+        `).join('');
+
+        } catch (e) {
+            resultsDiv.innerHTML = `<p class="error">Error: ${e.message}</p>`;
+        }
+    }
+
+    async function fetchGenius(url, artist, title) {
+        const resultsDiv = document.getElementById('genius-results');
+        resultsDiv.innerHTML = '<p>Fetching lyrics...</p>';
+
+        try {
+            const response = await fetch('/references/genius/fetch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, artist, title })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                resultsDiv.innerHTML = `<p class="success">✅ Saved! <a href="${data.path}">View lyrics</a></p>`;
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                resultsDiv.innerHTML = `<p class="error">${data.error}</p>`;
+            }
+        } catch (e) {
+            resultsDiv.innerHTML = `<p class="error">Error: ${e.message}</p>`;
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ session.title }} - VibeLyrics{% endblock %}
+
+{% block content %}
+<div class="session-container">
+    <!-- Session Header -->
+    <div class="session-header-bar">
+        <div class="session-info">
+            <a href="{{ url_for('workspace.index') }}" class="back-link">← Back</a>
+            <h1 class="session-title" contenteditable="true" data-session-id="{{ session.id }}">{{ session.title }}</h1>
+            <div class="session-badges">
+                <span class="bpm-badge large">{{ session.bpm }} BPM</span>
+                <span class="syllable-target">Target: {{ bpm_info.min }}-{{ bpm_info.max }} syllables/bar</span>
+                {% if session.mood %}<span class="tag mood-tag">{{ session.mood }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="session-actions">
+            <button class="btn btn-secondary" onclick="analyzeSession()">📊 Analyze</button>
+            <button class="btn btn-secondary" onclick="toggleAIPanel()">🤖 AI Help</button>
+            <select id="provider-select" class="input small" onchange="switchProvider(this.value)">
+                <option value="openai" {% if profile.preferred_provider=='openai' %}selected{% endif %}>OpenAI</option>
+                <option value="gemini" {% if profile.preferred_provider=='gemini' %}selected{% endif %}>Gemini</option>
+                <option value="perplexity" {% if profile.preferred_provider=='perplexity' %}selected{% endif %}>
+                    Perplexity</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Main Writing Area -->
+    <div class="writing-area">
+        <!-- Lyrics Panel -->
+        <div class="lyrics-panel">
+            <div class="lines-container" id="lines-container">
+                {% for line in lines %}
+                <div class="line-row" data-line-id="{{ line.id }}" data-line-number="{{ line.line_number }}">
+                    <span class="line-number">{{ line.line_number }}</span>
+                    <div class="line-content">
+                        <span class="line-text">{{ line.final_version or line.user_input }}</span>
+                        <div class="line-meta">
+                            <span class="syllable-count" title="Syllable count">{{ line.syllable_count }} syl</span>
+                            {% if line.has_internal_rhyme %}<span class="rhyme-badge"
+                                title="Has internal rhyme">🔗</span>{% endif %}
+                            {% if line.was_corrected %}<span class="corrected-badge"
+                                title="You modified AI suggestion">✏️</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="line-actions">
+                        <button class="btn-icon edit-btn" data-line-id="{{ line.id }}"
+                            data-line-text="{{ line.final_version or line.user_input }}"
+                            onclick="editLine(this.dataset.lineId, this.dataset.lineText)"
+                            title="Edit this line">✏️</button>
+                        <button class="btn-icon improve-btn" data-line-id="{{ line.id }}"
+                            data-line-text="{{ line.final_version or line.user_input }}"
+                            onclick="improveLine(this.dataset.lineId, this.dataset.lineText)"
+                            title="Improve this line">✨</button>
+                        <button class="btn-icon delete-btn" data-line-id="{{ line.id }}"
+                            onclick="deleteLine(this.dataset.lineId)" title="Delete this line">🗑️</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-row">
+                    <span class="line-number">{{ (lines|length) + 1 }}</span>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="new-line-input" class="line-input" placeholder="Write your next bar..."
+                            data-session-id="{{ session.id }}" autocomplete="off">
+                        <span class="ghost-text" id="ghost-text"></span>
+                    </div>
+                    <div class="input-actions">
+                        <button class="btn btn-primary" onclick="addLine()">Add</button>
+                    </div>
+                </div>
+                <div class="input-hint" id="input-hint">
+                    <span class="syllable-counter">0 syllables</span>
+                    <span class="hint-text" id="tab-hint" style="display:none;">Press <kbd>Tab</kbd> to accept</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Panel (collapsible) -->
+        <div class="ai-panel" id="ai-panel">
+            <div class="ai-panel-header">
+                <h3>🤖 AI Assistant</h3>
+                <button class="btn-icon" onclick="toggleAIPanel()">✕</button>
+            </div>
+
+            <div class="ai-content">
+                <!-- Suggestion Area -->
+                <div class="ai-section" id="suggestion-section">
+                    <h4>Suggestions</h4>
+                    <div class="suggestions-list" id="suggestions-list">
+                        <p class="placeholder-text">Write a line and click "Suggest" to get AI suggestions for the next
+                            bar.</p>
+                    </div>
+                </div>
+
+                <!-- Improvement Area -->
+                <div class="ai-section" id="improvement-section">
+                    <h4>Improve Line</h4>
+                    <div class="improvement-types">
+                        <button class="chip" data-type="rhyme" onclick="setImprovementType('rhyme')">🎯 Rhyme</button>
+                        <button class="chip" data-type="flow" onclick="setImprovementType('flow')">🌊 Flow</button>
+                        <button class="chip" data-type="wordplay" onclick="setImprovementType('wordplay')">🧠
+                            Wordplay</button>
+                        <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎 Depth</button>
+                    </div>
+                    <div class="improvement-result" id="improvement-result"></div>
+                </div>
+
+                <!-- Ask AI -->
+                <div class="ai-section">
+                    <h4>Ask AI</h4>
+                    <div class="ask-input-row">
+                        <input type="text" id="ask-input" class="input"
+                            placeholder="Ask about rhymes, flow, technique...">
+                        <button class="btn btn-primary" onclick="askAI()">Ask</button>
+                    </div>
+                    <div class="ask-response" id="ask-response"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Modal -->
+    <div class="modal" id="analysis-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 Session Analysis</h2>
+                <button class="btn-icon" onclick="closeModal('analysis-modal')">✕</button>
+            </div>
+            <div class="modal-body" id="analysis-content">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="session-data" data-session-id="{{ session.id }}" data-bpm="{{ session.bpm }}" style="display:none;"></div>
+<script>
+    const sessionData = document.getElementById('session-data');
+    const SESSION_ID = parseInt(sessionData.dataset.sessionId);
+    const BPM = parseInt(sessionData.dataset.bpm);
+    let currentImprovementType = 'rhyme';
+    let currentLineToImprove = null;
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/session.js') }}"></script>
+{% endblock %}

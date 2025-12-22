@@ -1,0 +1,87 @@
+"""
+Workspace Routes
+Main lyric writing workspace
+"""
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from app.models import db, LyricSession, LyricLine, UserProfile
+from app.ai import get_provider
+from app.analysis import RhymeDetector, SyllableCounter, BPMCalculator
+from app.learning import StyleExtractor
+
+workspace_bp = Blueprint('workspace', __name__)
+
+
+@workspace_bp.route('/')
+def index():
+    """Main workspace page"""
+    # Get recent sessions
+    sessions = LyricSession.query.order_by(LyricSession.updated_at.desc()).limit(10).all()
+    profile = UserProfile.get_or_create_default()
+    
+    return render_template('workspace.html', 
+                         sessions=sessions,
+                         profile=profile)
+
+
+@workspace_bp.route('/session/new', methods=['POST'])
+def new_session():
+    """Create a new writing session"""
+    title = request.form.get('title', 'Untitled')
+    bpm = request.form.get('bpm', 140, type=int)
+    mood = request.form.get('mood', '')
+    theme = request.form.get('theme', '')
+    
+    session = LyricSession(
+        title=title,
+        bpm=bpm,
+        mood=mood if mood else None,
+        theme=theme if theme else None
+    )
+    
+    db.session.add(session)
+    db.session.commit()
+    
+    return redirect(url_for('workspace.edit_session', session_id=session.id))
+
+
+@workspace_bp.route('/session/<int:session_id>')
+def edit_session(session_id):
+    """Edit a writing session"""
+    session = LyricSession.query.get_or_404(session_id)
+    lines = session.lines.all()
+    profile = UserProfile.get_or_create_default()
+    
+    # Get BPM info
+    bpm_calc = BPMCalculator()
+    bpm_info = bpm_calc.get_syllable_target(session.bpm)
+    
+    return render_template('session.html',
+                         session=session,
+                         lines=lines,
+                         profile=profile,
+                         bpm_info=bpm_info)
+
+
+@workspace_bp.route('/session/<int:session_id>/delete', methods=['POST'])
+def delete_session(session_id):
+    """Delete a session"""
+    session = LyricSession.query.get_or_404(session_id)
+    db.session.delete(session)
+    db.session.commit()
+    
+    return redirect(url_for('workspace.index'))
+
+
+@workspace_bp.route('/session/<int:session_id>/update', methods=['POST'])
+def update_session(session_id):
+    """Update session metadata"""
+    session = LyricSession.query.get_or_404(session_id)
+    
+    session.title = request.form.get('title', session.title)
+    session.bpm = request.form.get('bpm', session.bpm, type=int)
+    session.mood = request.form.get('mood', session.mood)
+    session.theme = request.form.get('theme', session.theme)
+    
+    db.session.commit()
+    
+    return jsonify({"success": True})
