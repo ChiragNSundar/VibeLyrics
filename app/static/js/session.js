@@ -380,6 +380,127 @@ async function analyzeSession() {
     // BUT I must respect the tools limitations. I am replacing from top of file.
     // I will use replace_file_content carefully.
 }
+
+// Handle word click/context menu
+function handleWordRightClick(event) {
+    event.preventDefault();
+    const word = getWordAtClick(event);
+    if (word) {
+        showWordTools(word, event.pageX, event.pageY);
+    }
+}
+
+// Get word at click position
+function getWordAtClick(event) {
+    let range;
+    let textNode;
+    let offset;
+
+    if (document.caretRangeFromPoint) {
+        range = document.caretRangeFromPoint(event.clientX, event.clientY);
+        textNode = range.startContainer;
+        offset = range.startOffset;
+    } else if (document.caretPositionFromPoint) {
+        range = document.caretPositionFromPoint(event.clientX, event.clientY);
+        textNode = range.offsetNode;
+        offset = range.offset;
+    }
+
+    if (textNode && textNode.nodeType === 3) {
+        const text = textNode.nodeValue;
+        // Find word boundaries
+        let start = offset;
+        while (start > 0 && /\w/.test(text[start - 1])) start--;
+        let end = offset;
+        while (end < text.length && /\w/.test(text[end])) end++;
+
+        const word = text.substring(start, end).trim();
+        if (word && /\w+/.test(word)) return word;
+    }
+    return null;
+}
+
+// Show Word Tools Popup
+async function showWordTools(word, x, y) {
+    // Remove existing
+    const existing = document.getElementById('word-tools-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'word-tools-popup';
+    popup.className = 'word-tools-popup';
+    popup.style.left = `${x}px`;
+    popup.style.top = `${y}px`;
+    popup.innerHTML = `
+        <div class="wt-header">
+            <strong>${word}</strong>
+            <button onclick="this.closest('.word-tools-popup').remove()">×</button>
+        </div>
+        <div class="wt-tabs">
+            <button class="active" onclick="switchWtTab(this, 'rhymes')">Rhymes</button>
+            <button onclick="switchWtTab(this, 'synonyms')">Synonyms</button>
+        </div>
+        <div class="wt-content loading">Loading...</div>
+    `;
+
+    document.body.appendChild(popup);
+
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', function close(e) {
+            if (!popup.contains(e.target)) {
+                popup.remove();
+                document.removeEventListener('click', close);
+            }
+        });
+    }, 100);
+
+    // Fetch Rhymes (Default)
+    await loadWtContent(word, 'rhyme', popup);
+}
+
+// Switch Tab
+async function switchWtTab(btn, type) {
+    const popup = btn.closest('.word-tools-popup');
+    popup.querySelectorAll('.wt-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const word = popup.querySelector('.wt-header strong').textContent;
+    await loadWtContent(word, type === 'rhymes' ? 'rhyme' : 'synonym', popup);
+}
+
+// Load Content
+async function loadWtContent(word, type, popup) {
+    const content = popup.querySelector('.wt-content');
+    content.innerHTML = '<div class="spinner small"></div>';
+
+    try {
+        const result = await apiCall(`/api/tools/lookup?word=${word}&type=${type}`);
+
+        if (result.results) {
+            let items = [];
+            if (type === 'rhyme') {
+                if (result.results.perfect) items = result.results.perfect;
+                // Handle dict vs list structure if changed in API
+                else if (Array.isArray(result.results)) items = result.results;
+            } else {
+                items = result.results;
+            }
+
+            if (items.length === 0) {
+                content.innerHTML = '<div class="wt-empty">No results found</div>';
+            } else {
+                content.innerHTML = `
+                    <div class="wt-grid">
+                        ${items.map(item => `<span class="wt-chip" onclick="useSuggestion('${item.replace(/'/g, "\\'")}')">${item}</span>`).join('')}
+                    </div>
+                `;
+            }
+        }
+    } catch (e) {
+        content.innerHTML = '<div class="wt-error">Error loading</div>';
+    }
+}
 // ... 
 
 // Edit a line

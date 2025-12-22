@@ -1891,3 +1891,74 @@ textarea.input {
         display: none;
     }
 }
+/* Word Tools Popup */
+.word-tools-popup {
+    position: absolute;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    width: 250px;
+    z-index: 1000;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+.wt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-color);
+}
+.wt-header button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+.wt-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+}
+.wt-tabs button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.wt-tabs button.active {
+    color: var(--accent-primary);
+    border-bottom: 2px solid var(--accent-primary);
+}
+.wt-content {
+    padding: 0.75rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.wt-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.wt-chip {
+    background: var(--bg-hover);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.wt-chip:hover {
+    background: var(--accent-primary);
+    color: white;
+}
+.wt-loading, .wt-error, .wt-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 1rem;
+}

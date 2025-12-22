@@ -389,9 +389,27 @@ def lookup_tool():
             results = {"perfect": [], "error": str(e)}
         
     elif lookup_type == 'synonym':
-        # Placeholder for synonyms
-        results = ["(Synonyms require ext. API)"]
-        
+        try:
+            from nltk.corpus import wordnet
+            synonyms = set()
+            for syn in wordnet.synsets(word):
+                for lemma in syn.lemmas():
+                    if lemma.name().lower() != word:
+                        synonyms.add(lemma.name().replace('_', ' '))
+            
+            results = list(synonyms)[:15]
+        except Exception as e:
+            results = ["Error loading synonyms"]
+            print(f"Synonym error: {e}")
+            
+    return jsonify({
+        "success": True,
+        "word": word,
+        "type": lookup_type,
+        "results": results
+    })
+
+
 @api_bp.route('/analysis/dna', methods=['POST'])
 def analyze_dna():
     """Analyze Artist DNA based on writing style"""
