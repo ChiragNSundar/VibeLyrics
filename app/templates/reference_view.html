@@ -19,7 +19,7 @@
                     <div class="lyrics-section">
                         <h4 class="section-header">[{{ section.name }}]</h4>
                         {% for line in section.lines %}
-                        <p class="lyric-line">{{ line }}</p>
+                        <p class="lyric-line">{{ line | safe }}</p>
                         {% endfor %}
                     </div>
                     {% endfor %}

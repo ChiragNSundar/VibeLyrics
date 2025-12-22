@@ -30,11 +30,13 @@ def create_app(config_class=Config):
     from .routes.references import references_bp
     from .routes.settings import settings_bp
     from .routes.api import api_bp
+    from .routes.education import education_bp
     
     app.register_blueprint(workspace_bp)
     app.register_blueprint(journal_bp, url_prefix="/journal")
     app.register_blueprint(references_bp, url_prefix="/references")
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(education_bp, url_prefix="/education")
     
     return app

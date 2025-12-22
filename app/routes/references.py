@@ -57,6 +57,16 @@ def view_file(filename):
             "complexity": complexity_scorer.score_verse(lines[:16]),
             "structure": txt_parser.analyze_structure(content)
         }
+        
+        # Enrich sections with visual highlights
+        if "sections" in parsed["lyrics"]:
+            for section in parsed["lyrics"]["sections"]:
+                section_lines = section["lines"]
+                if section_lines:
+                    # Highlight items in this section context
+                    # Note: rhyme schemes might break across sections if we do them individually
+                    # But often sections (Hook, Verse) have self-contained schemes
+                    section["lines"] = rhyme_detector.highlight_lyrics(section_lines)
     
     return render_template('reference_view.html',
                          filename=filename,

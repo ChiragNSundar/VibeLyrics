@@ -121,25 +121,97 @@ class RhymeDetector:
         
         return False
     
+    def _get_coda(self, phones: List[str]) -> str:
+        """Get the consonant sounds after the last vowel"""
+        coda = []
+        found_vowel = False
+        for p in reversed(phones):
+            if any(c.isdigit() for c in p):
+                found_vowel = True
+                break
+            coda.insert(0, p)
+        return " ".join(coda) if found_vowel else ""
+
+    def _coda_compatible(self, coda1: str, coda2: str) -> bool:
+        """Check if two codas are phonetically compatible for slant rhyme"""
+        if coda1 == coda2:
+            return True
+            
+        # Clean numeric stress if any leaking (shouldn't be)
+        c1 = ''.join(filter(str.isalpha, coda1))
+        c2 = ''.join(filter(str.isalpha, coda2))
+        
+        # Empty coda matches S/Z (very common: rhyme / rhymes)
+        if (not c1 and c2 in ['Z', 'S']) or (not c2 and c1 in ['Z', 'S']):
+            return True
+            
+        # Phonetic families
+        families = [
+            {'M', 'N', 'NG'}, # Nasals
+            {'S', 'Z', 'SH', 'ZH'}, # Sibilants
+            {'T', 'D', 'K', 'G', 'P', 'B'}, # Plosives
+            {'F', 'V', 'TH', 'DH'}, # Fricatives
+            {'L', 'R'} # Liquids
+        ]
+        
+        c1_set = set(c1.split())
+        c2_set = set(c2.split())
+        
+        # If any sound matches
+        if not c1_set.isdisjoint(c2_set):
+            return True
+            
+        # Check families
+        for fam in families:
+            if not c1_set.isdisjoint(fam) and not c2_set.isdisjoint(fam):
+                return True
+                
+        return False
+
     def _slant_rhyme(self, rhyme1: str, rhyme2: str) -> bool:
-        """Check for slant/near rhymes (vowel or consonant similarity)"""
+        """Check for slant/near rhymes (vowel match + compatible coda)"""
         phones1 = rhyme1.split()
         phones2 = rhyme2.split()
         
         if not phones1 or not phones2:
-            return False
+             return False
         
-        # Check if vowels match (ignore stress markers)
-        def get_vowel(phone):
+        # Check vowels
+        def get_vowel_sound(phone):
             return ''.join(c for c in phone if not c.isdigit())
         
-        vowels1 = [get_vowel(p) for p in phones1 if any(c.isdigit() for c in p)]
-        vowels2 = [get_vowel(p) for p in phones2 if any(c.isdigit() for c in p)]
+        vowels1 = [get_vowel_sound(p) for p in phones1 if any(c.isdigit() for c in p)]
+        vowels2 = [get_vowel_sound(p) for p in phones2 if any(c.isdigit() for c in p)]
         
-        # Match if same vowel sounds
-        if vowels1 and vowels2 and vowels1[-1] == vowels2[-1]:
+        # Must match last vowel
+        if not vowels1 or not vowels2 or vowels1[-1] != vowels2[-1]:
+            return False
+            
+        # Get vowel stresses
+        def get_stress(phone):
+            return ''.join(c for c in phone if c.isdigit())
+            
+        stress1 = [get_stress(p) for p in phones1 if any(c.isdigit() for c in p)]
+        stress2 = [get_stress(p) for p in phones2 if any(c.isdigit() for c in p)]
+        
+        last_stress1 = stress1[-1] if stress1 else '1'
+        last_stress2 = stress2[-1] if stress2 else '1'
+        
+        # Check Coda compatibility
+        coda1 = self._get_coda(phones1)
+        coda2 = self._get_coda(phones2)
+        
+        # Stricter check for Open vs Closed rhymes involving S/Z
+        # "Pay" (1) vs "Days" (1) -> OK
+        # "Whitney" (0) vs "Trees" (1) -> NO
+        is_open_closed_mix = (not coda1 and coda2) or (not coda2 and coda1)
+        if is_open_closed_mix and last_stress1 != last_stress2:
+            return False
+        
+        # Allow match if codas are compatible
+        if self._coda_compatible(coda1, coda2):
             return True
-        
+            
         return False
     
     def detect_end_rhymes(self, lines: List[str]) -> Dict[str, List[int]]:
@@ -258,6 +330,61 @@ class RhymeDetector:
         # Clean leading/trailing apostrophes
         return [w.strip("'") for w in words if w.strip("'")]
     
+    def highlight_lyrics(self, lines: List[str]) -> List[str]:
+        """
+        Takes a list of lyric lines and returns HTML strings with rhyming words highlighted.
+        Example: "I like <span class='rhyme-word rhyme-a'>cats</span>"
+        """
+        if not lines:
+            return []
+            
+        rhyme_groups = self.detect_end_rhymes(lines)
+        highlighted_lines = []
+        
+        # Flatten groups to map line_index -> label
+        line_to_label = {}
+        for label, indices in rhyme_groups.items():
+            for idx in indices:
+                line_to_label[idx] = label.lower() # rhyme-a, rhyme-b
+                
+        for i, line in enumerate(lines):
+            words = self._extract_words(line)
+            if not words:
+                highlighted_lines.append(line)
+                continue
+                
+            label = line_to_label.get(i)
+            if label:
+                last_word = words[-1]
+                # Replace the LAST occurrence of the word to avoid false positives early in line
+                # This is a simple regex replacement which might be safer
+                pattern = re.compile(re.escape(last_word) + r"($|\W)", re.IGNORECASE)
+                
+                # Check for match at end of string
+                match = None
+                for m in pattern.finditer(line):
+                    match = m
+                
+                if match:
+                    # We have the last match, replace it
+                    start, end = match.span()
+                    # Keep the original casing from the line, but wrap it
+                    # Note: match includes the trailing boundary char if present
+                    original_text = line[start:end]
+                    # Separate word and punctuation
+                    word_part = original_text[:len(last_word)]
+                    punct_part = original_text[len(last_word):]
+                    
+                    replacement = f"<span class='rhyme-word rhyme-{label}'>{word_part}</span>{punct_part}"
+                    new_line = line[:start] + replacement + line[end:]
+                    highlighted_lines.append(new_line)
+                else:
+                    highlighted_lines.append(line)
+            else:
+                highlighted_lines.append(line)
+                
+        return highlighted_lines
+
     def analyze_line(self, line: str, previous_lines: List[str] = None) -> Dict:
         """
         Complete rhyme analysis for a line
