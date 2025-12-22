@@ -5,6 +5,10 @@ from flask import Flask
 from .config import Config
 from .models.database import db
 
+from flask_socketio import SocketIO
+
+# Initialize SocketIO globally
+socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app(config_class=Config):
     """Create and configure the Flask application"""
@@ -19,6 +23,7 @@ def create_app(config_class=Config):
     
     # Initialize database
     db.init_app(app)
+    socketio.init_app(app)
     
     # Create tables
     with app.app_context():
@@ -38,5 +43,8 @@ def create_app(config_class=Config):
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(education_bp, url_prefix="/education")
+    
+    # Import socket events to register them
+    from . import events
     
     return app
