@@ -392,8 +392,42 @@ def lookup_tool():
         # Placeholder for synonyms
         results = ["(Synonyms require ext. API)"]
         
+@api_bp.route('/analysis/dna', methods=['POST'])
+def analyze_dna():
+    """Analyze Artist DNA based on writing style"""
+    # This is a mock implementation. In a real scenario, we'd feed 
+    # all user content to the LLM to classify style.
+    
+    # Calculate some basic stats to influence the result
+    profile = UserProfile.get_or_create_default()
+    sessions = LyricSession.query.all()
+    avg_bpm = sum([s.bpm for s in sessions]) / max(len(sessions), 1)
+    
+    # Mock logic
+    dna_profile = []
+    
+    if avg_bpm < 90:
+        dna_profile = [
+            {"artist": "Nas", "score": 35, "trait": "Introspective & Lyrical"},
+            {"artist": "J. Cole", "score": 25, "trait": "Storytelling"},
+            {"artist": "Kendrick Lamar", "score": 20, "trait": "Complex Flows"}
+        ]
+    elif avg_bpm > 140:
+        dna_profile = [
+            {"artist": "Travis Scott", "score": 40, "trait": "Hype & Energy"},
+            {"artist": "Playboi Carti", "score": 30, "trait": "Experimental"},
+            {"artist": "Drake", "score": 20, "trait": "Hit Maker"}
+        ]
+    else:
+        dna_profile = [
+            {"artist": "Drake", "score": 35, "trait": "Versatile"},
+            {"artist": "Kanye West", "score": 30, "trait": "Creative"},
+            {"artist": "Jay-Z", "score": 20, "trait": "Business Flow"}
+        ]
+        
     return jsonify({
-        "word": word,
-        "type": lookup_type,
-        "results": results
+        "success": True,
+        "dna": dna_profile,
+        "summary": "Your style leans towards " + dna_profile[0]['trait']
     })
+

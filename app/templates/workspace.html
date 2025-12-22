@@ -10,13 +10,15 @@
     </div>
 
     <!-- Gamification Dashboard -->
-    <div class="card stats-dashboard" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; text-align: center;">
+    <div class="card stats-dashboard"
+        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; text-align: center;">
         <div class="stat-item">
             <h3 style="margin:0; font-size:2rem; color:var(--accent-primary);">{{ profile.current_streak }} 🔥</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Day Streak</p>
         </div>
         <div class="stat-item">
-            <h3 style="margin:0; font-size:2rem; color:var(--accent-secondary);">{{ profile.total_lines_written }} ✍️</h3>
+            <h3 style="margin:0; font-size:2rem; color:var(--accent-secondary);">{{ profile.total_lines_written }} ✍️
+            </h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Lines Dropped</p>
         </div>
         <div class="stat-item">
@@ -24,11 +26,68 @@
             <p style="color:var(--text-muted); font-size:0.9rem;">Best Streak</p>
         </div>
         <div class="stat-item">
-             <h3 style="margin:0; font-size:2rem; color:var(--accent-success);">{{ profile.total_sessions }} 📀</h3>
-             <p style="color:var(--text-muted); font-size:0.9rem;">Projects</p>
+            <h3 style="margin:0; font-size:2rem; color:var(--accent-success);">{{ profile.total_sessions }} 📀</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Projects</p>
         </div>
     </div>
 
+    <!-- Artist DNA Card -->
+    <div class="card dna-card" style="background:var(--bg-hover);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2>🧬 Artist DNA</h2>
+                <p class="subtitle">Analyze your unique style profile</p>
+            </div>
+            <button class="btn btn-primary small" onclick="analyzeDNA()">Analyze My Style</button>
+        </div>
+        <div id="dna-results" style="margin-top:1rem; display:none;">
+            <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                <div style="flex:1; background:var(--bg-card); padding:1rem; border-radius:8px; text-align:center;">
+                    <h3 id="dna-1-artist" style="color:var(--accent-primary);">?</h3>
+                    <p id="dna-1-score">0%</p>
+                </div>
+                <div style="flex:1; background:var(--bg-card); padding:1rem; border-radius:8px; text-align:center;">
+                    <h3 id="dna-2-artist" style="color:var(--accent-secondary);">?</h3>
+                    <p id="dna-2-score">0%</p>
+                </div>
+                <div style="flex:1; background:var(--bg-card); padding:1rem; border-radius:8px; text-align:center;">
+                    <h3 id="dna-3-artist" style="color:var(--accent-warning);">?</h3>
+                    <p id="dna-3-score">0%</p>
+                </div>
+            </div>
+            <p id="dna-summary" style="text-align:center; font-style:italic; color:var(--text-secondary);"></p>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeDNA() {
+            const btn = document.querySelector('.dna-card button');
+            btn.textContent = "Analyzing...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/analysis/dna', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('dna-results').style.display = 'block';
+
+                    // Update UI
+                    data.dna.forEach((item, index) => {
+                        document.getElementById(`dna-${index + 1}-artist`).textContent = item.artist;
+                        document.getElementById(`dna-${index + 1}-score`).textContent = item.score + '%';
+                    });
+
+                    document.getElementById('dna-summary').textContent = data.summary;
+                    btn.textContent = "Re-Analyze";
+                }
+            } catch (e) {
+                alert("Analysis failed");
+                btn.textContent = "Analyze My Style";
+            }
+            btn.disabled = false;
+        }
+    </script>
 
     <!-- New Session Form -->
     <div class="card new-session-card">

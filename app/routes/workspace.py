@@ -112,3 +112,61 @@ def upload_audio(session_id):
         db.session.commit()
         
         return jsonify({"success": True, "audio_path": url_for('static', filename=session.audio_path)})
+
+
+@workspace_bp.route('/session/<int:session_id>/upload_recording', methods=['POST'])
+def upload_recording(session_id):
+    """Upload a vocal recording"""
+    session = LyricSession.query.get_or_404(session_id)
+    
+    if 'recording_file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+        
+    file = request.files['recording_file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+        
+    if file:
+        import os
+        import json
+        from werkzeug.utils import secure_filename
+        
+        # Ensure directory exists
+        upload_folder = os.path.join('app', 'static', 'uploads', 'recordings')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Use timestamp in filename
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = secure_filename(f"rec_{session_id}_{timestamp}.webm")
+        file.save(os.path.join(upload_folder, filename))
+        
+        # Update session recordings list
+        try:
+            recordings = json.loads(session.recordings)
+        except:
+            recordings = []
+            
+        recordings.append(f"uploads/recordings/{filename}")
+        session.recordings = json.dumps(recordings)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True, 
+            "recording_path": url_for('static', filename=recordings[-1]),
+            "filename": filename
+        })
+        
+
+@workspace_bp.route('/session/<int:session_id>/export/print')
+def export_print(session_id):
+    """Export lyrics for print/PDF"""
+    session = LyricSession.query.get_or_404(session_id)
+    lines = session.lines.all()
+    profile = UserProfile.get_or_create_default()
+    
+    return render_template('export_print.html',
+                         session=session,
+                         lines=lines,
+                         profile=profile)
+

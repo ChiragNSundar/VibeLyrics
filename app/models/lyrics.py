@@ -28,6 +28,7 @@ class LyricSession(db.Model, TimestampMixin):
 
     # Audio Integration
     audio_path = db.Column(db.String(500), nullable=True)  # Path to uploaded instrumental
+    recordings = db.Column(db.Text, default="[]") # JSON list of recording filenames
 
     
     def __repr__(self):
