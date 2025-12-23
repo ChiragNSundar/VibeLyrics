@@ -166,3 +166,16 @@ class RhymeDictionary:
                 break
         
         return pocket_rhymes
+
+
+# --- Singleton Instance ---
+# This ensures the cache is preserved across requests within the same process.
+_rhyme_dict_instance = None
+
+
+def get_rhyme_dictionary() -> RhymeDictionary:
+    """Get the shared RhymeDictionary instance (Singleton pattern)."""
+    global _rhyme_dict_instance
+    if _rhyme_dict_instance is None:
+        _rhyme_dict_instance = RhymeDictionary()
+    return _rhyme_dict_instance

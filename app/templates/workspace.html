@@ -31,6 +31,55 @@
         </div>
     </div>
 
+    <!-- Daily Challenge Card -->
+    <div class="card challenge-card" style="background:linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); color:white;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h3 style="margin:0; font-size:1.2rem;">🎯 Daily Challenge</h3>
+                <p id="challenge-word" style="font-size:2rem; font-weight:bold; margin:0.5rem 0;">Loading...</p>
+                <p id="challenge-prompt" style="opacity:0.9; margin:0;">Write a bar using today's word</p>
+            </div>
+            <button class="btn" style="background:rgba(255,255,255,0.2); color:white; border:none;"
+                onclick="refreshChallenge()">🔄</button>
+        </div>
+        <div style="margin-top:1rem;">
+            <input type="text" id="challenge-input" class="input" placeholder="Drop your bar here..."
+                style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white;">
+            <button class="btn" style="margin-top:0.5rem; background:rgba(255,255,255,0.3); color:white; width:100%;"
+                onclick="submitChallenge()">Submit 🔥</button>
+        </div>
+    </div>
+
+    <script>
+        async function loadDailyChallenge() {
+            try {
+                const res = await fetch('/api/challenge/today');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('challenge-word').textContent = data.word;
+                    document.getElementById('challenge-prompt').textContent = data.prompt || 'Write a bar using this word';
+                }
+            } catch (e) {
+                document.getElementById('challenge-word').textContent = 'Flow';
+            }
+        }
+
+        function refreshChallenge() {
+            loadDailyChallenge();
+        }
+
+        function submitChallenge() {
+            const input = document.getElementById('challenge-input');
+            if (input.value.trim()) {
+                showToast('🔥 Bar submitted! Keep grinding!', 'success');
+                input.value = '';
+            }
+        }
+
+        // Load challenge on page load
+        document.addEventListener('DOMContentLoaded', loadDailyChallenge);
+    </script>
+
     <!-- Artist DNA Card -->
     <div class="card dna-card" style="background:var(--bg-hover);">
         <div style="display:flex; justify-content:space-between; align-items:center;">

@@ -52,11 +52,11 @@
 
                 <div class="analysis-item">
                     <h4>Complexity Score</h4>
+                    {% set complexity_pct = ((analysis.complexity.overall|default(0)) * 100)|int %}
                     <div class="score-bar">
-                        <div class="score-fill"
-                            style="width: {{ ((analysis.complexity.overall|default(0)) * 100)|int }}%"></div>
+                        <div class="score-fill" style="width: {{ complexity_pct }}%;"></div>
                     </div>
-                    <span class="score-value">{{ ((analysis.complexity.overall|default(0)) * 100)|int }}%</span>
+                    <span class="score-value">{{ complexity_pct }}%</span>
                 </div>
 
                 <div class="analysis-item">

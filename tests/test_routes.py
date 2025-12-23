@@ -110,6 +110,6 @@ class TestReferences:
         response = client.get(f'/references/view/{filename}')
         assert response.status_code == 200
         # Check if lyrics are present
-        assert b"Checking the view" in response.data
+        assert b"Checking the" in response.data  # Note: 'view' is wrapped in rhyme-highlight span
         # Check if analysis metrics are present (proving template works)
         assert b"Complexity Score" in response.data

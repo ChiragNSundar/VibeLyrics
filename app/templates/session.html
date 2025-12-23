@@ -11,17 +11,14 @@
             <h1 class="session-title" contenteditable="true" data-session-id="{{ session.id }}">{{ session.title }}</h1>
             <div class="session-badges">
                 <span class="bpm-badge large">{{ session.bpm }} BPM</span>
-                <!-- Audio Player -->
-                {% if session.audio_path %}
-                <audio controls src="{{ url_for('static', filename=session.audio_path) }}" class="beat-player"></audio>
-                {% else %}
-                <button class="btn btn-secondary small" onclick="document.getElementById('audio-upload').click()">🎵 Add
-                    Beat</button>
-                <input type="file" id="audio-upload" style="display:none" accept="audio/*" onchange="uploadAudio(this)">
-                {% endif %}
             </div>
         </div>
         <div class="session-actions">
+            {% if not session.audio_path %}
+            <button class="btn btn-secondary small" onclick="document.getElementById('audio-upload').click()">🎵 Add
+                Beat</button>
+            <input type="file" id="audio-upload" style="display:none" accept="audio/*" onchange="uploadAudio(this)">
+            {% endif %}
             <button class="btn btn-secondary" onclick="analyzeSession()">📊 Analyze</button>
             <button class="btn btn-secondary" onclick="toggleAIPanel()">🤖 AI Help</button>
             <select id="provider-select" class="input small" onchange="switchProvider(this.value)">
@@ -34,6 +31,38 @@
                 class="btn btn-secondary">📄 Export</a>
         </div>
     </div>
+
+    <!-- Waveform Audio Player -->
+    {% if session.audio_path %}
+    <div class="waveform-player-container"
+        style="background:var(--bg-card); border-bottom:1px solid var(--border-color); padding:1rem;">
+        <div id="waveform-container" style="width:100%; height:80px; margin-bottom:0.5rem;"></div>
+        <div class="waveform-controls" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <button class="btn btn-primary small" onclick="waveformPlayer.playPause()" id="play-btn">▶️ Play</button>
+            <span id="waveform-time" style="font-family:monospace; color:var(--text-secondary);">0:00 / 0:00</span>
+            <div class="loop-controls" style="display:flex; gap:0.5rem; align-items:center;">
+                <button class="btn btn-secondary small" onclick="waveformPlayer.setLoopStart()"
+                    title="Set loop start">🅰️</button>
+                <button class="btn btn-secondary small" onclick="waveformPlayer.setLoopEnd()"
+                    title="Set loop end">🅱️</button>
+                <button class="btn btn-secondary small" onclick="waveformPlayer.clearLoop()"
+                    title="Clear loop">❌</button>
+                <span id="loop-info" style="font-size:0.85rem; color:var(--accent-primary);"></span>
+            </div>
+            <div class="speed-controls" style="display:flex; align-items:center; gap:0.5rem;">
+                <label style="font-size:0.85rem; color:var(--text-secondary);">Speed:</label>
+                <select id="speed-select" class="input small" style="width:auto;"
+                    onchange="waveformPlayer.setSpeed(parseFloat(this.value))">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="1.25">1.25x</option>
+                    <option value="1.5">1.5x</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Flow Visualization -->
     <div class="flow-viz-container"
@@ -154,6 +183,16 @@
                     </div>
                     <div class="ask-response" id="ask-response"></div>
                 </div>
+
+                <!-- Word Lookup Panel -->
+                <div class="ai-section" id="lookup-section">
+                    <h4>📚 Word Lookup</h4>
+                    <div id="lookup-word-header"
+                        style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
+                    <div id="lookup-results" style="max-height:200px; overflow-y:auto;">
+                        <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or synonyms.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -208,19 +247,54 @@
 
     async function lookupWord(type) {
         if (!selectedWord) return;
-        // Call global function or handle here. 
-        // Ideally we show a popup. For now let's alert or integrate.
-        // Let's perform a fetch and show in a small popup instead of alert
-        const res = await fetch(`/api/tools/lookup?word=${selectedWord}&type=${type}`);
+
+        // Show AI panel if hidden
+        const aiPanel = document.getElementById('ai-panel');
+        if (!aiPanel.classList.contains('active')) {
+            aiPanel.classList.add('active');
+        }
+
+        // Update lookup header
+        const header = document.getElementById('lookup-word-header');
+        header.textContent = `${type === 'rhyme' ? '🎯 Rhymes' : '🔁 Synonyms'} for "${selectedWord}"`;
+
+        // Fetch results
+        const res = await fetch(`/api/tools/lookup?word=${encodeURIComponent(selectedWord)}&type=${type}`);
         const data = await res.json();
 
-        let msg = "";
+        // Display in panel
+        const resultsDiv = document.getElementById('lookup-results');
+        let html = '';
+
         if (type === 'rhyme') {
-            msg = "Perfect Rhymes:\n" + (data.results.perfect || []).join(', ');
+            const rhymes = data.results?.perfect || data.results || [];
+            if (rhymes.length > 0) {
+                html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                    ${rhymes.slice(0, 20).map(r => `<span class="chip" style="cursor:pointer;" onclick="insertWord('${r}')">${r}</span>`).join('')}
+                </div>`;
+            } else {
+                html = '<p style="color:var(--text-secondary);">No rhymes found.</p>';
+            }
         } else {
-            msg = "Synonyms:\n" + data.results.join(', ');
+            const synonyms = data.results?.synonyms || data.results || [];
+            if (synonyms.length > 0) {
+                html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                    ${synonyms.slice(0, 20).map(s => `<span class="chip" style="cursor:pointer;" onclick="insertWord('${s}')">${s}</span>`).join('')}
+                </div>`;
+            } else {
+                html = '<p style="color:var(--text-secondary);">No synonyms found.</p>';
+            }
         }
-        alert(msg); // Simple placeholder implementation
+
+        resultsDiv.innerHTML = html;
+    }
+
+    function insertWord(word) {
+        const input = document.getElementById('new-line-input');
+        if (input) {
+            input.value += (input.value ? ' ' : '') + word;
+            input.focus();
+        }
     }
 
     async function uploadAudio(input) {
@@ -245,15 +319,20 @@
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="https://unpkg.com/wavesurfer.js@7"></script>
+<script src="{{ url_for('static', filename='js/waveform_player.js') }}"></script>
 <script src="{{ url_for('static', filename='js/flow_viz.js') }}"></script>
 <script src="{{ url_for('static', filename='js/session.js') }}"></script>
 <script>
     // Init Flow Viz
     const viz = new FlowVisualizer('flow-canvas');
-    // Pre-populate with existing line data (server-side would be better but this works for demo)
-    // Use data from hidden JSON block for safety
     const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
     viz.update(linesData);
+
+    // Init Waveform Player if audio exists
+    {% if session.audio_path %}
+    initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
+    {% endif %}
 </script>
 <script type="application/json" id="lines-data-json">
 [

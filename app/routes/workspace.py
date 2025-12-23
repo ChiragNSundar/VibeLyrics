@@ -105,6 +105,11 @@ def update_session(session_id):
 @workspace_bp.route('/session/<int:session_id>/upload_audio', methods=['POST'])
 def upload_audio(session_id):
     """Upload an audio file for the beat player and detect BPM"""
+    import os
+    import threading
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+    
     session = LyricSession.query.get_or_404(session_id)
     
     if 'audio_file' not in request.files:
@@ -115,10 +120,6 @@ def upload_audio(session_id):
         return jsonify({"error": "No selected file"}), 400
         
     if file:
-        import os
-        from werkzeug.utils import secure_filename
-        from app.analysis.audio_analyzer import detect_bpm
-        
         # Ensure directory exists
         upload_folder = os.path.join('app', 'static', 'uploads', 'audio')
         os.makedirs(upload_folder, exist_ok=True)
@@ -128,18 +129,31 @@ def upload_audio(session_id):
         file.save(file_path)
         
         session.audio_path = f"uploads/audio/{filename}"
-        
-        # Auto-Detect BPM
-        bpm = detect_bpm(file_path)
-        if bpm > 0:
-            session.bpm = bpm
-            
         db.session.commit()
+
+        # --- Async BPM Detection ---
+        # Run BPM detection in a background thread to avoid blocking I/O
+        app = current_app._get_current_object()  # Get actual app for thread context
+
+        def run_bpm_detection(app_ctx, s_id, f_path):
+            """Background task to detect BPM and update session."""
+            from app.analysis.audio_analyzer import detect_bpm
+            with app_ctx.app_context():
+                bpm = detect_bpm(f_path)
+                if bpm > 0:
+                    sess = LyricSession.query.get(s_id)
+                    if sess:
+                        sess.bpm = bpm
+                        db.session.commit()
+                        print(f"  [Async] BPM Detection complete for session {s_id}: {bpm}")
+
+        thread = threading.Thread(target=run_bpm_detection, args=(app, session_id, file_path))
+        thread.start()
         
         return jsonify({
             "success": True, 
             "audio_path": url_for('static', filename=session.audio_path),
-            "detected_bpm": bpm
+            "message": "BPM detection running in background..."
         })
         
 

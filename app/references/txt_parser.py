@@ -62,9 +62,13 @@ class TxtParser:
                 if current_section["lines"]:
                     result["sections"].append(current_section)
                 
-                # Extract section name
-                section_name = section_match.group(1) if section_match else line.rstrip(':')
-                current_section = {"name": section_name.strip(), "lines": []}
+                # Extract section name - find first non-None group from regex
+                if section_match:
+                    # Iterate through groups to find the one that matched
+                    section_name = next((g for g in section_match.groups() if g), line.rstrip(':'))
+                else:
+                    section_name = line.rstrip(':')
+                current_section = {"name": section_name.strip() if section_name else "Section", "lines": []}
             else:
                 # Regular lyric line
                 if not self._is_metadata_line(line):

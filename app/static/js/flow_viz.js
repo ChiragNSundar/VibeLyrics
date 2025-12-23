@@ -3,6 +3,7 @@ class FlowVisualizer {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
+        this.linesPerBar = 4; // Standard hip-hop bar = 4 lines
         this.resize();
         window.addEventListener('resize', () => this.resize());
     }
@@ -10,12 +11,11 @@ class FlowVisualizer {
     resize() {
         if (!this.canvas) return;
         this.canvas.width = this.canvas.parentElement.clientWidth;
-        this.canvas.height = 100; // Fixed height for the strip
+        this.canvas.height = 100;
         this.draw([]);
     }
 
     update(lines) {
-        // lines is array of {syllable_count: number}
         this.draw(lines);
     }
 
@@ -28,31 +28,89 @@ class FlowVisualizer {
 
         ctx.clearRect(0, 0, w, h);
 
-        if (!lines || lines.length === 0) return;
+        if (!lines || lines.length === 0) {
+            this.drawEmptyState(ctx, w, h);
+            return;
+        }
 
-        const barWidth = (w / lines.length) - 2;
-        const maxSyllables = Math.max(...lines.map(l => l.syllable_count || 0), 16); // Scale based on max or at least 16
+        // Group lines into bars (4 lines = 1 bar)
+        const bars = this.groupIntoBars(lines);
 
-        lines.forEach((line, index) => {
-            const count = line.syllable_count || 0;
-            const barHeight = (count / maxSyllables) * h;
-            const x = index * ((w / lines.length));
-            const y = h - barHeight;
+        const barWidth = Math.max((w / Math.max(bars.length, 1)) - 4, 20);
+        const maxSyllables = Math.max(...bars.map(b => b.totalSyllables), 48); // 4 bars * ~12 syllables
 
-            // Gradient based on density
-            const gradient = ctx.createLinearGradient(0, y, 0, h);
-            gradient.addColorStop(0, '#8b5cf6');
-            gradient.addColorStop(1, '#06b6d4');
+        bars.forEach((bar, index) => {
+            const x = index * ((w / Math.max(bars.length, 1))) + 2;
+            const barHeight = (bar.totalSyllables / maxSyllables) * (h - 20);
+            const y = h - barHeight - 10;
 
-            ctx.fillStyle = gradient;
-            ctx.fillRect(x, y, barWidth, barHeight);
+            // Color based on density category
+            const color = this.getDensityColor(bar.avgSyllables);
 
-            // Optional: Draw text
-            if (barWidth > 20) {
-                ctx.fillStyle = '#fff';
-                ctx.font = '10px monospace';
-                ctx.fillText(count, x + (barWidth / 2) - 3, h - 5);
-            }
+            // Draw bar
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(x, y, barWidth, barHeight, 4);
+            ctx.fill();
+
+            // Draw bar number
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = 'bold 11px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${bar.avgSyllables}`, x + barWidth / 2, h - 2);
         });
+
+        // Draw legend
+        this.drawLegend(ctx, w);
+    }
+
+    groupIntoBars(lines) {
+        const bars = [];
+        for (let i = 0; i < lines.length; i += this.linesPerBar) {
+            const barLines = lines.slice(i, i + this.linesPerBar);
+            const totalSyllables = barLines.reduce((sum, l) => sum + (l.syllable_count || 0), 0);
+            const avgSyllables = Math.round(totalSyllables / barLines.length);
+            bars.push({
+                lines: barLines,
+                totalSyllables,
+                avgSyllables,
+                lineCount: barLines.length
+            });
+        }
+        return bars;
+    }
+
+    getDensityColor(avgSyllables) {
+        if (avgSyllables <= 8) return '#22c55e';  // Green - sparse/laid back
+        if (avgSyllables <= 12) return '#8b5cf6'; // Purple - medium flow
+        if (avgSyllables <= 16) return '#f59e0b'; // Orange - dense
+        return '#ef4444'; // Red - chopper/double time
+    }
+
+    drawLegend(ctx, w) {
+        const legendItems = [
+            { color: '#22c55e', label: 'Chill' },
+            { color: '#8b5cf6', label: 'Flow' },
+            { color: '#f59e0b', label: 'Dense' },
+            { color: '#ef4444', label: 'Chopper' }
+        ];
+
+        let x = w - 180;
+        ctx.font = '10px system-ui';
+
+        legendItems.forEach(item => {
+            ctx.fillStyle = item.color;
+            ctx.fillRect(x, 5, 12, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText(item.label, x + 16, 14);
+            x += 45;
+        });
+    }
+
+    drawEmptyState(ctx, w, h) {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '14px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('Start writing to see your flow visualization', w / 2, h / 2);
     }
 }

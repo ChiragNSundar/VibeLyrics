@@ -6,7 +6,7 @@ import json
 from flask import Blueprint, request, jsonify
 from app.models import db, LyricSession, LyricLine, JournalEntry, Correction, UserProfile
 from app.ai import get_provider, get_provider_with_fallback
-from app.analysis import RhymeDetector, SyllableCounter, BPMCalculator, ComplexityScorer, RhymeDictionary
+from app.analysis import RhymeDetector, SyllableCounter, BPMCalculator, ComplexityScorer, RhymeDictionary, get_rhyme_dictionary
 from app.learning import StyleExtractor, VocabularyManager, CorrectionTracker
 
 api_bp = Blueprint('api', __name__)
@@ -322,7 +322,7 @@ def lookup_rhyme():
     if not word:
         return jsonify({"error": "Word required"}), 400
     
-    dictionary = RhymeDictionary()
+    dictionary = get_rhyme_dictionary()
     info = dictionary.get_rhyme_info(word)
     
     return jsonify({
@@ -337,7 +337,7 @@ def lookup_rhyme():
 @api_bp.route('/rhyme/slang/<category>', methods=['GET'])
 def get_slang(category):
     """Get hip-hop slang for a category"""
-    dictionary = RhymeDictionary()
+    dictionary = get_rhyme_dictionary()
     synonyms = dictionary.get_synonyms(category)
     
     if not synonyms:
@@ -358,7 +358,7 @@ def get_slang(category):
 @api_bp.route('/rhyme/categories', methods=['GET'])
 def get_categories():
     """Get all available slang categories"""
-    dictionary = RhymeDictionary()
+    dictionary = get_rhyme_dictionary()
     return jsonify({
         "success": True,
         "categories": dictionary.get_all_categories()
@@ -379,7 +379,7 @@ def lookup_tool():
     if lookup_type == 'rhyme':
         # Use existing RhymeDictionary
         try:
-            dictionary = RhymeDictionary()
+            dictionary = get_rhyme_dictionary()
             info = dictionary.get_rhyme_info(word)
             perfect_rhymes = info.get('exact_rhymes', [])
             
@@ -513,3 +513,55 @@ def analyze_dna():
         "summary": "Your style leans towards " + dna_profile[0]['trait']
     })
 
+
+@api_bp.route('/challenge/today', methods=['GET'])
+def get_daily_challenge():
+    """Get today's daily challenge word"""
+    import hashlib
+    from datetime import date
+    
+    # Word bank for challenges - hip-hop focused vocabulary
+    challenge_words = [
+        ("Cipher", "Drop a bar about circles or cycles"),
+        ("Crown", "Write about royalty or achievement"),
+        ("Hustle", "Capture the grind mentality"),
+        ("Legacy", "What will you leave behind?"),
+        ("Mirror", "Reflect on yourself or your reflection"),
+        ("Shadow", "Write about darkness or following"),
+        ("Fire", "Bring the heat with this one"),
+        ("Chain", "Links, jewelry, or being tied down"),
+        ("Streets", "The concrete jungle"),
+        ("Dreams", "Aspirations and nightmares"),
+        ("Time", "The ultimate boss"),
+        ("Pain", "Turn struggle into art"),
+        ("Gold", "Wealth, value, or the color"),
+        ("Soul", "The essence within"),
+        ("Rise", "Coming up from the bottom"),
+        ("Storm", "Weather the chaos"),
+        ("Blood", "Family, sacrifice, or life"),
+        ("Ghost", "The past that haunts"),
+        ("Light", "Hope in darkness"),
+        ("War", "Internal or external battles"),
+        ("King", "Claim your throne"),
+        ("Mask", "What you show vs what you hide"),
+        ("Game", "Play it or get played"),
+        ("Wave", "Ride it or create your own"),
+        ("Snake", "Trust issues and betrayal"),
+        ("Money", "The root and the fruit"),
+        ("Power", "Take it or give it away"),
+        ("Heart", "The core of everything"),
+    ]
+    
+    # Use date as seed for consistent daily selection
+    today = date.today().isoformat()
+    seed = int(hashlib.md5(today.encode()).hexdigest(), 16)
+    index = seed % len(challenge_words)
+    
+    word, prompt = challenge_words[index]
+    
+    return jsonify({
+        "success": True,
+        "word": word,
+        "prompt": prompt,
+        "date": today
+    })

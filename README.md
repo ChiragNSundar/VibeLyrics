@@ -12,17 +12,18 @@
 
 ### 📝 Smart Lyric Editor
 - **Distraction-free interface** for focused writing with song structure blocks.
-- **Smart Dictionary**: Right-click *any* word for a powerful lookup tool.
+- **Smart Dictionary**: Right-click *any* word to open the **Inline Lookup Panel**.
     - **Rhymes**: Improved engine detecting slant rhymes and slang.
-    - **Topic Filtering**: Find rhymes related to specific concepts (e.g., rhymes for "money" related to "food").
     - **Synonyms & Antonyms**: Powered by NLTK WordNet.
-    - **Syllable Filtering**: Filter rhymes by 1, 2, or 3+ syllables to fit your pocket perfectly.
+    - **Click-to-Insert**: Directly click suggestions to insert them into your lyrics.
 - **AI Assistance**: Get suggestions for next lines or improvements.
 
 ### 🎵 Studio Mode & Audio
-- **Beat Player**: Upload and play instrumental tracks directly in your session.
+- **Waveform Player**: Visualize your beat with a professional waveform display (powered by Wavesurfer.js).
+- **A-B Looping**: Set loop points to practice specific bars efficiently.
+- **Speed Control**: Adjust playback speed (0.5x - 1.5x) to master fast flows.
 - **Auto-BPM Detection**: Automatically identifies the tempo (BPM) of uploaded beats using advanced signal processing.
-- **Flow Visualization**: Real-time bar charts visualize syllable density and rhythm.
+- **Flow Visualization**: Real-time bar charts with bar-level grouping and density color coding (Green=Laid back, Red=Chopper).
 
 ### 🧠 Advanced Analysis Engine
 - **Stress Pattern Visualization**: Visual dots (●○) show the rhythmic stress of your lyrics (stressed vs unstressed).
@@ -33,6 +34,7 @@
 - **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.
 
 ### 🎮 Gamification & Progress
+- **Daily Challenge**: "Word of the Day" prompt to spark your creativity and keep your streak alive.
 - **Daily Streaks**: Track your writing consistency with a daily streak counter.
 - **Stats Dashboard**: View customized stats like "Lines Dropped" and "Total Sessions".
 
@@ -48,8 +50,9 @@
 - **Frontend**: HTML5, CSS3 (Custom Design System), JavaScript (ES6)
 - **Data**: JSON-based local storage (no heavy database setup required for local use)
 - **NLP**: CMU Dict (Pronouncing), NLTK (WordNet)
-- **Audio Analysis**: **Librosa** & **Numpy** (for BPM detection and signal processing)
+- **Audio Analysis**: **Librosa** & **Numpy** (for async BPM detection)
 - **AI Integration**: Support for OpenAI GPT-4, Google Gemini, and Perplexity AI
+- **Performance**: Singleton caching for dictionary lookups, background threading for audio processing
 - **Testing**: Pytest
 
 ---
