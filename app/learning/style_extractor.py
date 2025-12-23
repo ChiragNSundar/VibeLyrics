@@ -224,3 +224,97 @@ class StyleExtractor:
         if theme.lower() not in themes:
             themes.append(theme.lower())
             self.save_style()
+    
+    def track_evolution(self):
+        """
+        Save a monthly snapshot of style metrics for evolution tracking.
+        Called periodically to build a history of growth.
+        """
+        from datetime import datetime
+        
+        now = datetime.now()
+        month_key = now.strftime("%Y-%m")
+        
+        # Initialize evolution history if not present
+        if "evolution" not in self.style_data:
+            self.style_data["evolution"] = {}
+        
+        stats = self.style_data.get("statistics", {})
+        patterns = self.style_data.get("learned_patterns", {})
+        
+        # Only save if we have meaningful data
+        if stats.get("total_lines_written", 0) == 0:
+            return
+        
+        # Save snapshot
+        self.style_data["evolution"][month_key] = {
+            "total_lines": stats.get("total_lines_written", 0),
+            "total_sessions": stats.get("total_sessions", 0),
+            "avg_complexity": stats.get("avg_complexity_score", 0),
+            "avg_syllables": patterns.get("avg_syllables_per_line", 0),
+            "vocabulary_size": len(self.style_data.get("vocabulary", {}).get("favorite_words", [])),
+            "snapshot_date": now.isoformat()
+        }
+        
+        # Keep only last 12 months
+        evolution = self.style_data["evolution"]
+        sorted_months = sorted(evolution.keys())
+        if len(sorted_months) > 12:
+            for old_key in sorted_months[:-12]:
+                del evolution[old_key]
+        
+        self.save_style()
+    
+    def get_growth_metrics(self) -> Dict:
+        """
+        Get metrics showing user's growth over time.
+        """
+        evolution = self.style_data.get("evolution", {})
+        stats = self.style_data.get("statistics", {})
+        
+        if not evolution:
+            return {
+                "has_history": False,
+                "total_lines": stats.get("total_lines_written", 0),
+                "total_sessions": stats.get("total_sessions", 0)
+            }
+        
+        sorted_months = sorted(evolution.keys())
+        oldest = evolution.get(sorted_months[0], {})
+        newest = evolution.get(sorted_months[-1], {})
+        
+        # Calculate growth
+        lines_growth = newest.get("total_lines", 0) - oldest.get("total_lines", 0)
+        complexity_growth = newest.get("avg_complexity", 0) - oldest.get("avg_complexity", 0)
+        vocab_growth = newest.get("vocabulary_size", 0) - oldest.get("vocabulary_size", 0)
+        
+        return {
+            "has_history": True,
+            "months_tracked": len(evolution),
+            "total_lines": stats.get("total_lines_written", 0),
+            "total_sessions": stats.get("total_sessions", 0),
+            "lines_written_this_period": lines_growth,
+            "complexity_improvement": round(complexity_growth, 2),
+            "vocabulary_growth": vocab_growth,
+            "current_level": self._calculate_skill_level()
+        }
+    
+    def _calculate_skill_level(self) -> str:
+        """Calculate user's skill level based on statistics"""
+        stats = self.style_data.get("statistics", {})
+        total_lines = stats.get("total_lines_written", 0)
+        avg_complexity = stats.get("avg_complexity_score", 0)
+        
+        # Simple tier system
+        if total_lines < 50:
+            return "Rookie"
+        elif total_lines < 200:
+            return "Rising MC"
+        elif total_lines < 500:
+            return "Skilled Writer"
+        elif total_lines < 1000:
+            return "Veteran Lyricist"
+        elif avg_complexity > 0.7:
+            return "Master Wordsmith"
+        else:
+            return "Elite Poet"

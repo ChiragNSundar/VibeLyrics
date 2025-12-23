@@ -63,10 +63,26 @@ def view_file(filename):
             for section in parsed["lyrics"]["sections"]:
                 section_lines = section["lines"]
                 if section_lines:
-                    # Highlight items in this section context
-                    # Note: rhyme schemes might break across sections if we do them individually
-                    # But often sections (Hook, Verse) have self-contained schemes
                     section["lines"] = rhyme_detector.highlight_lyrics(section_lines)
+        
+        # --- AUTO-LEARN FROM REFERENCE ---
+        # Silently learn patterns from viewed reference to improve suggestions
+        try:
+            from app.learning import StyleExtractor
+            style_extractor = StyleExtractor()
+            
+            # Extract patterns (only first 32 lines to avoid skewing with long songs)
+            ref_analysis = style_extractor.analyze_lines(lines[:32])
+            
+            # Update vocabulary with new words (but don't overwrite favorites)
+            if ref_analysis.get("common_words"):
+                vocab = style_extractor.style_data.get("vocabulary", {})
+                current_words = set(vocab.get("learned_from_refs", []))
+                current_words.update(ref_analysis["common_words"][:5])
+                vocab["learned_from_refs"] = list(current_words)[:100]  # Cap at 100
+                style_extractor.save_style()
+        except Exception:
+            pass  # Silently fail - learning is non-critical
     
     return render_template('reference_view.html',
                          filename=filename,

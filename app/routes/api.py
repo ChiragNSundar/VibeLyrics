@@ -54,6 +54,18 @@ def add_line():
     vocab_manager = VocabularyManager()
     vocab_manager.track_words(user_input)
     
+    # --- RAG: Index line for infinite memory ---
+    try:
+        from app.learning import get_vector_store
+        vector_store = get_vector_store()
+        vector_store.index_line(
+            text=user_input,
+            session_id=session_id,
+            session_title=session.title
+        )
+    except Exception:
+        pass  # RAG indexing is non-critical
+    
     return jsonify({
         "success": True,
         "line_id": line.id,
@@ -83,6 +95,28 @@ def suggest_line():
     # Get style context
     style_extractor = StyleExtractor()
     style_context = style_extractor.get_style_summary()
+    
+    # --- RAG: Retrieve similar past lyrics ---
+    rag_context = ""
+    try:
+        from app.learning import get_vector_store
+        vector_store = get_vector_store()
+        
+        # Use last 2 lines as query for context
+        query_text = " ".join(previous_lines[-2:]) if previous_lines else ""
+        if query_text:
+            similar_lines = vector_store.search_similar(
+                query=query_text,
+                top_k=3,
+                exclude_session_id=session_id
+            )
+            rag_context = vector_store.format_for_prompt(similar_lines)
+    except Exception:
+        pass  # RAG is non-critical
+    
+    # Add RAG context to style context
+    if rag_context:
+        style_context["rag_memory"] = rag_context
     
     # Get AI provider
     try:
@@ -142,6 +176,29 @@ def accept_suggestion():
             line_id=line.id,
             session_id=line.session_id
         )
+    else:
+        # User accepted suggestion as-is - learn from it!
+        try:
+            from app.learning import StyleExtractor
+            style_extractor = StyleExtractor()
+            
+            # Extract key words from accepted suggestion
+            words = [w.strip('.,!?;:"\'').lower() for w in accepted_version.split() 
+                    if len(w) > 3]
+            
+            # Update vocabulary with accepted words
+            vocab = style_extractor.style_data.get("vocabulary", {})
+            favorites = set(vocab.get("favorite_words", []))
+            favorites.update(words[-3:])  # Add last 3 words (often rhyme words)
+            vocab["favorite_words"] = list(favorites)[:50]
+            
+            # Track acceptance rate
+            patterns = style_extractor.style_data.get("learned_patterns", {})
+            patterns["suggestions_accepted"] = patterns.get("suggestions_accepted", 0) + 1
+            
+            style_extractor.save_style()
+        except Exception:
+            pass  # Learning is non-critical
     
     db.session.commit()
     
@@ -565,3 +622,71 @@ def get_daily_challenge():
         "prompt": prompt,
         "date": today
     })
+
+
+@api_bp.route('/user/vocabulary', methods=['GET'])
+def get_user_vocabulary():
+    """Get user's learned vocabulary for smarter suggestions"""
+    try:
+        from app.learning import StyleExtractor
+        style_extractor = StyleExtractor()
+        
+        vocab = style_extractor.style_data.get("vocabulary", {})
+        patterns = style_extractor.style_data.get("learned_patterns", {})
+        
+        return jsonify({
+            "success": True,
+            "favorite_words": vocab.get("favorite_words", [])[:30],
+            "favorite_slangs": vocab.get("favorite_slangs", [])[:10],
+            "learned_from_refs": vocab.get("learned_from_refs", [])[:20],
+            "avoided_words": vocab.get("avoided_words", []),
+            "avg_syllables": patterns.get("avg_syllables_per_line", 12),
+            "suggestions_accepted": patterns.get("suggestions_accepted", 0)
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/audio/energy', methods=['GET'])
+def get_audio_energy():
+    """Get energy sections for a session's audio track"""
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        return jsonify({"error": "Missing session_id"}), 400
+    
+    session = LyricSession.query.get_or_404(session_id)
+    
+    if not session.audio_path:
+        return jsonify({"success": True, "sections": []})
+    
+    try:
+        from app.analysis.audio_analyzer import analyze_energy_sections
+        import os
+        
+        audio_file = os.path.join('app', 'static', session.audio_path)
+        sections = analyze_energy_sections(audio_file)
+        
+        return jsonify({
+            "success": True,
+            "sections": sections
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/memory/stats', methods=['GET'])
+def get_memory_stats():
+    """Get RAG memory statistics"""
+    try:
+        from app.learning import get_vector_store
+        vector_store = get_vector_store()
+        stats = vector_store.get_stats()
+        
+        return jsonify({
+            "success": True,
+            "total_lines_memorized": stats.get("total_lines", 0),
+            "unique_sessions": stats.get("unique_sessions", 0)
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

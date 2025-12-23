@@ -33,7 +33,22 @@
 - **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
 - **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.
 
-### 🎮 Gamification & Progress
+### � Continuous Learning Engine
+- **Style DNA**: The app learns your unique voice—syllable counts, favorite rhyme schemes, and flow patterns.
+- **Reference Absorption**: Simply viewing lyrics in the library adds them to your knowledge base.
+- **Adaptive Suggestions**: AI suggestions get smarter the more you use them, prioritized by your writing history.
+- **Vocabulary Tracking**: Maintains a dynamic list of your favorite words, slangs, and avoided terms.
+
+### 🧠 Infinite Memory (RAG)
+- **Lyric Recall**: Every bar you write is indexed for instant retrieval later.
+- **Context-Aware AI**: AI suggestions reference your past lyrics for callbacks.
+- **TF-IDF Search**: Fast similarity matching across all your work.
+
+### 🎹 Audio-Reactive AI
+- **Energy Detection**: Detects calm/build/verse/drop sections in your beat.
+- **Flow Suggestions**: AI adjusts style based on beat energy (melodic vs aggressive).
+
+### �🎮 Gamification & Progress
 - **Daily Challenge**: "Word of the Day" prompt to spark your creativity and keep your streak alive.
 - **Daily Streaks**: Track your writing consistency with a daily streak counter.
 - **Stats Dashboard**: View customized stats like "Lines Dropped" and "Total Sessions".

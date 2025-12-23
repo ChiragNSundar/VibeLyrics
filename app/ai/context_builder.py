@@ -57,16 +57,46 @@ class ContextBuilder:
     
     def build_style_context(self, user_style: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Build style context from user preferences
+        Build style context from user preferences and learned patterns
         """
+        learned_patterns = user_style.get("learned_patterns", {})
+        vocabulary = user_style.get("vocabulary", {})
+        
+        # Build personalized hints for AI
+        hints = []
+        
+        # Syllable preference
+        avg_syl = learned_patterns.get("avg_syllables_per_line", 0)
+        if avg_syl > 0:
+            hints.append(f"User typically writes {avg_syl:.0f} syllables per line")
+        
+        # Rhyme scheme preference
+        schemes = learned_patterns.get("preferred_rhyme_schemes", [])
+        if schemes:
+            from collections import Counter
+            common = Counter(schemes).most_common(1)
+            if common:
+                hints.append(f"User prefers {common[0][0]} rhyme schemes")
+        
+        # Words to prioritize/avoid
+        favorites = vocabulary.get("favorite_words", [])[:10]
+        avoided = vocabulary.get("avoided_words", [])
+        
+        if favorites:
+            hints.append(f"Favorite vocabulary: {', '.join(favorites[:5])}")
+        if avoided:
+            hints.append(f"Avoid these words: {', '.join(avoided[:5])}")
+        
         return {
             "rhyme_style": user_style.get("preferences", {}).get("rhyme_style", "mixed"),
             "complexity_level": user_style.get("preferences", {}).get("complexity_level", "medium"),
-            "favorite_words": user_style.get("vocabulary", {}).get("favorite_words", []),
-            "favorite_slangs": user_style.get("vocabulary", {}).get("favorite_slangs", []),
-            "avoided_words": user_style.get("vocabulary", {}).get("avoided_words", []),
+            "favorite_words": favorites,
+            "favorite_slangs": vocabulary.get("favorite_slangs", []),
+            "avoided_words": avoided,
             "preferred_themes": user_style.get("themes", {}).get("preferred", []),
-            "learned_patterns": user_style.get("learned_patterns", {})
+            "learned_patterns": learned_patterns,
+            "personalized_hints": hints,
+            "avg_syllables": avg_syl if avg_syl > 0 else 12
         }
     
     def get_relevant_journal_entries(
