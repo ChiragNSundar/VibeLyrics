@@ -58,7 +58,13 @@
 - **Pattern Insertion**: Finds optimal positions for adlibs (line endings, emphasis words).
 - **Contextual Adlibs**: 100+ hip-hop adlibs organized by mood (Yeah!, Skrrt!, What!, Brr!).
 
-### �🎮 Gamification & Progress
+### 🥊 Elite Lyric Tools
+- **Punch Line Engine**: Detects wordplay, double meanings ("bars" → prison/lyrics), and contrast ("love" vs "hate") to score your lines 1-10.
+- **Multi-Syllable Rhymes**: Finds complex 3-4 syllable rhymes (elevation → celebration, dedication).
+- **Metaphor Generator**: Instantly generates creative imagery ("Money like water", "Heart cold like December").
+- **RhymeWave Integration**: Built-in access to RhymeWave.com for phoneme-based rhyme finding.
+
+### 🎮 Gamification & Progress
 - **Daily Challenge**: "Word of the Day" prompt to spark your creativity and keep your streak alive.
 - **Daily Streaks**: Track your writing consistency with a daily streak counter.
 - **Stats Dashboard**: View customized stats like "Lines Dropped" and "Total Sessions".

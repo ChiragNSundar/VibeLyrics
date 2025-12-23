@@ -777,3 +777,186 @@ def suggest_adlib():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============ ELITE WRITER FEATURES ============
+
+@api_bp.route('/punchline/score', methods=['POST'])
+def score_punchline():
+    """Score a line's punch line potential"""
+    try:
+        from app.analysis.punchline_engine import score_punchline as score_punch
+        
+        data = request.json
+        line = data.get('line', '')
+        
+        if not line:
+            return jsonify({"success": False, "error": "No line provided"}), 400
+        
+        result = score_punch(line)
+        
+        return jsonify({
+            "success": True,
+            "line": line,
+            "score": result["score"],
+            "rating": result["rating"],
+            "breakdown": result["breakdown"],
+            "double_meanings": result["double_meanings"]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/punchline/generate', methods=['POST'])
+def generate_punchlines():
+    """Generate punch line starters for a theme"""
+    try:
+        from app.analysis.punchline_engine import generate_punchline_starters
+        
+        data = request.json
+        theme = data.get('theme', '')
+        rhyme_word = data.get('rhyme_word')
+        
+        if not theme:
+            return jsonify({"success": False, "error": "No theme provided"}), 400
+        
+        starters = generate_punchline_starters(theme, rhyme_word)
+        
+        return jsonify({
+            "success": True,
+            "theme": theme,
+            "starters": starters
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/punchline/analyze', methods=['POST'])
+def analyze_verse_punchlines():
+    """Analyze entire verse for punch lines"""
+    try:
+        from app.analysis.punchline_engine import analyze_verse_for_punchlines
+        
+        data = request.json
+        lines = data.get('lines', [])
+        
+        if not lines:
+            return jsonify({"success": False, "error": "No lines provided"}), 400
+        
+        result = analyze_verse_for_punchlines(lines)
+        
+        return jsonify({
+            "success": True,
+            **result
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/rhyme/multi/<word>', methods=['GET'])
+def get_multi_rhymes(word):
+    """Get multi-syllable rhymes"""
+    try:
+        from app.analysis.multi_rhyme import suggest_multi_rhyme
+        
+        result = suggest_multi_rhyme(word)
+        
+        return jsonify({
+            "success": True,
+            "word": word,
+            "rhyme_family": result["rhyme_family"],
+            "2_syllable": result["2_syllable_matches"],
+            "3_syllable": result["3_syllable_matches"]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/metaphor/generate', methods=['POST'])
+def generate_metaphors_endpoint():
+    """Generate metaphors for a concept"""
+    try:
+        from app.analysis.metaphor_engine import generate_metaphors
+        
+        data = request.json
+        concept = data.get('concept', '')
+        
+        if not concept:
+            return jsonify({"success": False, "error": "No concept provided"}), 400
+        
+        metaphors = generate_metaphors(concept)
+        
+        return jsonify({
+            "success": True,
+            "concept": concept,
+            "metaphors": metaphors
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/simile/generate', methods=['POST'])
+def generate_similes_endpoint():
+    """Generate similes for a word"""
+    try:
+        from app.analysis.metaphor_engine import generate_similes
+        
+        data = request.json
+        word = data.get('word', '')
+        
+        if not word:
+            return jsonify({"success": False, "error": "No word provided"}), 400
+        
+        similes = generate_similes(word)
+        
+        return jsonify({
+            "success": True,
+            "word": word,
+            "similes": similes
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/simile/complete', methods=['GET'])
+def complete_simile_endpoint():
+    """Complete a simile starter"""
+    try:
+        from app.analysis.metaphor_engine import complete_simile
+        
+        starter = request.args.get('starter', '')
+        
+        if not starter:
+            return jsonify({"success": False, "error": "No starter provided"}), 400
+        
+        completions = complete_simile(starter)
+        
+        return jsonify({
+            "success": True,
+            "starter": starter,
+            "completions": completions
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/imagery/analyze', methods=['POST'])
+def analyze_imagery():
+    """Analyze imagery density in verse"""
+    try:
+        from app.analysis.metaphor_engine import analyze_metaphor_density
+        
+        data = request.json
+        lines = data.get('lines', [])
+        
+        if not lines:
+            return jsonify({"success": False, "error": "No lines provided"}), 400
+        
+        result = analyze_metaphor_density(lines)
+        
+        return jsonify({
+            "success": True,
+            **result
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

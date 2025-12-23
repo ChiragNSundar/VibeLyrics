@@ -145,200 +145,244 @@
 
         <!-- AI Panel (collapsible) -->
         <div class="ai-panel" id="ai-panel">
-            <div class="ai-panel-header">
-                <h3>🤖 AI Assistant</h3>
-                <button class="btn-icon" onclick="toggleAIPanel()">✕</button>
+            <div class="ai-header" style="padding-bottom: 0;">
+                <div class="sidebar-tabs"
+                    style="display:flex; gap:10px; border-bottom:1px solid var(--border-color); width:100%;">
+                    <button class="tab-btn active" onclick="switchSidebarTab('ai')"
+                        style="background:none; border:none; color:var(--text-primary); padding:10px; border-bottom:2px solid var(--accent-primary); cursor:pointer;">🤖
+                        AI Tools</button>
+                    <button class="tab-btn" onclick="switchSidebarTab('rhymewave')"
+                        style="background:none; border:none; color:var(--text-secondary); padding:10px; cursor:pointer;">🌊
+                        RhymeWave</button>
+                    <button class="btn-icon" onclick="toggleAIPanel()" style="margin-left:auto;">✕</button>
+                </div>
             </div>
 
-            <div class="ai-content">
-                <!-- Suggestion Area -->
-                <div class="ai-section" id="suggestion-section">
-                    <h4>Suggestions</h4>
-                    <div class="suggestions-list" id="suggestions-list">
-                        <p class="placeholder-text">Write a line and click "Suggest" to get AI suggestions for the next
-                            bar.</p>
+            <div class="sidebar-content-wrapper" style="height: calc(100% - 50px); overflow-y: auto;">
+                <!-- AI Tools Tab -->
+                <div id="tab-ai" class="sidebar-tab-content">
+                    <div class="ai-content">
+                        <!-- Suggestion Area -->
+                        <div class="ai-section" id="suggestion-section">
+                            <h4>Suggestions</h4>
+                            <div class="suggestions-list" id="suggestions-list">
+                                <p class="placeholder-text">Write a line and click "Suggest" to get AI suggestions for
+                                    the next bar.</p>
+                            </div>
+                        </div>
+
+                        <!-- Improvement Area -->
+                        <div class="ai-section" id="improvement-section">
+                            <h4>Improve Line</h4>
+                            <div class="improvement-types">
+                                <button class="chip" data-type="rhyme" onclick="setImprovementType('rhyme')">🎯
+                                    Rhyme</button>
+                                <button class="chip" data-type="flow" onclick="setImprovementType('flow')">🌊
+                                    Flow</button>
+                                <button class="chip" data-type="wordplay" onclick="setImprovementType('wordplay')">🧠
+                                    Wordplay</button>
+                                <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎
+                                    Depth</button>
+                            </div>
+                            <div class="improvement-result" id="improvement-result"></div>
+                        </div>
+
+                        <!-- Ask AI -->
+                        <div class="ai-section">
+                            <h4>Ask AI</h4>
+                            <div class="ask-input-row">
+                                <input type="text" id="ask-input" class="input"
+                                    placeholder="Ask about rhymes, flow, technique...">
+                                <button class="btn btn-primary" onclick="askAI()">Ask</button>
+                            </div>
+                            <div class="ask-response" id="ask-response"></div>
+                        </div>
+
+                        <!-- Word Lookup Panel -->
+                        <div class="ai-section" id="lookup-section">
+                            <h4>📚 Word Lookup</h4>
+                            <div id="lookup-word-header"
+                                style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
+                            <div id="lookup-results" style="max-height:200px; overflow-y:auto;">
+                                <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or
+                                    synonyms.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Improvement Area -->
-                <div class="ai-section" id="improvement-section">
-                    <h4>Improve Line</h4>
-                    <div class="improvement-types">
-                        <button class="chip" data-type="rhyme" onclick="setImprovementType('rhyme')">🎯 Rhyme</button>
-                        <button class="chip" data-type="flow" onclick="setImprovementType('flow')">🌊 Flow</button>
-                        <button class="chip" data-type="wordplay" onclick="setImprovementType('wordplay')">🧠
-                            Wordplay</button>
-                        <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎 Depth</button>
-                    </div>
-                    <div class="improvement-result" id="improvement-result"></div>
+                <!-- RhymeWave Tab -->
+                <div id="tab-rhymewave" class="sidebar-tab-content" style="display:none; height:100%;">
+                    <iframe src="https://rhymewave.com"
+                        style="width:100%; height:100%; border:none; background:white;"></iframe>
                 </div>
+            </div>
+        </div>
 
-                <!-- Ask AI -->
-                <div class="ai-section">
-                    <h4>Ask AI</h4>
-                    <div class="ask-input-row">
-                        <input type="text" id="ask-input" class="input"
-                            placeholder="Ask about rhymes, flow, technique...">
-                        <button class="btn btn-primary" onclick="askAI()">Ask</button>
-                    </div>
-                    <div class="ask-response" id="ask-response"></div>
+        <!-- Power Tools Context Menu -->
+        <div id="context-menu" class="context-menu"
+            style="display:none; position:absolute; z-index:1000; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); width:200px;">
+            <ul style="list-style:none; padding:0; margin:0;">
+                <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('rhyme')">🔍 Find Rhymes</li>
+                <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('synonym')">🔁 Synonyms</li>
+            </ul>
+        </div>
+
+        <!-- Analysis Modal -->
+        <div class="modal" id="analysis-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📊 Session Analysis</h2>
+                    <button class="btn-icon" onclick="closeModal('analysis-modal')">✕</button>
                 </div>
-
-                <!-- Word Lookup Panel -->
-                <div class="ai-section" id="lookup-section">
-                    <h4>📚 Word Lookup</h4>
-                    <div id="lookup-word-header"
-                        style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
-                    <div id="lookup-results" style="max-height:200px; overflow-y:auto;">
-                        <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or synonyms.</p>
-                    </div>
+                <div class="modal-body" id="analysis-content">
+                    Loading...
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Power Tools Context Menu -->
-    <div id="context-menu" class="context-menu"
-        style="display:none; position:absolute; z-index:1000; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); width:200px;">
-        <ul style="list-style:none; padding:0; margin:0;">
-            <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('rhyme')">🔍 Find Rhymes</li>
-            <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('synonym')">🔁 Synonyms</li>
-        </ul>
-    </div>
+    <div id="session-data" data-session-id="{{ session.id }}" data-bpm="{{ session.bpm }}" style="display:none;"></div>
+    <script>
+        const sessionData = document.getElementById('session-data');
+        const SESSION_ID = parseInt(sessionData.dataset.sessionId);
+        const BPM = parseInt(sessionData.dataset.bpm);
+        let currentImprovementType = 'rhyme';
+        let currentLineToImprove = null;
+        let selectedWord = "";
 
-    <!-- Analysis Modal -->
-    <div class="modal" id="analysis-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📊 Session Analysis</h2>
-                <button class="btn-icon" onclick="closeModal('analysis-modal')">✕</button>
-            </div>
-            <div class="modal-body" id="analysis-content">
-                Loading...
-            </div>
-        </div>
-    </div>
-</div>
+        function switchSidebarTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.sidebar-tab-content').forEach(el => el.style.display = 'none');
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.borderBottom = 'none';
+                btn.style.color = 'var(--text-secondary)';
+            });
 
-<div id="session-data" data-session-id="{{ session.id }}" data-bpm="{{ session.bpm }}" style="display:none;"></div>
-<script>
-    const sessionData = document.getElementById('session-data');
-    const SESSION_ID = parseInt(sessionData.dataset.sessionId);
-    const BPM = parseInt(sessionData.dataset.bpm);
-    let currentImprovementType = 'rhyme';
-    let currentLineToImprove = null;
-    let selectedWord = "";
+            // Show selected tab
+            document.getElementById('tab-' + tabName).style.display = 'block';
 
-    function handleWordRightClick(e) {
-        e.preventDefault();
-        const selection = window.getSelection();
-        selectedWord = selection.toString().trim();
-        if (!selectedWord) return;
-
-        const menu = document.getElementById('context-menu');
-        menu.style.display = 'block';
-        menu.style.left = e.pageX + 'px';
-        menu.style.top = e.pageY + 'px';
-    }
-
-    document.addEventListener('click', () => {
-        document.getElementById('context-menu').style.display = 'none';
-    });
-
-    async function lookupWord(type) {
-        if (!selectedWord) return;
-
-        // Show AI panel if hidden
-        const aiPanel = document.getElementById('ai-panel');
-        if (!aiPanel.classList.contains('active')) {
-            aiPanel.classList.add('active');
+            // Activate button
+            const activeBtn = document.querySelector(`.tab-btn[onclick="switchSidebarTab('${tabName}')"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.borderBottom = '2px solid var(--accent-primary)';
+                activeBtn.style.color = 'var(--text-primary)';
+            }
         }
 
-        // Update lookup header
-        const header = document.getElementById('lookup-word-header');
-        header.textContent = `${type === 'rhyme' ? '🎯 Rhymes' : '🔁 Synonyms'} for "${selectedWord}"`;
+        function handleWordRightClick(e) {
+            e.preventDefault();
+            const selection = window.getSelection();
+            selectedWord = selection.toString().trim();
+            if (!selectedWord) return;
 
-        // Fetch results
-        const res = await fetch(`/api/tools/lookup?word=${encodeURIComponent(selectedWord)}&type=${type}`);
-        const data = await res.json();
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+        }
 
-        // Display in panel
-        const resultsDiv = document.getElementById('lookup-results');
-        let html = '';
+        document.addEventListener('click', () => {
+            document.getElementById('context-menu').style.display = 'none';
+        });
 
-        if (type === 'rhyme') {
-            const rhymes = data.results?.perfect || data.results || [];
-            if (rhymes.length > 0) {
-                html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+        async function lookupWord(type) {
+            if (!selectedWord) return;
+
+            // Show AI panel if hidden
+            const aiPanel = document.getElementById('ai-panel');
+            if (!aiPanel.classList.contains('active')) {
+                aiPanel.classList.add('active');
+            }
+
+            // Update lookup header
+            const header = document.getElementById('lookup-word-header');
+            header.textContent = `${type === 'rhyme' ? '🎯 Rhymes' : '🔁 Synonyms'} for "${selectedWord}"`;
+
+            // Fetch results
+            const res = await fetch(`/api/tools/lookup?word=${encodeURIComponent(selectedWord)}&type=${type}`);
+            const data = await res.json();
+
+            // Display in panel
+            const resultsDiv = document.getElementById('lookup-results');
+            let html = '';
+
+            if (type === 'rhyme') {
+                const rhymes = data.results?.perfect || data.results || [];
+                if (rhymes.length > 0) {
+                    html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                     ${rhymes.slice(0, 20).map(r => `<span class="chip" style="cursor:pointer;" onclick="insertWord('${r}')">${r}</span>`).join('')}
                 </div>`;
+                } else {
+                    html = '<p style="color:var(--text-secondary);">No rhymes found.</p>';
+                }
             } else {
-                html = '<p style="color:var(--text-secondary);">No rhymes found.</p>';
-            }
-        } else {
-            const synonyms = data.results?.synonyms || data.results || [];
-            if (synonyms.length > 0) {
-                html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                const synonyms = data.results?.synonyms || data.results || [];
+                if (synonyms.length > 0) {
+                    html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                     ${synonyms.slice(0, 20).map(s => `<span class="chip" style="cursor:pointer;" onclick="insertWord('${s}')">${s}</span>`).join('')}
                 </div>`;
-            } else {
-                html = '<p style="color:var(--text-secondary);">No synonyms found.</p>';
+                } else {
+                    html = '<p style="color:var(--text-secondary);">No synonyms found.</p>';
+                }
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function insertWord(word) {
+            const input = document.getElementById('new-line-input');
+            if (input) {
+                input.value += (input.value ? ' ' : '') + word;
+                input.focus();
             }
         }
 
-        resultsDiv.innerHTML = html;
-    }
+        async function uploadAudio(input) {
+            if (!input.files[0]) return;
+            const formData = new FormData();
+            formData.append('audio_file', input.files[0]);
 
-    function insertWord(word) {
-        const input = document.getElementById('new-line-input');
-        if (input) {
-            input.value += (input.value ? ' ' : '') + word;
-            input.focus();
-        }
-    }
-
-    async function uploadAudio(input) {
-        if (!input.files[0]) return;
-        const formData = new FormData();
-        formData.append('audio_file', input.files[0]);
-
-        const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-        if (data.success) {
-            if (data.detected_bpm > 0) {
-                alert(`Beat uploaded! Auto-detected BPM: ${data.detected_bpm}`);
+            const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.detected_bpm > 0) {
+                    alert(`Beat uploaded! Auto-detected BPM: ${data.detected_bpm}`);
+                }
+                location.reload();
             }
-            location.reload();
         }
-    }
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}
 
-{% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-<script src="https://unpkg.com/wavesurfer.js@7"></script>
-<script src="{{ url_for('static', filename='js/waveform_player.js') }}"></script>
-<script src="{{ url_for('static', filename='js/flow_viz.js') }}"></script>
-<script src="{{ url_for('static', filename='js/session.js') }}"></script>
-<script>
-    // Init Flow Viz
-    const viz = new FlowVisualizer('flow-canvas');
-    const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
-    viz.update(linesData);
+    {% block extra_js %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="{{ url_for('static', filename='js/waveform_player.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/flow_viz.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/session.js') }}"></script>
+    <script>
+        // Init Flow Viz
+        const viz = new FlowVisualizer('flow-canvas');
+        const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
+        viz.update(linesData);
 
-    // Init Waveform Player if audio exists
-    {% if session.audio_path %}
-    initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
-    {% endif %}
-</script>
-<script type="application/json" id="lines-data-json">
+        // Init Waveform Player if audio exists
+        {% if session.audio_path %}
+        initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
+        {% endif %}
+    </script>
+    <script type="application/json" id="lines-data-json">
 [
     {% for line in lines %}
     { "syllable_count": {{ line.syllable_count or 0 }} }{% if not loop.last %},{% endif %}
     {% endfor %}
 ]
 </script>
-{% endblock %}
+    {% endblock %}
