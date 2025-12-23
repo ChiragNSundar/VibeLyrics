@@ -56,25 +56,71 @@ socket.on('line_updated', (data) => {
 
 // Listener: New line added by collaborator
 socket.on('line_added', (data) => {
-    // Check if line already exists (dedupe)
-    if (document.querySelector(`[data-line-id="${data.id}"]`)) return;
+    // Check if we have a pending line for this content
+    // We look for a line with data-pending="true" and matching text
+    const pendingLines = document.querySelectorAll('.line-row[data-pending="true"]');
+    let match = null;
 
-    // Create new line
-    // Map data to match createLineElement expectations
-    const mappedData = {
-        line_id: data.id,
-        line_number: data.line_number,
-        syllable_count: data.syllable_count || 0,
-        has_internal_rhyme: false, // simplify for now
-        stress_pattern: data.stress_pattern
-    };
+    // Find the first pending line that matches content
+    for (const row of pendingLines) {
+        const text = row.querySelector('.line-text').textContent;
+        if (text === data.content) {
+            match = row;
+            break;
+        }
+    }
 
-    const container = document.getElementById('lines-container');
-    const lineRow = createLineElement(mappedData, data.content);
-    container.appendChild(lineRow);
+    if (match) {
+        // Reconcile / Upgrade the pending line
+        match.dataset.lineId = data.id;
+        match.dataset.lineNumber = data.line_number;
+        delete match.dataset.pending;
+        match.style.opacity = '1';
 
-    updateLineNumber();
-    container.scrollTop = container.scrollHeight;
+        // Update stats from server (authoritative)
+        match.querySelector('.syllable-count').textContent = `${data.syllable_count} syl`;
+        match.querySelector('.line-number').textContent = data.line_number;
+
+        // Update content with highlighted HTML from server if available
+        if (data.highlighted_html) {
+            match.querySelector('.line-text').innerHTML = data.highlighted_html;
+        }
+
+        // Update edit buttons data-attributes
+        match.querySelectorAll('[data-line-id]').forEach(btn => {
+            btn.dataset.lineId = data.id;
+        });
+
+        // Add stress viz if needed
+        if (data.stress_pattern) {
+            const meta = match.querySelector('.line-meta');
+            let stressViz = meta.querySelector('.stress-viz');
+            if (!stressViz) {
+                stressViz = document.createElement('div');
+                stressViz.className = 'stress-viz';
+                meta.appendChild(stressViz);
+            }
+            stressViz.innerHTML = renderStressPattern(data.stress_pattern);
+        }
+    } else {
+        // If no pending match found (e.g. from another user), append normally
+        if (document.querySelector(`[data-line-id="${data.id}"]`)) return;
+
+        const mappedData = {
+            line_id: data.id,
+            line_number: data.line_number,
+            syllable_count: data.syllable_count || 0,
+            has_internal_rhyme: data.has_internal_rhyme || false,
+            stress_pattern: data.stress_pattern,
+            highlighted_html: data.highlighted_html
+        };
+
+        const container = document.getElementById('lines-container');
+        const lineRow = createLineElement(mappedData, data.content);
+        container.appendChild(lineRow);
+        container.scrollTop = container.scrollHeight;
+        updateLineNumber();
+    }
 });
 
 
@@ -87,31 +133,52 @@ function toggleAIPanel() {
 // Add line to session (Socket Version)
 async function addLine() {
     const input = document.getElementById('new-line-input');
-    const line = input.value.trim();
+    const lineContent = input.value.trim();
 
-    if (!line) return;
+    if (!lineContent) return;
 
-    // input.disabled = true; // Prevent double submit
+    const section = document.getElementById('section-select')?.value || 'Verse';
 
-    // Use Socket instead of API
-    socket.emit('new_line', {
-        session_id: SESSION_ID,
-        content: line,
-        section: document.getElementById('section-select')?.value || 'Verse'
-    });
+    // Optimistic: Create temporary line immediately
+    const tempId = 'temp-' + Date.now(); // Unique temp ID
+    const currentLines = document.querySelectorAll('.line-row');
+    const nextNum = currentLines.length + 1;
 
-    // Clear immediately for UX (optimistic)
+    // Client-side syllable guess
+    let sylCount = 0;
+    if (typeof countSyllablesClient === 'function') {
+        sylCount = countSyllablesClient(lineContent);
+    }
+
+    const tempData = {
+        line_id: tempId,
+        line_number: nextNum,
+        syllable_count: sylCount,
+        has_internal_rhyme: false,
+        stress_pattern: ''
+    };
+
+    const container = document.getElementById('lines-container');
+    const lineRow = createLineElement(tempData, lineContent);
+
+    // Add visual indicator that it's syncing? (Optional, maybe opacity)
+    lineRow.style.opacity = '0.7';
+    lineRow.dataset.pending = 'true';
+
+    container.appendChild(lineRow);
+    container.scrollTop = container.scrollHeight;
+    updateLineNumber();
+
+    // Clear input immediately
     input.value = '';
-    // updateLineNumber(); // Wait for confirmation or socket event? 
-    // Actually, listening to 'line_added' will handle the UI update.
-    // But we should maybe do it optimistically?
-    // Let's rely on the socket event 'line_added' which returns to everyone including sender (default broadcasts often do, 
-    // check events.py: yes room=... implies everyone).
-
     document.querySelector('.syllable-counter').textContent = '0 syllables';
 
-    // Auto-suggest next line (vibe writing mode!)
-    // suggestNext(); // Delay slightly or wait for node?
+    // Emit to server
+    socket.emit('new_line', {
+        session_id: SESSION_ID,
+        content: lineContent,
+        section: section
+    });
 }
 
 // Create line element
@@ -121,10 +188,13 @@ function createLineElement(data, text) {
     div.dataset.lineId = data.line_id;
     div.dataset.lineNumber = data.line_number;
 
+    // Use highlighted HTML if available, otherwise escape text
+    const contentHtml = data.highlighted_html || escapeHtml(text);
+
     div.innerHTML = `
         <span class="line-number">${data.line_number}</span>
         <div class="line-content">
-            <span class="line-text" oncontextmenu="handleWordRightClick(event)">${escapeHtml(text)}</span>
+            <span class="line-text" oncontextmenu="handleWordRightClick(event)">${contentHtml}</span>
             <div class="line-meta">
                 <span class="syllable-count" title="Syllable count">${data.syllable_count} syl</span>
                 ${data.has_internal_rhyme ? '<span class="rhyme-badge" title="Has internal rhyme">🔗</span>' : ''}
@@ -812,3 +882,14 @@ async function deleteLine(lineId) {
     }
 }
 
+
+// Utility to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
