@@ -20,7 +20,8 @@
             <input type="file" id="audio-upload" style="display:none" accept="audio/*" onchange="uploadAudio(this)">
             {% endif %}
             <button class="btn btn-secondary" onclick="analyzeSession()">📊 Analyze</button>
-            <button class="btn btn-secondary" onclick="toggleAIPanel()">🤖 AI Help</button>
+            <button class="btn btn-secondary" onclick="openAIHelp()">🤖 AI Help</button>
+            <button class="btn btn-secondary" onclick="openRhymeWave()">🌊 RhymeWave</button>
             <select id="provider-select" class="input small" onchange="switchProvider(this.value)">
                 <option value="openai" {% if profile.preferred_provider=='openai' %}selected{% endif %}>OpenAI</option>
                 <option value="gemini" {% if profile.preferred_provider=='gemini' %}selected{% endif %}>Gemini</option>
@@ -270,6 +271,40 @@
                 activeBtn.classList.add('active');
                 activeBtn.style.borderBottom = '2px solid var(--accent-primary)';
                 activeBtn.style.color = 'var(--text-primary)';
+            }
+        }
+
+        function openAIHelp() {
+            const aiPanel = document.getElementById('ai-panel');
+            const aiTab = document.getElementById('tab-ai');
+            const isVisible = aiPanel.classList.contains('active');
+            // Check if AI tab is currently visible (checking display style of the *content* or button state)
+            // But switchSidebarTab 'ai' sets tab-ai to block.
+            const isAIActive = aiTab.style.display !== 'none';
+
+            if (isVisible && isAIActive) {
+                // If already open and on AI Tools, close it
+                aiPanel.classList.remove('active');
+            } else {
+                // Otherwise open and switch to AI Tools
+                if (!isVisible) aiPanel.classList.add('active');
+                switchSidebarTab('ai');
+            }
+        }
+
+        function openRhymeWave() {
+            const aiPanel = document.getElementById('ai-panel');
+            const rhymewaveTab = document.getElementById('tab-rhymewave');
+            const isVisible = aiPanel.classList.contains('active');
+            const isRhymewaveActive = rhymewaveTab.style.display !== 'none';
+
+            if (isVisible && isRhymewaveActive) {
+                // If already open and on RhymeWave, close it
+                aiPanel.classList.remove('active');
+            } else {
+                // Otherwise open and switch to RhymeWave
+                if (!isVisible) aiPanel.classList.add('active');
+                switchSidebarTab('rhymewave');
             }
         }
 
