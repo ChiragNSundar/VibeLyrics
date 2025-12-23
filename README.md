@@ -48,6 +48,16 @@
 - **Energy Detection**: Detects calm/build/verse/drop sections in your beat.
 - **Flow Suggestions**: AI adjusts style based on beat energy (melodic vs aggressive).
 
+### 💡 Semantic Concept Rhymes
+- **Meaning + Sound**: Find words that both rhyme AND relate conceptually (King → reign, throne, crown).
+- **Hip-Hop Vocabulary**: 20+ curated concept clusters (money → bands, racks, paper, bread).
+- **Mind Map**: Auto-generates a "concept cloud" from your verse.
+
+### 🎤 Auto-Adlib Generator
+- **Mood Detection**: Analyzes line energy (hype, flex, aggressive, smooth, emotional).
+- **Pattern Insertion**: Finds optimal positions for adlibs (line endings, emphasis words).
+- **Contextual Adlibs**: 100+ hip-hop adlibs organized by mood (Yeah!, Skrrt!, What!, Brr!).
+
 ### �🎮 Gamification & Progress
 - **Daily Challenge**: "Word of the Day" prompt to spark your creativity and keep your streak alive.
 - **Daily Streaks**: Track your writing consistency with a daily streak counter.

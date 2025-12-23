@@ -12,25 +12,25 @@
   },
   "vocabulary": {
     "favorite_words": [
-      "grind",
       "dream",
-      "elevate",
       "vision",
-      "rise",
+      "hustle",
       "manifest",
+      "rise",
+      "elevate",
       "legacy",
-      "hustle"
+      "grind"
     ],
     "favorite_slangs": [
-      "shi",
-      "no cap",
-      "fire",
       "bussin",
+      "valid",
       "bet",
+      "fire",
       "highkey",
+      "no cap",
       "goated",
-      "lowkey",
-      "valid"
+      "shi",
+      "lowkey"
     ],
     "avoided_words": [],
     "word_frequency": {
@@ -38,8 +38,8 @@
       "grind": 15,
       "hustle": 12,
       "dream": 10,
+      "test": 9,
       "rise": 8,
-      "test": 8,
       "trap": 3,
       "girl": 2,
       "minus": 1,

@@ -690,3 +690,90 @@ def get_memory_stats():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/rhyme/concept/<word>', methods=['GET'])
+def get_concept_rhymes(word):
+    """Get semantic concept rhymes - words that rhyme AND relate by meaning"""
+    try:
+        from app.analysis.concept_rhymes import get_concept_rhymes as find_concept_rhymes
+        
+        result = find_concept_rhymes(word)
+        
+        return jsonify({
+            "success": True,
+            "word": word,
+            "concept_rhymes": result["concept_rhymes"],
+            "related_words": result["related_only"][:10],
+            "standard_rhymes": result["rhymes_only"][:10],
+            "hip_hop_related": result["hip_hop_related"]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/rhyme/mindmap', methods=['POST'])
+def build_verse_mindmap():
+    """Build a semantic mind map from verse lines"""
+    try:
+        from app.analysis.concept_rhymes import build_mind_map
+        
+        data = request.json
+        lines = data.get('lines', [])
+        
+        if not lines:
+            return jsonify({"success": False, "error": "No lines provided"}), 400
+        
+        result = build_mind_map(lines)
+        
+        return jsonify({
+            "success": True,
+            "core_concepts": result["core_concepts"],
+            "expanded_concepts": result["expanded_concepts"]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/adlib/generate', methods=['POST'])
+def generate_adlibs_endpoint():
+    """Generate adlib suggestions for lyrics"""
+    try:
+        from app.analysis.adlib_generator import generate_adlibs_for_verse
+        
+        data = request.json
+        lines = data.get('lines', [])
+        intensity = data.get('intensity', 'medium')  # low, medium, high
+        
+        if not lines:
+            return jsonify({"success": False, "error": "No lines provided"}), 400
+        
+        result = generate_adlibs_for_verse(lines, intensity)
+        
+        return jsonify({
+            "success": True,
+            "lines_with_adlibs": result["lines_with_adlibs"],
+            "adlib_suggestions": result["adlib_suggestions"],
+            "overall_mood": result["overall_mood"]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/adlib/suggest', methods=['GET'])
+def suggest_adlib():
+    """Get a contextual adlib based on current context"""
+    try:
+        from app.analysis.adlib_generator import get_adlib_for_context
+        
+        context = request.args.get('context', '')
+        
+        adlib = get_adlib_for_context(context)
+        
+        return jsonify({
+            "success": True,
+            "adlib": adlib,
+            "context": context
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
