@@ -78,7 +78,7 @@ def add_line():
 
 @api_bp.route('/line/suggest', methods=['POST'])
 def suggest_line():
-    """Get AI suggestion for next line or improvement"""
+    """Get AI suggestion for next line or improvement with full context awareness"""
     data = request.json
     session_id = data.get('session_id')
     action = data.get('action', 'next')  # next, improve
@@ -92,17 +92,51 @@ def suggest_line():
     lines = session.lines.all()
     previous_lines = [l.final_version or l.user_input for l in lines]
     
-    # Get style context
+    # Get style context (base)
     style_extractor = StyleExtractor()
     style_context = style_extractor.get_style_summary()
     
-    # --- RAG: Retrieve similar past lyrics ---
+    # ========================================
+    # ENHANCED CONTEXT AWARENESS
+    # ========================================
+    
+    # 1. Detect current rhyme scheme
+    try:
+        from app.analysis import RhymeDetector
+        rhyme_detector = RhymeDetector()
+        if previous_lines:
+            rhyme_scheme = rhyme_detector.get_rhyme_scheme_string(previous_lines[-8:])  # Last 8 lines
+            style_context["current_rhyme_scheme"] = rhyme_scheme
+            style_context["rhyme_hint"] = f"Current pattern is {rhyme_scheme}. Continue or create contrast."
+    except Exception:
+        pass
+    
+    # 2. Extract themes from recent lines
+    try:
+        recent_text = " ".join(previous_lines[-4:]) if previous_lines else ""
+        if recent_text:
+            # Simple keyword extraction
+            words = recent_text.lower().split()
+            theme_words = [w for w in set(words) if len(w) > 4 and w.isalpha()][:5]
+            style_context["recent_themes"] = theme_words
+            style_context["theme_hint"] = f"Recent themes/words: {', '.join(theme_words)}"
+    except Exception:
+        pass
+    
+    # 3. Get syllable pattern for flow matching
+    if lines:
+        recent_syllables = [l.syllable_count for l in lines[-4:] if l.syllable_count]
+        if recent_syllables:
+            avg_syl = sum(recent_syllables) / len(recent_syllables)
+            style_context["target_syllables"] = round(avg_syl)
+            style_context["syllable_hint"] = f"Match ~{round(avg_syl)} syllables for consistent flow."
+    
+    # 4. RAG: Retrieve similar past lyrics
     rag_context = ""
     try:
         from app.learning import get_vector_store
         vector_store = get_vector_store()
         
-        # Use last 2 lines as query for context
         query_text = " ".join(previous_lines[-2:]) if previous_lines else ""
         if query_text:
             similar_lines = vector_store.search_similar(
@@ -112,11 +146,31 @@ def suggest_line():
             )
             rag_context = vector_store.format_for_prompt(similar_lines)
     except Exception:
-        pass  # RAG is non-critical
+        pass
     
-    # Add RAG context to style context
     if rag_context:
         style_context["rag_memory"] = rag_context
+        style_context["memory_hint"] = "Reference your past style from these similar lines."
+    
+    # 5. Get learned corrections/preferences
+    try:
+        learned_prefs = profile.style_profile_data or {}
+        if "consolidated_insights" in learned_prefs:
+            insights = learned_prefs["consolidated_insights"]
+            if insights.get("preferences"):
+                style_context["learned_preferences"] = insights["preferences"]
+            if insights.get("avoided_words"):
+                style_context["avoid_words"] = insights["avoided_words"]
+    except Exception:
+        pass
+    
+    # 6. Build elite context if not improving
+    try:
+        from app.ai.context_builder import ContextBuilder
+        context_builder = ContextBuilder()
+        style_context["elite_prompt"] = context_builder.build_elite_prompt(session, profile)
+    except Exception:
+        pass
     
     # Get AI provider
     try:
@@ -141,13 +195,21 @@ def suggest_line():
         else:
             return jsonify({"error": "Invalid action"}), 400
         
+        # Include context hints in response for transparency
         return jsonify({
             "success": True,
-            "result": result
+            "result": result,
+            "context_used": {
+                "previous_lines": len(previous_lines),
+                "rhyme_scheme": style_context.get("current_rhyme_scheme", ""),
+                "target_syllables": style_context.get("target_syllables", 12),
+                "has_rag_memory": bool(rag_context)
+            }
         })
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 @api_bp.route('/line/accept', methods=['POST'])
