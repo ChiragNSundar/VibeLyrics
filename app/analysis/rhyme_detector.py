@@ -226,7 +226,45 @@ class RhymeDetector:
             ['eal', 'eel', 'iel'],
         ]
         
+        # Hindi/Kannada rhyme families (romanized)
+        indian_rhyme_families = [
+            # Vowel endings (very common in Indian languages)
+            ['aa', 'a'],
+            ['ee', 'i', 'ii'],
+            ['oo', 'u', 'uu'],
+            ['ai', 'ay', 'ae'],
+            ['au', 'aw', 'ao'],
+            # Common verb/noun endings
+            ['ana', 'ena', 'ina', 'ona', 'una'],
+            ['ata', 'eta', 'ita', 'ota', 'uta'],
+            ['ara', 'era', 'ira', 'ora', 'ura'],
+            ['aya', 'eya', 'iya', 'oya', 'uya'],
+            ['ala', 'ela', 'ila', 'ola', 'ula'],
+            # Hindi specific
+            ['ani', 'eni', 'ini', 'oni', 'uni'],
+            ['ake', 'eke', 'ike', 'oke', 'uke'],
+            ['aam', 'eem', 'oom'],
+            ['aan', 'een', 'oon', 'ain', 'ein'],
+            ['aar', 'eer', 'oor', 'air', 'eir'],
+            # Kannada specific
+            ['adu', 'edu', 'idu', 'odu', 'udu'],
+            ['anu', 'enu', 'inu', 'onu', 'unu'],
+            ['agi', 'egi', 'igi', 'ogi', 'ugi'],
+            ['ali', 'eli', 'ili', 'oli', 'uli'],
+            # Common suffixes
+            ['wala', 'wali', 'waala', 'waali'],
+            ['giri', 'dari', 'bazi', 'baazi'],
+        ]
+        
+        # Check English families first
         for family in rhyme_families:
+            w1_match = any(w1.endswith(ending) for ending in family)
+            w2_match = any(w2.endswith(ending) for ending in family)
+            if w1_match and w2_match:
+                return True
+        
+        # Check Indian language families
+        for family in indian_rhyme_families:
             w1_match = any(w1.endswith(ending) for ending in family)
             w2_match = any(w2.endswith(ending) for ending in family)
             if w1_match and w2_match:

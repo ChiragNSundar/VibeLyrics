@@ -574,16 +574,45 @@ def lookup_tool():
                 'antonyms': enrich(list(antonyms)[:15])
             }
             
-        except Exception as e:
-            results = {"error": f"Error loading data: {e}"}
-            print(f"Synonym error: {e}")
+            # If WordNet returned nothing, try Indian thesaurus
+            if not synonyms:
+                try:
+                    from app.analysis.indian_thesaurus import get_indian_thesaurus
+                    indian = get_indian_thesaurus()
+                    lookup = indian.lookup(word)
+                    
+                    if lookup:
+                        results = {
+                            'synonyms': enrich(lookup.get('synonyms', [])),
+                            'antonyms': enrich(lookup.get('antonyms', [])),
+                            'related': lookup.get('related', []),
+                            'language': lookup.get('language', 'hindi/kannada')
+                        }
+                except Exception:
+                    pass
             
-    return jsonify({
-        "success": True,
-        "word": word,
-        "type": lookup_type,
-        "results": results
-    })
+        except Exception as e:
+            # Fallback to Indian thesaurus if WordNet fails
+            try:
+                from app.analysis.indian_thesaurus import get_indian_thesaurus
+                indian = get_indian_thesaurus()
+                lookup = indian.lookup(word)
+                
+                if lookup:
+                    syllable_counter = SyllableCounter()
+                    def enrich_simple(word_list):
+                        return [{'word': w, 'syllables': syllable_counter.count_syllables(w)} for w in word_list]
+                    
+                    results = {
+                        'synonyms': enrich_simple(lookup.get('synonyms', [])),
+                        'antonyms': enrich_simple(lookup.get('antonyms', [])),
+                        'related': lookup.get('related', []),
+                        'language': lookup.get('language', 'hindi/kannada')
+                    }
+                else:
+                    results = {"error": f"Word not found: {e}"}
+            except Exception:
+                results = {"error": f"Error loading data: {e}"}
             
     return jsonify({
         "success": True,

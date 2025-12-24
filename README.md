@@ -33,6 +33,7 @@
 - **Stress Pattern Visualization**: Visual dots (●○) show the rhythmic stress of your lyrics (stressed vs unstressed).
 - **Rhyme Density Heatmap**: Visual glow (Red → Orange → Green) highlighting the technical complexity of your verses.
 - **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis.
+- **Hindi/Kannada Support**: Write in romanized Hindi or Kannada (typed in English like "Mera naam hai") - syllable counting and rhyme detection fully supported!
 - **Slang Heuristic Engine**: Intelligently handles modern slang ("thicc", "vibez") phonetic analysis.
 - **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
 - **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.

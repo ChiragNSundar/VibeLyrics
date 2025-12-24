@@ -871,19 +871,31 @@ async function deleteLine(lineId) {
     if (!confirm('Delete this line?')) return;
 
     try {
-        await apiCall('/api/line/delete', 'POST', { line_id: lineId });
-        // NOTE: we should probably emit 'delete_line' socket event too for robustness, 
-        // but user didn't explicitly ask for delete sync, just writing. 
-        // I'll stick to basic writing sync for now.
+        const response = await apiCall('/api/line/delete', 'POST', { line_id: lineId });
 
-        // Remove from UI
-        const lineRow = document.querySelector(`[data-line-id="${lineId}"]`);
+        // Remove from UI - try multiple selectors
+        let lineRow = document.querySelector(`.line-row[data-line-id="${lineId}"]`);
+
+        // If not found by line-row, try finding by button and get parent
+        if (!lineRow) {
+            const deleteBtn = document.querySelector(`.delete-btn[data-line-id="${lineId}"]`);
+            if (deleteBtn) {
+                lineRow = deleteBtn.closest('.line-row');
+            }
+        }
+
         if (lineRow) {
             lineRow.remove();
             updateLineNumber();
+            refreshFlowViz();
             showToast('Line deleted');
+        } else {
+            // Fallback: reload the page if we can't find the element
+            showToast('Line deleted, refreshing...');
+            setTimeout(() => location.reload(), 500);
         }
     } catch (e) {
+        console.error('Delete error:', e);
         showToast('Error deleting line', 'error');
     }
 }
