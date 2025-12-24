@@ -226,34 +226,83 @@ class RhymeDetector:
             ['eal', 'eel', 'iel'],
         ]
         
-        # Hindi/Kannada rhyme families (romanized)
+        # Hindi/Kannada rhyme families (romanized) - MASSIVELY EXPANDED
         indian_rhyme_families = [
-            # Vowel endings (very common in Indian languages)
+            # === VOWEL ENDINGS (most common in Indian languages) ===
             ['aa', 'a'],
             ['ee', 'i', 'ii'],
             ['oo', 'u', 'uu'],
-            ['ai', 'ay', 'ae'],
-            ['au', 'aw', 'ao'],
-            # Common verb/noun endings
+            ['ai', 'ay', 'ae', 'ey'],
+            ['au', 'aw', 'ao', 'ow'],
+            
+            # === KANNADA VERB ENDINGS (critical for rhyming) ===
+            # Present/future tense
+            ['odu', 'edu', 'idu', 'adu', 'udu'],
+            ['ona', 'ena', 'ina', 'ana', 'una'],
+            ['onu', 'enu', 'inu', 'anu', 'unu'],
+            ['ali', 'eli', 'ili', 'oli', 'uli'],
+            ['agi', 'egi', 'igi', 'ogi', 'ugi'],
+            # Past tense
+            ['adu', 'edu', 'idu'],
+            ['itu', 'atu', 'etu'],
+            ['ide', 'ade', 'ode', 'ude'],
+            ['iddey', 'addey', 'oddey'],
+            # Imperative
+            ['iro', 'aro', 'oro', 'uro'],
+            ['odu', 'adu', 'edu'],
+            # Common verb roots
+            ['aadu', 'aagu', 'aalu', 'aanu'],
+            ['eeru', 'eelu', 'eenu'],
+            ['oogu', 'oodu', 'oolu'],
+            
+            # === KANNADA NOUN ENDINGS ===
+            ['anu', 'alu', 'aru', 'avu'],
+            ['ike', 'uge', 'age', 'ane'],
+            ['atey', 'itey', 'utey'],
+            ['galu', 'kalu', 'talu'],
+            ['aara', 'eera', 'oora'],
+            
+            # === KANNADA PRONOUN PATTERNS ===
+            ['aanu', 'eenu', 'aavu', 'eevu'],  # naanu, neenu, naavu, neevu
+            ['ane', 'ene', 'ine'],  # nane, neene
+            ['adu', 'idu', 'udu'],  # adu, idu
+            
+            # === HINDI VERB ENDINGS ===
             ['ana', 'ena', 'ina', 'ona', 'una'],
             ['ata', 'eta', 'ita', 'ota', 'uta'],
             ['ara', 'era', 'ira', 'ora', 'ura'],
             ['aya', 'eya', 'iya', 'oya', 'uya'],
             ['ala', 'ela', 'ila', 'ola', 'ula'],
-            # Hindi specific
+            
+            # === HINDI NOUN ENDINGS ===
             ['ani', 'eni', 'ini', 'oni', 'uni'],
             ['ake', 'eke', 'ike', 'oke', 'uke'],
-            ['aam', 'eem', 'oom'],
+            ['aam', 'eem', 'oom', 'aam'],
             ['aan', 'een', 'oon', 'ain', 'ein'],
             ['aar', 'eer', 'oor', 'air', 'eir'],
-            # Kannada specific
-            ['adu', 'edu', 'idu', 'odu', 'udu'],
-            ['anu', 'enu', 'inu', 'onu', 'unu'],
-            ['agi', 'egi', 'igi', 'ogi', 'ugi'],
-            ['ali', 'eli', 'ili', 'oli', 'uli'],
-            # Common suffixes
+            
+            # === COMMON WORD PATTERNS ===
+            ['agi', 'ali', 'ari', 'ani'],
+            ['egi', 'eli', 'eri', 'eni'],
+            ['igi', 'ili', 'iri', 'ini'],
+            ['ogi', 'oli', 'ori', 'oni'],
+            ['ugi', 'uli', 'uri', 'uni'],
+            
+            # === EMOTION/ABSTRACT WORDS ===
+            ['eeti', 'eema', 'eeva'],  # preeti, prema, jeeva
+            ['osha', 'asha', 'isha'],  # santhosha, aase
+            ['ukha', 'akha', 'ikha'],  # dukha
+            
+            # === COMMON SUFFIXES ===
             ['wala', 'wali', 'waala', 'waali'],
             ['giri', 'dari', 'bazi', 'baazi'],
+            ['inda', 'enda', 'anda'],  # -inda suffix
+            ['alli', 'olli', 'elli'],  # -alli suffix
+            
+            # === SLANG/STREET PATTERNS ===
+            ['accha', 'iccha', 'uccha'],
+            ['alla', 'ella', 'illa', 'olla', 'ulla'],
+            ['amma', 'appa', 'anna', 'akka'],
         ]
         
         # Check English families first
@@ -268,6 +317,13 @@ class RhymeDetector:
             w1_match = any(w1.endswith(ending) for ending in family)
             w2_match = any(w2.endswith(ending) for ending in family)
             if w1_match and w2_match:
+                return True
+        
+        # === ADDITIONAL: Check if last 2 vowels match (Indian phonetic rhyme) ===
+        vowels_w1 = ''.join(c for c in w1 if c in 'aeiou')
+        vowels_w2 = ''.join(c for c in w2 if c in 'aeiou')
+        if len(vowels_w1) >= 2 and len(vowels_w2) >= 2:
+            if vowels_w1[-2:] == vowels_w2[-2:]:
                 return True
         
         return False

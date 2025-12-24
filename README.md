@@ -33,8 +33,16 @@
 - **Stress Pattern Visualization**: Visual dots (●○) show the rhythmic stress of your lyrics (stressed vs unstressed).
 - **Rhyme Density Heatmap**: Visual glow (Red → Orange → Green) highlighting the technical complexity of your verses.
 - **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis.
-- **Hindi/Kannada Support**: Write in romanized Hindi or Kannada (typed in English like "Mera naam hai") - syllable counting and rhyme detection fully supported!
-- **Slang Heuristic Engine**: Intelligently handles modern slang ("thicc", "vibez") phonetic analysis.
+- **Ultra-Detailed Thesaurus**: Right-click *any* word for 6-layer analysis:
+  - **Formal**: Standard English synonyms/antonyms
+  - **Slang**: 50+ street/hip-hop terms ("money" → "guap", "racks")
+  - **Emotional**: 4-level intensity spectrum ("sad" → "devastated")
+  - **Indian**: 200+ Hindi/Kannada words
+  - **AI Fallback**: Auto-generates suggestions for unknown words
+- **Hindi/Kannada Engine**: Full romanized support:
+  - **Syllable Counting**: Accurate counts for 150+ common words + phonetic heuristic.
+  - **Rhyme Finder**: Detects Kannada verb endings (*-odu*, *-ali*), pronouns (*naanu/neenu*), and Hindi patterns.
+  - **Vowel-Based Rhymes**: Phonetic matching for Indian languages (last 2 vowels).
 - **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
 - **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.
 
@@ -125,15 +133,22 @@ vibelyrics/
 │   │   ├── __init__.py
 │   │   ├── base.py         # Abstract base class for providers
 │   │   ├── gemini.py       # Google Gemini integration
-│   │   └── openai_prov.py  # OpenAI GPT-4 integration
+│   │   ├── openai_prov.py  # OpenAI GPT-4 integration
+│   │   └── elite_knowledge.py # Technique library & few-shot examples
 │   ├── analysis/           # Core algorithms for rhyme & rhythm analysis
 │   │   ├── __init__.py
 │   │   ├── audio_analyzer.py  # BPM detection using Librosa
 │   │   ├── bpm_calculator.py  # Rhyme pocket & timing logic
 │   │   ├── complexity_scorer.py # SSS, unique word count, diversity metrics
+│   │   ├── indian_rhyme_finder.py # Rhyme groups & pattern matching for IN langs
+│   │   ├── indian_thesaurus.py # Hindi/Kannada synonyms & antonyms
 │   │   ├── rhyme_detector.py # End rhymes, internal rhymes, & heatmap logic
 │   │   ├── rhyme_dictionary.py # CMU Dict based rhyme lookups
-│   │   └── syllable_counter.py # Syllable counting & stress patterns
+│   │   ├── syllable_counter.py # Syllable counting & stress patterns
+│   │   └── ultra_thesaurus.py # Unified engine (WordNet + Slang + Indian + AI)
+│   ├── learning/           # Adaptive learning inputs
+│   │   ├── correction_analyzer.py # Learns from user edits
+│   │   └── self_enhancer.py # Background learning thread
 │   ├── models/             # Flask-SQLAlchemy data models
 │   │   ├── __init__.py
 │   │   ├── lyrics.py       # LyricSession and LyricLine models

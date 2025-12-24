@@ -63,24 +63,78 @@ class SyllableCounter:
             # Slang/Hip-hop Hindi
             "bhai": 1, "yaar": 1, "dost": 1, "pagle": 2,
             "banda": 2, "bandi": 2, "scene": 1, "game": 1,
+            # More Hindi words
+            "zindagi": 3, "duniya": 3, "sapna": 2, "khwab": 1,
+            "ishq": 1, "mohabbat": 3, "chahat": 2, "nafrat": 2,
+            "jeet": 1, "haar": 1, "safar": 2, "manzil": 2,
+            "raasta": 2, "musafir": 3, "aasman": 3, "zameen": 2,
+            "sitara": 3, "chaand": 1, "suraj": 2, "roshni": 3,
+            "andhera": 3, "ujala": 3, "saath": 1, "akela": 3,
         }
         
-        # Common Kannada words (romanized)
+        # Common Kannada words (romanized) - MASSIVELY EXPANDED
         self.kannada_syllables = {
-            # Pronouns and basics
-            "naanu": 2, "ninna": 2, "avanu": 3, "avalu": 3,
-            "naavu": 2, "neevu": 2, "avaru": 3,
-            "idu": 2, "adu": 2, "yenu": 2, "yaaru": 2, "elli": 2,
-            # Common words
-            "ide": 2, "illa": 2, "beku": 2, "maadu": 2,
-            "hesaru": 3, "kelsa": 2, "bele": 2, "haadu": 2,
-            "dina": 2, "raatri": 2, "beligge": 3,
-            "preeti": 2, "prema": 2, "snehaa": 2,
-            "manasu": 3, "jeeva": 2, "jagat": 2, "bhoomi": 2,
-            "aakasha": 3, "nakshatra": 3, "chandra": 2,
-            "hana": 2, "belli": 2, "chinna": 2,
-            # Slang
-            "guru": 2, "maga": 2, "maccha": 2, "thala": 2,
+            # Pronouns
+            "naanu": 2, "nane": 2, "nanu": 2, "naane": 2,
+            "neenu": 2, "nee": 1, "neene": 2, "ninu": 2,
+            "avanu": 3, "avalu": 3, "avaru": 3,
+            "naavu": 2, "neevu": 2, "ivaru": 3,
+            "idu": 2, "adu": 2, "itu": 2, "atu": 2,
+            "yenu": 2, "yaaru": 2, "elli": 2, "yaake": 2,
+            "hege": 2, "yavaga": 3, "yaava": 2,
+            
+            # Common verbs
+            "maadu": 2, "maadi": 2, "maadona": 3,
+            "hogi": 2, "hogo": 2, "hogona": 3, "hogadu": 3,
+            "baa": 1, "baaro": 2, "barona": 3, "bandu": 2,
+            "nodi": 2, "nodona": 3, "nodadu": 3,
+            "helu": 2, "helona": 3, "heladu": 3,
+            "kodu": 2, "kodona": 3, "needu": 2,
+            "iru": 2, "irona": 3, "irali": 3, "iddey": 2,
+            "aagu": 2, "aagona": 3, "aagadu": 3,
+            "beku": 2, "bekagide": 4, "bekaaguttey": 5,
+            "illa": 2, "illave": 3, "ide": 2, "ittu": 2,
+            "haadu": 2, "haadona": 3, "haadadu": 3,
+            "aadu": 2, "aadona": 3, "aadadu": 3,
+            "odi": 2, "odona": 3, "bareyona": 4,
+            
+            # Nouns - People
+            "guru": 2, "maga": 2, "magalu": 3, "makalu": 3,
+            "appa": 2, "amma": 2, "anna": 2, "akka": 2,
+            "tamma": 2, "tangi": 2, "ajji": 2, "thatha": 2,
+            "huduga": 3, "hudugi": 3, "hennu": 2, "gandu": 2,
+            "snehita": 3, "geleya": 3, "thala": 2, "maccha": 2,
+            "shatru": 2, "vairi": 2, "nayaka": 3, "raja": 2,
+            "rani": 2, "devaru": 3, "devate": 3,
+            
+            # Nouns - Body
+            "manasu": 3, "hridaya": 3, "kannu": 2, "kanna": 2,
+            "kai": 1, "kaalu": 2, "tale": 2, "mukha": 2,
+            "moogu": 2, "baai": 1, "halla": 2, "kivi": 2,
+            
+            # Nouns - Nature
+            "dina": 2, "raatri": 2, "beligge": 3, "saanje": 2,
+            "aakasha": 3, "bhoomi": 2, "neeru": 2, "benki": 2,
+            "gaali": 2, "male": 2, "bisilu": 3, "chali": 2,
+            "chandra": 2, "surya": 2, "nakshatra": 3, "taare": 2,
+            "mara": 2, "hoovu": 2, "hanna": 2, "beru": 2,
+            
+            # Nouns - Abstract
+            "preeti": 2, "prema": 2, "snehaa": 2, "dvesha": 2,
+            "santhosha": 3, "dukha": 2, "kashta": 2, "novu": 2,
+            "kopaa": 2, "bhaya": 2, "aase": 2, "nambike": 3,
+            "jeeva": 2, "saavu": 2, "janma": 2, "karma": 2,
+            
+            # Adjectives
+            "olleya": 3, "chennagi": 3, "kettadu": 3, "ketta": 2,
+            "sundara": 3, "adbhuta": 3, "dodda": 2, "chikka": 2,
+            "hosa": 2, "haleyadu": 4, "bisi": 2, "thanda": 2,
+            "bhaari": 2, "halka": 2, "gantta": 2, "mella": 2,
+            
+            # Common expressions
+            "houdu": 2, "illa": 2, "sari": 2, "tumba": 2,
+            "yeshtu": 2, "yaavaga": 3, "innnu": 2, "matte": 2,
+            "ondu": 2, "eradu": 3, "mooru": 2, "naalku": 2,
         }
         
         # Merge all dictionaries
