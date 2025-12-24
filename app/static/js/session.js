@@ -102,6 +102,9 @@ socket.on('line_added', (data) => {
             }
             stressViz.innerHTML = renderStressPattern(data.stress_pattern);
         }
+
+        // Refresh flow visualization
+        refreshFlowViz();
     } else {
         // If no pending match found (e.g. from another user), append normally
         if (document.querySelector(`[data-line-id="${data.id}"]`)) return;
@@ -120,6 +123,9 @@ socket.on('line_added', (data) => {
         container.appendChild(lineRow);
         container.scrollTop = container.scrollHeight;
         updateLineNumber();
+
+        // Refresh flow visualization
+        refreshFlowViz();
     }
 });
 
@@ -893,3 +899,26 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// Refresh Flow Visualization with current line data
+function refreshFlowViz() {
+    // Check if viz exists (defined in session.html)
+    if (typeof viz === 'undefined' || !viz) return;
+
+    // Collect syllable data from all lines in DOM
+    const lineRows = document.querySelectorAll('.line-row');
+    const linesData = [];
+
+    lineRows.forEach(row => {
+        const sylSpan = row.querySelector('.syllable-count');
+        if (sylSpan) {
+            const sylText = sylSpan.textContent;
+            const match = sylText.match(/(\d+)/);
+            const syllable_count = match ? parseInt(match[1]) : 0;
+            linesData.push({ syllable_count });
+        }
+    });
+
+    viz.update(linesData);
+}
+

@@ -47,4 +47,13 @@ def create_app(config_class=Config):
     # Import socket events to register them
     from . import events
     
+    # Start background self-enhancement (learning even when idle)
+    try:
+        from .learning.self_enhancer import start_self_enhancement
+        start_self_enhancement()
+        print("[VibeLyrics] Background self-enhancement started ✨")
+    except Exception as e:
+        print(f"[VibeLyrics] Self-enhancement startup skipped: {e}")
+    
     return app
+
