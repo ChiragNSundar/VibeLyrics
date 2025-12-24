@@ -447,58 +447,182 @@ class RhymeDetector:
     
     def highlight_lyrics(self, lines: List[str]) -> List[str]:
         """
-        Takes a list of lyric lines and returns HTML strings with rhyming words highlighted.
-        Example: "I like <span class='rhyme-word rhyme-a'>cats</span>"
+        Ultra-detailed lyric highlighting. Detects and highlights:
+        - End rhymes (words at end of lines that rhyme with each other)
+        - Internal rhymes (words rhyming within the same line)
+        - Cross-line internal rhymes (words rhyming across different lines)
+        - Alliteration (consecutive words with same starting consonant)
+        - Assonance (repeated vowel sounds)
+        
+        Returns HTML strings with spans for each detected pattern.
         """
         if not lines:
             return []
-            
-        rhyme_groups = self.detect_end_rhymes(lines)
-        highlighted_lines = []
         
-        # Flatten groups to map line_index -> label
+        # Build comprehensive word data for all lines
+        all_word_data = []  # List of (line_idx, word_idx, word, start_pos, end_pos)
+        for line_idx, line in enumerate(lines):
+            words = self._extract_words(line)
+            # Find word positions in original line
+            pos = 0
+            for word_idx, word in enumerate(words):
+                # Find this word in line starting from pos
+                word_start = line.lower().find(word.lower(), pos)
+                if word_start == -1:
+                    continue
+                word_end = word_start + len(word)
+                all_word_data.append({
+                    'line_idx': line_idx,
+                    'word_idx': word_idx,
+                    'word': word,
+                    'original': line[word_start:word_end],  # Preserve case
+                    'start': word_start,
+                    'end': word_end,
+                    'classes': set()
+                })
+                pos = word_end
+        
+        # 1. Detect END RHYMES
+        rhyme_groups = self.detect_end_rhymes(lines)
         line_to_label = {}
         for label, indices in rhyme_groups.items():
-            for idx in indices:
-                line_to_label[idx] = label.lower() # rhyme-a, rhyme-b
-                
-        for i, line in enumerate(lines):
-            words = self._extract_words(line)
-            if not words:
+            if len(indices) > 1:  # Only highlight if there's actually a rhyme pair
+                for idx in indices:
+                    line_to_label[idx] = label.lower()
+        
+        # Mark end words with rhyme classes
+        for wd in all_word_data:
+            line_words = [w for w in all_word_data if w['line_idx'] == wd['line_idx']]
+            if line_words and wd == line_words[-1]:  # Last word
+                label = line_to_label.get(wd['line_idx'])
+                if label:
+                    wd['classes'].add(f'rhyme-word')
+                    wd['classes'].add(f'rhyme-{label}')
+        
+        # 2. Detect INTERNAL RHYMES (within same line)
+        for line_idx, line in enumerate(lines):
+            internal = self.detect_internal_rhymes(line)
+            line_words = [w for w in all_word_data if w['line_idx'] == line_idx]
+            
+            for w1, w2, pos1, pos2 in internal:
+                # Find matching word data entries
+                for wd in line_words:
+                    if wd['word'].lower() == w1.lower() or wd['word'].lower() == w2.lower():
+                        wd['classes'].add('internal-rhyme')
+        
+        # 3. Detect CROSS-LINE RHYMES (non-end words that rhyme across lines)
+        non_end_words = []
+        for wd in all_word_data:
+            line_words = [w for w in all_word_data if w['line_idx'] == wd['line_idx']]
+            if line_words and wd != line_words[-1]:
+                non_end_words.append(wd)
+        
+        for i, wd1 in enumerate(non_end_words):
+            for wd2 in non_end_words[i+1:]:
+                if wd1['line_idx'] != wd2['line_idx']:
+                    if self.words_rhyme(wd1['word'], wd2['word'], strict=False):
+                        wd1['classes'].add('cross-rhyme')
+                        wd2['classes'].add('cross-rhyme')
+        
+        # 4. Detect ALLITERATION (consecutive words with same starting sound)
+        for line_idx, line in enumerate(lines):
+            line_words = [w for w in all_word_data if w['line_idx'] == line_idx]
+            for i in range(len(line_words) - 1):
+                w1, w2 = line_words[i], line_words[i+1]
+                if self._same_starting_sound(w1['word'], w2['word']):
+                    w1['classes'].add('alliteration')
+                    w2['classes'].add('alliteration')
+        
+        # 5. Detect ASSONANCE (repeated vowel sounds in nearby words)
+        for line_idx, line in enumerate(lines):
+            line_words = [w for w in all_word_data if w['line_idx'] == line_idx]
+            vowel_groups = {}  # vowel_sound -> [word_data]
+            
+            for wd in line_words:
+                vowel = self._get_primary_vowel(wd['word'])
+                if vowel:
+                    if vowel not in vowel_groups:
+                        vowel_groups[vowel] = []
+                    vowel_groups[vowel].append(wd)
+            
+            # Mark words that share vowel sounds (3+ occurrences)
+            for vowel, word_list in vowel_groups.items():
+                if len(word_list) >= 2:
+                    for wd in word_list:
+                        wd['classes'].add('assonance')
+        
+        # Build highlighted HTML for each line
+        highlighted_lines = []
+        for line_idx, line in enumerate(lines):
+            line_words = sorted(
+                [w for w in all_word_data if w['line_idx'] == line_idx],
+                key=lambda x: x['start']
+            )
+            
+            if not line_words:
                 highlighted_lines.append(line)
                 continue
+            
+            # Build new line with spans
+            result = []
+            last_end = 0
+            
+            for wd in line_words:
+                # Add text before this word
+                if wd['start'] > last_end:
+                    result.append(line[last_end:wd['start']])
                 
-            label = line_to_label.get(i)
-            if label:
-                last_word = words[-1]
-                # Replace the LAST occurrence of the word to avoid false positives early in line
-                # This is a simple regex replacement which might be safer
-                pattern = re.compile(re.escape(last_word) + r"($|\W)", re.IGNORECASE)
-                
-                # Check for match at end of string
-                match = None
-                for m in pattern.finditer(line):
-                    match = m
-                
-                if match:
-                    # We have the last match, replace it
-                    start, end = match.span()
-                    # Keep the original casing from the line, but wrap it
-                    # Note: match includes the trailing boundary char if present
-                    original_text = line[start:end]
-                    # Separate word and punctuation
-                    word_part = original_text[:len(last_word)]
-                    punct_part = original_text[len(last_word):]
-                    
-                    replacement = f"<span class='rhyme-word rhyme-{label}'>{word_part}</span>{punct_part}"
-                    new_line = line[:start] + replacement + line[end:]
-                    highlighted_lines.append(new_line)
+                # Add the word with classes
+                if wd['classes']:
+                    classes = ' '.join(sorted(wd['classes']))
+                    result.append(f"<span class='{classes}'>{wd['original']}</span>")
                 else:
-                    highlighted_lines.append(line)
-            else:
-                highlighted_lines.append(line)
+                    result.append(wd['original'])
                 
+                last_end = wd['end']
+            
+            # Add remaining text after last word
+            if last_end < len(line):
+                result.append(line[last_end:])
+            
+            highlighted_lines.append(''.join(result))
+        
         return highlighted_lines
+    
+    def _same_starting_sound(self, word1: str, word2: str) -> bool:
+        """Check if two words start with the same consonant sound (alliteration)"""
+        if not word1 or not word2:
+            return False
+        
+        # Get pronunciations
+        pron1 = self.get_pronunciation(word1)
+        pron2 = self.get_pronunciation(word2)
+        
+        if pron1 and pron2:
+            # Get first consonant sound
+            first1 = pron1[0].split()[0] if pron1[0] else ''
+            first2 = pron2[0].split()[0] if pron2[0] else ''
+            # Ignore if starts with vowel
+            if first1 and first2 and not any(c.isdigit() for c in first1):
+                return first1 == first2
+        
+        # Fallback: first letter match (excluding vowels)
+        c1, c2 = word1[0].lower(), word2[0].lower()
+        if c1 not in 'aeiou' and c1 == c2:
+            return True
+        return False
+    
+    def _get_primary_vowel(self, word: str) -> Optional[str]:
+        """Get the primary stressed vowel sound of a word"""
+        prons = self.get_pronunciation(word)
+        if not prons:
+            return None
+        
+        phones = prons[0].split()
+        for phone in phones:
+            if '1' in phone:  # Primary stress
+                return ''.join(c for c in phone if c.isalpha())
+        return None
 
     def analyze_line(self, line: str, previous_lines: List[str] = None) -> Dict:
         """

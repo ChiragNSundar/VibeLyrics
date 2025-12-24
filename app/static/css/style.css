@@ -630,12 +630,34 @@ textarea.input {
 .internal-rhyme {
     text-decoration: underline;
     text-decoration-color: var(--accent-secondary);
+    text-decoration-style: wavy;
     text-underline-offset: 3px;
 }
 
-.alliteration-word {
+.cross-rhyme {
+    background: rgba(236, 72, 153, 0.15);
+    border-bottom: 2px dashed #f472b6;
+}
+
+.alliteration {
     font-style: italic;
-    color: var(--accent-primary);
+    color: var(--accent-warning);
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.assonance {
+    background: linear-gradient(to bottom, transparent 60%, rgba(6, 182, 212, 0.25) 60%);
+}
+
+/* Combination styles for words with multiple effects */
+.rhyme-word.internal-rhyme {
+    text-decoration: underline;
+    text-decoration-style: wavy;
+}
+
+.alliteration.assonance {
+    font-style: italic;
+    background: linear-gradient(to bottom, transparent 60%, rgba(245, 158, 11, 0.25) 60%);
 }
 
 /* Input Area */
