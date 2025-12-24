@@ -960,3 +960,146 @@ def analyze_imagery():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# =============================================================================
+# ADAPTIVE LEARNING ENDPOINTS
+# =============================================================================
+
+@api_bp.route('/suggestion/rate', methods=['POST'])
+def rate_suggestion():
+    """
+    Rate an AI suggestion (thumbs up/down) to train the model on preferences.
+    """
+    try:
+        data = request.json
+        suggestion_text = data.get('suggestion', '')
+        rating = data.get('rating', 0)  # 1 = good, -1 = bad
+        reason = data.get('reason', '')  # e.g., "too_simple", "off_topic", "wrong_rhyme"
+        
+        if not suggestion_text or rating == 0:
+            return jsonify({"success": False, "error": "Missing suggestion or rating"}), 400
+        
+        profile = UserProfile.get_or_create_default()
+        style_data = profile.style_profile_data or {}
+        
+        # Initialize feedback history
+        if "feedback_history" not in style_data:
+            style_data["feedback_history"] = []
+        
+        # Store feedback
+        from datetime import datetime
+        style_data["feedback_history"].append({
+            "suggestion": suggestion_text[:200],  # Truncate for storage
+            "rating": rating,
+            "reason": reason,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Keep last 100 feedback items
+        style_data["feedback_history"] = style_data["feedback_history"][-100:]
+        
+        # Update avoided patterns based on negative feedback
+        if rating == -1 and reason:
+            if "negative_patterns" not in style_data:
+                style_data["negative_patterns"] = []
+            style_data["negative_patterns"].append(reason)
+            style_data["negative_patterns"] = list(set(style_data["negative_patterns"]))[-20:]
+        
+        profile.style_profile_data = style_data
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Feedback recorded. AI will adapt."
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/correction/track', methods=['POST'])
+def track_correction():
+    """
+    Track when user corrects an AI suggestion.
+    The difference between suggestion and final version teaches the model.
+    """
+    try:
+        from app.learning import get_correction_analyzer
+        
+        data = request.json
+        ai_suggestion = data.get('ai_suggestion', '')
+        final_version = data.get('final_version', '')
+        line_id = data.get('line_id')
+        
+        if not ai_suggestion or not final_version:
+            return jsonify({"success": False, "error": "Need both suggestion and final version"}), 400
+        
+        # Skip if no real correction was made
+        if ai_suggestion.strip().lower() == final_version.strip().lower():
+            return jsonify({"success": True, "message": "No correction detected"})
+        
+        # Analyze the correction
+        analyzer = get_correction_analyzer()
+        analysis = analyzer.analyze_correction(ai_suggestion, final_version)
+        
+        # Store in user profile
+        profile = UserProfile.get_or_create_default()
+        style_data = profile.style_profile_data or {}
+        
+        if "correction_history" not in style_data:
+            style_data["correction_history"] = []
+        
+        style_data["correction_history"].append(analysis)
+        
+        # Keep last 50 corrections
+        style_data["correction_history"] = style_data["correction_history"][-50:]
+        
+        profile.style_profile_data = style_data
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "analysis": analysis,
+            "message": "Correction learned. AI will adapt."
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route('/learning/status', methods=['GET'])
+def get_learning_status():
+    """
+    Get the current learning status - what the AI has learned from the user.
+    """
+    try:
+        from app.learning import get_correction_analyzer
+        
+        profile = UserProfile.get_or_create_default()
+        style_data = profile.style_profile_data or {}
+        
+        corrections = style_data.get("correction_history", [])
+        feedback = style_data.get("feedback_history", [])
+        
+        # Aggregate learnings
+        analyzer = get_correction_analyzer()
+        aggregated = analyzer.aggregate_learnings(corrections) if corrections else {}
+        
+        # Count feedback
+        positive_count = len([f for f in feedback if f.get("rating") == 1])
+        negative_count = len([f for f in feedback if f.get("rating") == -1])
+        
+        return jsonify({
+            "success": True,
+            "learning_stats": {
+                "corrections_analyzed": len(corrections),
+                "positive_feedback": positive_count,
+                "negative_feedback": negative_count,
+                "learned_preferences": aggregated.get("preferences", []),
+                "avoided_words": aggregated.get("avoided_words", []),
+                "preferred_words": aggregated.get("preferred_words", []),
+                "negative_patterns": style_data.get("negative_patterns", [])
+            }
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
