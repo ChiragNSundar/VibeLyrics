@@ -28,10 +28,13 @@
                 <option value="perplexity" {% if profile.preferred_provider=='perplexity' %}selected{% endif %}>
                     Perplexity</option>
             </select>
-            <div class="export-dropdown" style="position:relative;">
-                <button class="btn btn-secondary" onclick="toggleExportMenu()">📄 Export ▾</button>
-                <div id="export-menu" class="dropdown-menu"
-                    style="display:none; position:absolute; right:0; top:100%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; min-width:180px; z-index:100; margin-top:4px;">
+            <div class="export-dropdown" style="position:relative;" x-data="{ open: false }">
+                <button class="btn btn-secondary" @click="open = !open">📄 Export ▾</button>
+                <div id="export-menu" class="dropdown-menu" x-show="open" @click.outside="open = false"
+                    x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
+                    x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                    style="position:absolute; right:0; top:100%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; min-width:180px; z-index:100; margin-top:4px;">
                     <a href="{{ url_for('export.export_txt', session_id=session.id) }}" class="dropdown-item"
                         style="display:block; padding:0.75rem 1rem; color:var(--text-primary); text-decoration:none;">📝
                         Plain Text (.txt)</a>
@@ -56,24 +59,23 @@
 
     <!-- Waveform Audio Player -->
     {% if session.audio_path %}
-    <div class="waveform-player-container"
-        style="background:var(--bg-card); border-bottom:1px solid var(--border-color); padding:1rem;">
-        <div id="waveform-container" style="width:100%; height:80px; margin-bottom:0.5rem;"></div>
-        <div class="waveform-controls" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <div class="waveform-player-container">
+        <div id="waveform-container"></div>
+        <div class="waveform-controls">
             <button class="btn btn-primary small" onclick="waveformPlayer.playPause()" id="play-btn">▶️ Play</button>
-            <span id="waveform-time" style="font-family:monospace; color:var(--text-secondary);">0:00 / 0:00</span>
-            <div class="loop-controls" style="display:flex; gap:0.5rem; align-items:center;">
+            <span id="waveform-time">0:00 / 0:00</span>
+            <div class="loop-controls">
                 <button class="btn btn-secondary small" onclick="waveformPlayer.setLoopStart()"
                     title="Set loop start">🅰️</button>
                 <button class="btn btn-secondary small" onclick="waveformPlayer.setLoopEnd()"
                     title="Set loop end">🅱️</button>
                 <button class="btn btn-secondary small" onclick="waveformPlayer.clearLoop()"
                     title="Clear loop">❌</button>
-                <span id="loop-info" style="font-size:0.85rem; color:var(--accent-primary);"></span>
+                <span id="loop-info"></span>
             </div>
-            <div class="speed-controls" style="display:flex; align-items:center; gap:0.5rem;">
-                <label style="font-size:0.85rem; color:var(--text-secondary);">Speed:</label>
-                <select id="speed-select" class="input small" style="width:auto;"
+            <div class="speed-controls">
+                <label>Speed:</label>
+                <select id="speed-select" class="input small"
                     onchange="waveformPlayer.setSpeed(parseFloat(this.value))">
                     <option value="0.5">0.5x</option>
                     <option value="0.75">0.75x</option>
@@ -87,15 +89,14 @@
     {% endif %}
 
     <!-- Flow Visualization -->
-    <div class="flow-viz-container"
-        style="background:var(--bg-card); border-bottom:1px solid var(--border-color); height:100px; width:100%; position:relative;">
-        <canvas id="flow-canvas" style="width:100%; height:100%; display:block;"></canvas>
+    <div class="flow-viz-container">
+        <canvas id="flow-canvas"></canvas>
     </div>
 
     <!-- Main Writing Area -->
     <div class="writing-area" id="writing-area">
         <!-- Reference Panel (Split View) -->
-        <div class="reference-panel" id="reference-panel" style="display:none;">
+        <div class="reference-panel" id="reference-panel">
             <div class="reference-header">
                 <h3>📚 Reference</h3>
                 <div class="reference-controls">
@@ -108,8 +109,7 @@
             <div class="reference-content" id="reference-content">
                 <p class="placeholder-text">Select a reference to view lyrics side-by-side while you write.</p>
             </div>
-            <div class="reference-actions"
-                style="padding:0.5rem; border-top:1px solid var(--border-color); display:none;" id="reference-actions">
+            <div class="reference-actions" id="reference-actions">
                 <button class="btn btn-secondary small" onclick="copyRhymeWord()">Copy Rhyme</button>
             </div>
         </div>
@@ -163,7 +163,7 @@
 
             <!-- Input Area -->
             <div class="input-area">
-                <div class="section-controls" style="margin-bottom:0.5rem; display:flex; gap:0.5rem;">
+                <div class="section-controls">
                     <select id="section-select" class="input small" style="width:auto;">
                         <option value="Verse">Verse</option>
                         <option value="Chorus">Chorus</option>
@@ -190,424 +190,371 @@
             </div>
         </div>
 
-        <!-- AI Panel (collapsible) -->
-        <div class="ai-panel" id="ai-panel">
-            <div class="ai-header" style="padding-bottom: 0;">
-                <div class="sidebar-tabs"
-                    style="display:flex; gap:10px; border-bottom:1px solid var(--border-color); width:100%;">
-                    <button class="tab-btn active" onclick="switchSidebarTab('ai')"
-                        style="background:none; border:none; color:var(--text-primary); padding:10px; border-bottom:2px solid var(--accent-primary); cursor:pointer;">🤖
-                        AI Tools</button>
-                    <button class="tab-btn" onclick="switchSidebarTab('rhymewave')"
-                        style="background:none; border:none; color:var(--text-secondary); padding:10px; cursor:pointer;">🌊
-                        RhymeWave</button>
-                    <button class="btn-icon" onclick="toggleAIPanel()" style="margin-left:auto;">✕</button>
+        <!-- AI Panel (collapsible) - Alpine.js managed -->
+        <div class="ai-panel" id="ai-panel" x-data="sidebarPanel" :class="{ 'active': $store.aiPanel.open }">
+            <div class="ai-header">
+                <div class="sidebar-tabs">
+                    <button class="tab-btn" :class="{ 'active': activeTab === 'ai' }" @click="activeTab = 'ai'">🤖 AI
+                        Coach</button>
+                    <button class="tab-btn" :class="{ 'active': activeTab === 'rhymewave' }"
+                        @click="activeTab = 'rhymewave'">🌊 RhymeWave</button>
+                </div>
+                <!-- Controls -->
+                <div class="ai-panel-controls">
+                    <button class="btn-icon" @click="$store.aiPanel.toggle()">✕</button>
                 </div>
             </div>
 
-            <div class="sidebar-content-wrapper" style="height: calc(100% - 50px); overflow-y: auto;">
-                <!-- AI Tools Tab -->
-                <div id="tab-ai" class="sidebar-tab-content">
-                    <div class="ai-content">
-                        <!-- Suggestion Area -->
-                        <div class="ai-section" id="suggestion-section">
-                            <h4>Suggestions</h4>
-                            <div class="suggestions-list" id="suggestions-list">
-                                <p class="placeholder-text">Write a line and click "Suggest" to get AI suggestions for
-                                    the next bar.</p>
-                            </div>
-                        </div>
-
-                        <!-- Improvement Area -->
-                        <div class="ai-section" id="improvement-section">
-                            <h4>Improve Line</h4>
-                            <div class="improvement-types">
-                                <button class="chip" data-type="rhyme" onclick="setImprovementType('rhyme')">🎯
-                                    Rhyme</button>
-                                <button class="chip" data-type="flow" onclick="setImprovementType('flow')">🌊
-                                    Flow</button>
-                                <button class="chip" data-type="wordplay" onclick="setImprovementType('wordplay')">🧠
-                                    Wordplay</button>
-                                <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎
-                                    Depth</button>
-                            </div>
-                            <div class="improvement-result" id="improvement-result"></div>
-                        </div>
-
-                        <!-- Ask AI -->
-                        <div class="ai-section">
-                            <h4>Ask AI</h4>
-                            <div class="ask-input-row">
-                                <input type="text" id="ask-input" class="input"
-                                    placeholder="Ask about rhymes, flow, technique...">
-                                <button class="btn btn-primary" onclick="askAI()">Ask</button>
-                            </div>
-                            <div class="ask-response" id="ask-response"></div>
-                        </div>
-
-                        <!-- Word Lookup Panel -->
-                        <div class="ai-section" id="lookup-section">
-                            <h4>📚 Word Lookup</h4>
-                            <div id="lookup-word-header"
-                                style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
-                            <div id="lookup-results" style="max-height:200px; overflow-y:auto;">
-                                <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or
-                                    synonyms.</p>
-                            </div>
-                        </div>
-                    </div>
+            <div class="ai-content">
+                <!-- AI Coach Tab -->
+                <div id="tab-ai" class="sidebar-tab-content" x-show="activeTab === 'ai'">
+                    Wordplay</button>
+                    <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎
+                        Depth</button>
                 </div>
+                <div class="improvement-result" id="improvement-result"></div>
+            </div>
 
-                <!-- RhymeWave Tab -->
-                <div id="tab-rhymewave" class="sidebar-tab-content" style="display:none; height:100%;">
-                    <iframe src="https://rhymewave.com"
-                        style="width:100%; height:100%; border:none; background:white;"></iframe>
+            <!-- Ask AI -->
+            <div class="ai-section">
+                <h4>Ask AI</h4>
+                <div class="ask-input-row">
+                    <input type="text" id="ask-input" class="input" placeholder="Ask about rhymes, flow, technique...">
+                    <button class="btn btn-primary" onclick="askAI()">Ask</button>
+                </div>
+                <div class="ask-response" id="ask-response"></div>
+            </div>
+
+            <!-- Word Lookup Panel -->
+            <div class="ai-section" id="lookup-section">
+                <h4>📚 Word Lookup</h4>
+                <div id="lookup-word-header"
+                    style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
+                <div id="lookup-results" style="max-height:200px; overflow-y:auto;">
+                    <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or
+                        synonyms.</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Power Tools Context Menu -->
-        <div id="context-menu" class="context-menu"
-            style="display:none; position:absolute; z-index:1000; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); width:200px;">
-            <ul style="list-style:none; padding:0; margin:0;">
-                <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('rhyme')">🔍 Find Rhymes</li>
-                <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('synonym')">🔁 Synonyms</li>
-            </ul>
-        </div>
-
-        <!-- Analysis Modal -->
-        <div class="modal" id="analysis-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>📊 Session Analysis</h2>
-                    <button class="btn-icon" onclick="closeModal('analysis-modal')">✕</button>
-                </div>
-                <div class="modal-body" id="analysis-content">
-                    Loading...
-                </div>
+            <!-- RhymeWave Tab -->
+            <div id="tab-rhymewave" class="sidebar-tab-content" x-show="activeTab === 'rhymewave'" style="height:100%;">
+                <!-- Lazy-load: only set src when tab is active -->
+                <iframe :src="activeTab === 'rhymewave' ? 'https://rhymewave.com' : ''"
+                    style="width:100%; height:100%; border:none; background:white;"></iframe>
             </div>
         </div>
     </div>
+</div>
+</div>
+</div>
 
-    <div id="session-data" data-session-id="{{ session.id }}" data-bpm="{{ session.bpm }}" style="display:none;"></div>
-    <script>
-        const sessionData = document.getElementById('session-data');
-        const SESSION_ID = parseInt(sessionData.dataset.sessionId);
-        const BPM = parseInt(sessionData.dataset.bpm);
-        let currentImprovementType = 'rhyme';
-        let currentLineToImprove = null;
-        let selectedWord = "";
+<!-- Power Tools Context Menu -->
+<div id="context-menu" class="context-menu"
+    style="display:none; position:absolute; z-index:1000; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); width:200px;">
+    <ul style="list-style:none; padding:0; margin:0;">
+        <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('rhyme')">🔍 Find Rhymes</li>
+        <li style="padding:0.5rem 1rem; cursor:pointer;" onclick="lookupWord('synonym')">🔁 Synonyms</li>
+    </ul>
+</div>
 
-        function switchSidebarTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.sidebar-tab-content').forEach(el => el.style.display = 'none');
-            // Deactivate all buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.borderBottom = 'none';
-                btn.style.color = 'var(--text-secondary)';
-            });
+<!-- Analysis Modal -->
+<div class="modal" id="analysis-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📊 Session Analysis</h2>
+            <button class="btn-icon" onclick="closeModal('analysis-modal')">✕</button>
+        </div>
+        <div class="modal-body" id="analysis-content">
+            Loading...
+        </div>
+    </div>
+</div>
+</div>
 
-            // Show selected tab
-            document.getElementById('tab-' + tabName).style.display = 'block';
+<div id="session-data" data-session-id="{{ session.id }}" data-bpm="{{ session.bpm }}" style="display:none;"></div>
+<script>
+    const sessionData = document.getElementById('session-data');
+    const SESSION_ID = parseInt(sessionData.dataset.sessionId);
+    const BPM = parseInt(sessionData.dataset.bpm);
+    let currentImprovementType = 'rhyme';
+    let currentLineToImprove = null;
+    let selectedWord = "";
 
-            // Activate button
-            const activeBtn = document.querySelector(`.tab-btn[onclick="switchSidebarTab('${tabName}')"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-                activeBtn.style.borderBottom = '2px solid var(--accent-primary)';
-                activeBtn.style.color = 'var(--text-primary)';
-            }
-        }
-
-        function openAIHelp() {
-            const aiPanel = document.getElementById('ai-panel');
-            const aiTab = document.getElementById('tab-ai');
-            const isVisible = aiPanel.classList.contains('active');
-            // Check if AI tab is currently visible (checking display style of the *content* or button state)
-            // But switchSidebarTab 'ai' sets tab-ai to block.
-            const isAIActive = aiTab.style.display !== 'none';
-
-            if (isVisible && isAIActive) {
-                // If already open and on AI Tools, close it
-                aiPanel.classList.remove('active');
-            } else {
-                // Otherwise open and switch to AI Tools
-                if (!isVisible) aiPanel.classList.add('active');
-                switchSidebarTab('ai');
-            }
-        }
-
-        function openRhymeWave() {
-            const aiPanel = document.getElementById('ai-panel');
-            const rhymewaveTab = document.getElementById('tab-rhymewave');
-            const isVisible = aiPanel.classList.contains('active');
-            const isRhymewaveActive = rhymewaveTab.style.display !== 'none';
-
-            if (isVisible && isRhymewaveActive) {
-                // If already open and on RhymeWave, close it
-                aiPanel.classList.remove('active');
-            } else {
-                // Otherwise open and switch to RhymeWave
-                if (!isVisible) aiPanel.classList.add('active');
-                switchSidebarTab('rhymewave');
-            }
-        }
-
-        function handleWordRightClick(e) {
-            e.preventDefault();
-            const selection = window.getSelection();
-            selectedWord = selection.toString().trim();
-            if (!selectedWord) return;
-
-            const menu = document.getElementById('context-menu');
-            menu.style.display = 'block';
-            menu.style.left = e.pageX + 'px';
-            menu.style.top = e.pageY + 'px';
-        }
-
-        document.addEventListener('click', () => {
-            document.getElementById('context-menu').style.display = 'none';
+    // Alpine.js Store for AI Panel state (global access)
+    document.addEventListener('alpine:init', () => {
+        Alpine.store('aiPanel', {
+            open: false,
+            toggle() { this.open = !this.open; }
         });
+    });
 
-        async function lookupWord(type) {
-            if (!selectedWord) return;
+    // Legacy function wrappers for button onclick handlers
+    function openAIHelp() {
+        const panel = document.getElementById('ai-panel');
+        const component = Alpine.$data(panel);
+        if (Alpine.store('aiPanel').open && component.activeTab === 'ai') {
+            Alpine.store('aiPanel').open = false;
+        } else {
+            Alpine.store('aiPanel').open = true;
+            component.activeTab = 'ai';
+        }
+    }
 
-            // Show AI panel if hidden
-            const aiPanel = document.getElementById('ai-panel');
-            if (!aiPanel.classList.contains('active')) {
-                aiPanel.classList.add('active');
-            }
+    function openRhymeWave() {
+        const panel = document.getElementById('ai-panel');
+        const component = Alpine.$data(panel);
+        if (Alpine.store('aiPanel').open && component.activeTab === 'rhymewave') {
+            Alpine.store('aiPanel').open = false;
+        } else {
+            Alpine.store('aiPanel').open = true;
+            component.activeTab = 'rhymewave';
+        }
+    }
 
-            // Update lookup header
-            const header = document.getElementById('lookup-word-header');
-            header.textContent = `${type === 'rhyme' ? '🎯 Rhymes' : '🔁 Synonyms'} for "${selectedWord}"`;
+    // toggleAIPanel kept for backwards compatibility
+    function toggleAIPanel() {
+        Alpine.store('aiPanel').toggle();
+    }
 
-            // Fetch results
-            const res = await fetch(`/api/tools/lookup?word=${encodeURIComponent(selectedWord)}&type=${type}`);
-            const data = await res.json();
+    function handleWordRightClick(e) {
+        e.preventDefault();
+        const selection = window.getSelection();
+        selectedWord = selection.toString().trim();
+        if (!selectedWord) return;
 
-            // Display in panel
-            const resultsDiv = document.getElementById('lookup-results');
-            let html = '';
+        const menu = document.getElementById('context-menu');
+        menu.style.display = 'block';
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+    }
 
-            if (type === 'rhyme') {
-                const rhymes = data.results?.perfect || data.results || [];
-                if (rhymes.length > 0) {
-                    html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+    document.addEventListener('click', () => {
+        document.getElementById('context-menu').style.display = 'none';
+    });
+
+    async function lookupWord(type) {
+        if (!selectedWord) return;
+
+        // Show AI panel using Alpine store
+        Alpine.store('aiPanel').open = true;
+
+        // Update lookup header
+        const header = document.getElementById('lookup-word-header');
+        header.textContent = `${type === 'rhyme' ? '🎯 Rhymes' : '🔁 Synonyms'} for "${selectedWord}"`;
+
+        // Fetch results
+        const res = await fetch(`/api/tools/lookup?word=${encodeURIComponent(selectedWord)}&type=${type}`);
+        const data = await res.json();
+
+        // Display in panel
+        const resultsDiv = document.getElementById('lookup-results');
+        let html = '';
+
+        if (type === 'rhyme') {
+            const rhymes = data.results?.perfect || data.results || [];
+            if (rhymes.length > 0) {
+                html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                     ${rhymes.slice(0, 20).map(r => `<span class="chip" style="cursor:pointer;" onclick="insertWord('${r}')">${r}</span>`).join('')}
                 </div>`;
-                } else {
-                    html = '<p style="color:var(--text-secondary);">No rhymes found.</p>';
-                }
             } else {
-                const synonyms = data.results?.synonyms || data.results || [];
-                if (synonyms.length > 0) {
-                    html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                html = '<p style="color:var(--text-secondary);">No rhymes found.</p>';
+            }
+        } else {
+            const synonyms = data.results?.synonyms || data.results || [];
+            if (synonyms.length > 0) {
+                html = `<div class="lookup-tags" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                     ${synonyms.slice(0, 20).map(s => `<span class="chip" style="cursor:pointer;" onclick="insertWord('${s}')">${s}</span>`).join('')}
                 </div>`;
-                } else {
-                    html = '<p style="color:var(--text-secondary);">No synonyms found.</p>';
-                }
-            }
-
-            resultsDiv.innerHTML = html;
-        }
-
-        function insertWord(word) {
-            const input = document.getElementById('new-line-input');
-            if (input) {
-                input.value += (input.value ? ' ' : '') + word;
-                input.focus();
-            }
-        }
-
-        function toggleExportMenu() {
-            const menu = document.getElementById('export-menu');
-            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Close export menu when clicking elsewhere
-        document.addEventListener('click', function (e) {
-            const exportDropdown = document.querySelector('.export-dropdown');
-            const menu = document.getElementById('export-menu');
-            if (exportDropdown && menu && !exportDropdown.contains(e.target)) {
-                menu.style.display = 'none';
-            }
-        });
-
-        // ============================================
-        // SPLIT VIEW MODE
-        // ============================================
-        let splitViewActive = false;
-
-        function toggleSplitView() {
-            splitViewActive = !splitViewActive;
-            const panel = document.getElementById('reference-panel');
-            const writingArea = document.getElementById('writing-area');
-            const toggle = document.getElementById('split-toggle');
-
-            if (splitViewActive) {
-                panel.style.display = 'flex';
-                writingArea.classList.add('split-mode');
-                toggle.classList.add('active');
-                loadReferenceOptions();
             } else {
-                panel.style.display = 'none';
-                writingArea.classList.remove('split-mode');
-                toggle.classList.remove('active');
+                html = '<p style="color:var(--text-secondary);">No synonyms found.</p>';
             }
         }
 
-        async function loadReferenceOptions() {
-            const select = document.getElementById('reference-select');
+        resultsDiv.innerHTML = html;
+    }
 
+    function insertWord(word) {
+        const input = document.getElementById('new-line-input');
+        if (input) {
+            input.value += (input.value ? ' ' : '') + word;
+            input.focus();
+        }
+    }
+
+    // Export menu now handled by Alpine.js x-data and @click.outside
+
+    // ============================================
+    // SPLIT VIEW MODE
+    // ============================================
+    let splitViewActive = false;
+
+    function toggleSplitView() {
+        splitViewActive = !splitViewActive;
+        const panel = document.getElementById('reference-panel');
+        const writingArea = document.getElementById('writing-area');
+        const toggle = document.getElementById('split-toggle');
+
+        if (splitViewActive) {
+            panel.style.display = 'flex';
+            writingArea.classList.add('split-mode');
+            toggle.classList.add('active');
+            loadReferenceOptions();
+        } else {
+            panel.style.display = 'none';
+            writingArea.classList.remove('split-mode');
+            toggle.classList.remove('active');
+        }
+    }
+
+    async function loadReferenceOptions() {
+        const select = document.getElementById('reference-select');
+
+        try {
+            // Load saved sessions as references
+            const res = await fetch('/api/sessions');
+            if (res.ok) {
+                const data = await res.json();
+                const sessions = data.sessions || [];
+
+                // Clear existing options
+                select.innerHTML = '<option value="">Select reference...</option>';
+
+                sessions.forEach(s => {
+                    if (s.id !== SESSION_ID) {
+                        const opt = document.createElement('option');
+                        opt.value = `session:${s.id}`;
+                        opt.textContent = `📝 ${s.title}`;
+                        select.appendChild(opt);
+                    }
+                });
+            }
+        } catch (e) {
+            console.log('Could not load references:', e);
+        }
+    }
+
+    async function loadReference(value) {
+        const content = document.getElementById('reference-content');
+        const actions = document.getElementById('reference-actions');
+
+        if (!value) {
+            content.innerHTML = '<p class="placeholder-text">Select a reference to view lyrics side-by-side.</p>';
+            actions.style.display = 'none';
+            return;
+        }
+
+        const [type, id] = value.split(':');
+
+        if (type === 'session') {
             try {
-                // Load saved sessions as references
-                const res = await fetch('/api/sessions');
-                if (res.ok) {
-                    const data = await res.json();
-                    const sessions = data.sessions || [];
-
-                    // Clear existing options
-                    select.innerHTML = '<option value="">Select reference...</option>';
-
-                    sessions.forEach(s => {
-                        if (s.id !== SESSION_ID) {
-                            const opt = document.createElement('option');
-                            opt.value = `session:${s.id}`;
-                            opt.textContent = `📝 ${s.title}`;
-                            select.appendChild(opt);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.log('Could not load references:', e);
-            }
-        }
-
-        async function loadReference(value) {
-            const content = document.getElementById('reference-content');
-            const actions = document.getElementById('reference-actions');
-
-            if (!value) {
-                content.innerHTML = '<p class="placeholder-text">Select a reference to view lyrics side-by-side.</p>';
-                actions.style.display = 'none';
-                return;
-            }
-
-            const [type, id] = value.split(':');
-
-            if (type === 'session') {
-                try {
-                    const res = await fetch(`/export/${id}/json`);
-                    const data = await res.json();
-
-                    let html = `<div class="reference-title">${data.title}</div>`;
-                    html += '<div class="reference-lines">';
-
-                    let currentSection = '';
-                    data.lines.forEach(line => {
-                        if (line.section !== currentSection) {
-                            currentSection = line.section;
-                            html += `<div class="ref-section">[${currentSection}]</div>`;
-                        }
-                        html += `<div class="ref-line" onclick="copyToInput('${line.text.replace(/'/g, "\\'")}')">${line.text}</div>`;
-                    });
-
-                    html += '</div>';
-                    content.innerHTML = html;
-                    actions.style.display = 'block';
-                } catch (e) {
-                    content.innerHTML = '<p class="error">Failed to load reference.</p>';
-                }
-            }
-        }
-
-        function copyToInput(text) {
-            const input = document.getElementById('new-line-input');
-            if (input) {
-                input.value = text;
-                input.focus();
-                showToast('Line copied to input', 'success');
-            }
-        }
-
-        // ============================================
-        // STYLE SELECTOR
-        // ============================================
-        let currentStyle = '';
-
-        async function loadStyleOptions() {
-            try {
-                const res = await fetch('/api/styles');
+                const res = await fetch(`/export/${id}/json`);
                 const data = await res.json();
 
-                if (data.success) {
-                    const container = document.getElementById('style-selector');
-                    if (container) {
-                        let html = '<option value="">Your Style</option>';
-                        for (const [key, style] of Object.entries(data.styles)) {
-                            html += `<option value="${key}">${style.icon} ${style.name}</option>`;
-                        }
-                        container.innerHTML = html;
+                let html = `<div class="reference-title">${data.title}</div>`;
+                html += '<div class="reference-lines">';
+
+                let currentSection = '';
+                data.lines.forEach(line => {
+                    if (line.section !== currentSection) {
+                        currentSection = line.section;
+                        html += `<div class="ref-section">[${currentSection}]</div>`;
                     }
-                }
+                    html += `<div class="ref-line" onclick="copyToInput('${line.text.replace(/'/g, "\\'")}')">${line.text}</div>`;
+                });
+
+                html += '</div>';
+                content.innerHTML = html;
+                actions.style.display = 'block';
             } catch (e) {
-                console.log('Could not load styles');
+                content.innerHTML = '<p class="error">Failed to load reference.</p>';
             }
         }
+    }
 
-        function setStyle(styleKey) {
-            currentStyle = styleKey;
-            showToast(styleKey ? `Style: ${styleKey}` : 'Using your style', 'info');
+    function copyToInput(text) {
+        const input = document.getElementById('new-line-input');
+        if (input) {
+            input.value = text;
+            input.focus();
+            showToast('Line copied to input', 'success');
         }
+    }
 
-        // Load styles on page load
-        document.addEventListener('DOMContentLoaded', loadStyleOptions);
+    // ============================================
+    // STYLE SELECTOR
+    // ============================================
+    let currentStyle = '';
 
-        async function uploadAudio(input) {
-            if (!input.files[0]) return;
-            const formData = new FormData();
-            formData.append('audio_file', input.files[0]);
-
-            const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
-                method: 'POST',
-                body: formData
-            });
+    async function loadStyleOptions() {
+        try {
+            const res = await fetch('/api/styles');
             const data = await res.json();
+
             if (data.success) {
-                if (data.detected_bpm > 0) {
-                    alert(`Beat uploaded! Auto-detected BPM: ${data.detected_bpm}`);
+                const container = document.getElementById('style-selector');
+                if (container) {
+                    let html = '<option value="">Your Style</option>';
+                    for (const [key, style] of Object.entries(data.styles)) {
+                        html += `<option value="${key}">${style.icon} ${style.name}</option>`;
+                    }
+                    container.innerHTML = html;
                 }
-                location.reload();
             }
+        } catch (e) {
+            console.log('Could not load styles');
         }
-    </script>
-    {% endblock %}
+    }
 
-    {% block extra_js %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="https://unpkg.com/wavesurfer.js@7"></script>
-    <script src="{{ url_for('static', filename='js/waveform_player.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/flow_viz.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/session.js') }}"></script>
-    <script>
-        // Init Flow Viz
-        const viz = new FlowVisualizer('flow-canvas');
-        const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
-        viz.update(linesData);
+    function setStyle(styleKey) {
+        currentStyle = styleKey;
+        showToast(styleKey ? `Style: ${styleKey}` : 'Using your style', 'info');
+    }
 
-        // Init Waveform Player if audio exists
-        {% if session.audio_path %}
-        initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
-        {% endif %}
-    </script>
-    <script type="application/json" id="lines-data-json">
+    // Load styles on page load
+    document.addEventListener('DOMContentLoaded', loadStyleOptions);
+
+    async function uploadAudio(input) {
+        if (!input.files[0]) return;
+        const formData = new FormData();
+        formData.append('audio_file', input.files[0]);
+
+        const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (data.detected_bpm > 0) {
+                alert(`Beat uploaded! Auto-detected BPM: ${data.detected_bpm}`);
+            }
+            location.reload();
+        }
+    }
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="https://unpkg.com/wavesurfer.js@7"></script>
+<script src="{{ url_for('static', filename='js/waveform_player.js') }}"></script>
+<script src="{{ url_for('static', filename='js/flow_viz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/alpine-components.js') }}"></script>
+<script src="{{ url_for('static', filename='js/session.js') }}"></script>
+<script>
+    // Init Flow Viz
+    const viz = new FlowVisualizer('flow-canvas');
+    const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
+    viz.update(linesData);
+
+    // Init Waveform Player if audio exists
+    {% if session.audio_path %}
+    initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
+    {% endif %}
+</script>
+<script type="application/json" id="lines-data-json">
 [
     {% for line in lines %}
     { "syllable_count": {{ line.syllable_count or 0 }} }{% if not loop.last %},{% endif %}
     {% endfor %}
 ]
 </script>
-    {% endblock %}
+{% endblock %}

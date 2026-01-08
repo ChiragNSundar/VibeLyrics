@@ -4,10 +4,12 @@ AJAX endpoints for AI interactions and real-time features
 """
 import json
 from flask import Blueprint, request, jsonify
+from pydantic import ValidationError
 from app.models import db, LyricSession, LyricLine, JournalEntry, Correction, UserProfile
 from app.ai import get_provider, get_provider_with_fallback
 from app.analysis import RhymeDetector, SyllableCounter, BPMCalculator, ComplexityScorer, RhymeDictionary, get_rhyme_dictionary
 from app.learning import StyleExtractor, VocabularyManager, CorrectionTracker
+from app.schemas import AddLineRequest, UpdateLineRequest, DeleteLineRequest, SwitchProviderRequest, RhymeLookupRequest
 
 api_bp = Blueprint('api', __name__)
 
@@ -15,12 +17,13 @@ api_bp = Blueprint('api', __name__)
 @api_bp.route('/line/add', methods=['POST'])
 def add_line():
     """Add a new line to a session"""
-    data = request.json
-    session_id = data.get('session_id')
-    user_input = data.get('line', '').strip()
+    try:
+        req = AddLineRequest.model_validate(request.json)
+    except ValidationError as e:
+        return jsonify({"error": e.errors()[0]['msg']}), 400
     
-    if not session_id or not user_input:
-        return jsonify({"error": "Missing session_id or line"}), 400
+    session_id = req.session_id
+    user_input = req.line
     
     session = LyricSession.query.get_or_404(session_id)
     
@@ -362,28 +365,28 @@ def ask_question():
 @api_bp.route('/provider/switch', methods=['POST'])
 def switch_provider():
     """Switch AI provider"""
-    data = request.json
-    provider = data.get('provider', 'openai')
-    
-    if provider not in ['openai', 'gemini', 'perplexity']:
+    try:
+        req = SwitchProviderRequest.model_validate(request.json)
+    except ValidationError as e:
         return jsonify({"error": "Invalid provider"}), 400
     
     profile = UserProfile.get_or_create_default()
-    profile.preferred_provider = provider
+    profile.preferred_provider = req.provider
     db.session.commit()
     
-    return jsonify({"success": True, "provider": provider})
+    return jsonify({"success": True, "provider": req.provider})
 
 
 @api_bp.route('/line/update', methods=['POST'])
 def update_line():
     """Update an existing line"""
-    data = request.json
-    line_id = data.get('line_id')
-    new_text = data.get('text', '').strip()
+    try:
+        req = UpdateLineRequest.model_validate(request.json)
+    except ValidationError as e:
+        return jsonify({"error": e.errors()[0]['msg']}), 400
     
-    if not line_id or not new_text:
-        return jsonify({"error": "Missing line_id or text"}), 400
+    line_id = req.line_id
+    new_text = req.text
     
     line = LyricLine.query.get_or_404(line_id)
     
@@ -411,11 +414,12 @@ def update_line():
 @api_bp.route('/line/delete', methods=['POST'])
 def delete_line():
     """Delete a line"""
-    data = request.json
-    line_id = data.get('line_id')
+    try:
+        req = DeleteLineRequest.model_validate(request.json)
+    except ValidationError as e:
+        return jsonify({"error": e.errors()[0]['msg']}), 400
     
-    if not line_id:
-        return jsonify({"error": "Missing line_id"}), 400
+    line_id = req.line_id
     
     line = LyricLine.query.get_or_404(line_id)
     session_id = line.session_id
@@ -435,11 +439,12 @@ def delete_line():
 @api_bp.route('/rhyme/lookup', methods=['POST'])
 def lookup_rhyme():
     """Look up rhymes for a word"""
-    data = request.json
-    word = data.get('word', '').strip()
-    
-    if not word:
+    try:
+        req = RhymeLookupRequest.model_validate(request.json)
+    except ValidationError as e:
         return jsonify({"error": "Word required"}), 400
+    
+    word = req.word
     
     dictionary = get_rhyme_dictionary()
     info = dictionary.get_rhyme_info(word)

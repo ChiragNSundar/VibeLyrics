@@ -47,6 +47,51 @@ class OpenAIProvider(BaseAIProvider):
             # If JSON parsing fails, return a structured default
             return {"error": "Failed to parse response", "raw": response}
     
+    def _call_api_stream(self, user_prompt: str, temperature: float = 0.8):
+        """Streaming API call yielding chunks"""
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": LyricPrompts.SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=temperature,
+                max_tokens=200, # Shorter for streaming suggestions
+                stream=True
+            )
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as e:
+            yield f"[ERROR: {str(e)}]"
+
+    def suggest_next_line_stream(
+        self,
+        previous_lines: List[str],
+        bpm: int,
+        style_context: Dict[str, Any]
+    ):
+        """Stream suggestion for next line"""
+        syllable_range = Config.get_syllable_target(bpm)
+        rhyme_scheme = self._analyze_rhyme_scheme(previous_lines) if previous_lines else "Starting fresh"
+        prev_lines_text = "\n".join([f"{i+1}. {line}" for i, line in enumerate(previous_lines)]) if previous_lines else "No previous lines"
+        
+        prompt = LyricPrompts.SUGGEST_NEXT_LINE.format(
+            previous_lines=prev_lines_text,
+            bpm=bpm,
+            syllable_range=f"{syllable_range[0]}-{syllable_range[1]} syllables",
+            style_context=json.dumps(style_context),
+            journal_context="",
+            reference_context="",
+            rhyme_scheme=rhyme_scheme
+        )
+        
+        # Append instruction to return ONLY the raw line text for streaming, no JSON
+        prompt += "\n\nCRITICAL: Return ONLY the suggested lyric text. Do not wrap in JSON. Do not include quotes."
+        
+        return self._call_api_stream(prompt, temperature=0.9)
+
     def suggest_next_line(
         self,
         previous_lines: List[str],

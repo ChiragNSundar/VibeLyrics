@@ -9,6 +9,25 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
+    <!-- Alpine.js v3 for declarative UI components -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Tailwind CSS with tw- prefix to prevent conflicts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            prefix: 'tw-',
+            theme: {
+                extend: {
+                    colors: {
+                        'vibe-purple': '#8b5cf6',
+                        'vibe-cyan': '#06b6d4',
+                        'vibe-dark': '#0a0a0f',
+                        'vibe-card': '#12121a',
+                    }
+                }
+            }
+        }
+    </script>
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -104,6 +123,18 @@
         };
     </script>
     {% block extra_js %}{% endblock %}
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js').then(req => {
+                    console.log('Service Worker Registered');
+                }).catch(err => {
+                    console.log('Service Worker registration failed: ', err);
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>

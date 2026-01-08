@@ -31,6 +31,18 @@ class BaseAIProvider(ABC):
             }
         """
         pass
+
+    def suggest_next_line_stream(
+        self,
+        previous_lines: List[str],
+        bpm: int,
+        style_context: Dict[str, Any]
+    ):
+        """
+        Stream suggestion for next line (Generator)
+        Yields chunks of text.
+        """
+        yield "Streaming not supported by this provider"
     
     @abstractmethod
     def improve_line(

@@ -8,8 +8,10 @@
 
 ### 📖 Smart Writing Interface
 
+- **Real-Time AI Streaming**: Ghost text streams in instantly as you type (like ChatGPT), powered by Server-Sent Events.
 - **Split View Mode**: View reference tracks or past sessions side-by-side while writing.
-- **Teleprompter View**: Auto-scrolling, high-contrast view for recording sessions.
+- **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading for instant performance.
+- **Offline Support**: Full functionality offline via Service Workers (auto-caching assets & dictionaries).
 - **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang, Emotional intensity).
 - **Export Options**: Export to PDF (styled), TXT, or JSON backup.
 
@@ -43,12 +45,85 @@ Write in the signature style of legendary artists:
 ## 🛠️ Technology Stack
 
 - **Backend**: Python 3.10+ with Flask
-- **Frontend**: Custom HTML5/CSS3 Design System + Vanilla JS
+- **Frontend**: Alpine.js + Custom HTML5/CSS3 Design System
+- **Real-time**: Server-Sent Events (SSE) & Flask-SocketIO
 - **Search Engine**: **Whoosh** (Pure Python Full-Text Search)
 - **Task Queue**: **Celery** + **Redis** (Async processing)
-- **Real-time**: Flask-SocketIO (WebSockets)
 - **AI**: OpenAI GPT-4, Google Gemini, Perplexity
 - **Audio**: Librosa & Wavesurfer.js
+
+---
+
+## 📂 Project Structure
+
+```text
+vibelyrics/
+├── app/
+│   ├── ai/                 # AI Logic
+│   │   ├── openai_provider.py
+│   │   ├── gemini_provider.py
+│   │   ├── perplexity_provider.py
+│   │   ├── context_builder.py
+│   │   ├── prompts.py
+│   │   └── style_library.py
+│   ├── analysis/           # Algorithmic Analysis
+│   │   ├── rhyme_detector.py
+│   │   ├── syllable_counter.py
+│   │   ├── complexity_scorer.py
+│   │   ├── metaphor_engine.py
+│   │   └── ...
+│   ├── learning/           # Personalization
+│   │   ├── style_extractor.py
+│   │   ├── correction_tracker.py
+│   │   └── vector_store.py
+│   ├── models/             # Database Models
+│   │   ├── lyrics.py
+│   │   ├── user_profile.py
+│   │   └── journal.py
+│   ├── routes/             # API Blueprints
+│   │   ├── api.py          # REST API
+│   │   ├── streaming.py    # SSE Streaming
+│   │   ├── workspace.py    # UI Routes
+│   │   └── stats.py
+│   ├── search/             # Whoosh Search Engine
+│   │   └── search_index.py
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── style.css
+│   │   ├── js/
+│   │   │   ├── session.js  # Main Logic
+│   │   │   ├── alpine-components.js
+│   │   │   ├── flow_viz.js
+│   │   │   └── waveform_player.js
+│   │   └── sw.js           # Service Worker
+│   ├── templates/          # Jinja2 Views
+│   │   ├── session.html
+│   │   ├── workspace.html
+│   │   └── base.html
+│   ├── celery_app.py       # Celery Config
+│   ├── config.py
+│   ├── events.py           # SocketIO Events
+│   └── tasks.py            # Async Tasks
+├── data/                   # Data Storage
+├── run.py                  # App Entry Point
+└── requirements.txt
+```
+
+## 📐 Architecture
+
+```mermaid
+graph TD
+    Client[Browser Client]
+    Client -- HTTP Request --> Flask[Flask Web App]
+    Client -- SSE Stream --> Flask
+    Client -- SocketIO --> Socket[SocketServer]
+    Flask -- Enqueue --> Redis[(Redis Broker)]
+    Redis -- Task --> Worker[Celery Worker]
+    Worker -- Update --> DB[(Database)]
+    Flask -- Query --> DB
+    Client -- Cache --> SW[Service Worker]
+    Flask -- API Call --> OpenAI[OpenAI/Gemini]
+```
 
 ---
 

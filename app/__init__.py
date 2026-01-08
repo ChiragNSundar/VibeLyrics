@@ -52,6 +52,9 @@ def create_app(config_class=Config):
     app.register_blueprint(search_bp, url_prefix="/api")
     app.register_blueprint(task_status_bp, url_prefix="/api")
     
+    from .routes.streaming import streaming_bp
+    app.register_blueprint(streaming_bp, url_prefix="") # Mounted at root to allow /api/line/stream
+    
     # Import socket events to register them
     from . import events
     

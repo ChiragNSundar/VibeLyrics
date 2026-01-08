@@ -3,6 +3,197 @@
 // Initialize Socket.IO
 const socket = io();
 
+// =============================================================================
+// UTILITIES
+// =============================================================================
+
+/**
+ * Debounce function - delays execution until after wait ms have passed
+ * @param {Function} fn - Function to debounce
+ * @param {number} delay - Delay in milliseconds
+ * @returns {Function} Debounced function
+ */
+function debounce(fn, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// =============================================================================
+// UNDO/REDO HISTORY (10 actions)
+// =============================================================================
+const lineHistory = {
+    past: [],
+    future: [],
+    maxSize: 10
+};
+
+/**
+ * Push an action to undo history
+ * @param {{ type: string, lineId: number, data: any }} action
+ */
+function pushHistory(action) {
+    lineHistory.past.push(action);
+    if (lineHistory.past.length > lineHistory.maxSize) lineHistory.past.shift();
+    lineHistory.future = []; // Clear redo stack on new action
+}
+
+/**
+ * Undo the last action
+ */
+async function undoLine() {
+    if (lineHistory.past.length === 0) {
+        showToast('Nothing to undo', 'info');
+        return;
+    }
+    const action = lineHistory.past.pop();
+    lineHistory.future.push(action);
+
+    if (action.type === 'delete') {
+        // Re-add the deleted line
+        socket.emit('new_line', {
+            session_id: SESSION_ID,
+            content: action.data.text,
+            section: action.data.section || 'Verse'
+        });
+        showToast('Line restored', 'success');
+    } else if (action.type === 'add') {
+        // Delete the added line
+        await apiCall('/api/line/delete', 'POST', { line_id: action.lineId });
+        document.querySelector(`[data-line-id="${action.lineId}"]`)?.remove();
+        updateLineNumber();
+        showToast('Undo: line removed', 'success');
+    } else if (action.type === 'update') {
+        // Revert to previous text
+        socket.emit('update_line', {
+            session_id: SESSION_ID,
+            line_id: action.lineId,
+            content: action.data.oldText
+        });
+        showToast('Undo: text reverted', 'success');
+    }
+}
+
+/**
+ * Redo the last undone action
+ */
+async function redoLine() {
+    if (lineHistory.future.length === 0) {
+        showToast('Nothing to redo', 'info');
+        return;
+    }
+    const action = lineHistory.future.pop();
+    lineHistory.past.push(action);
+
+    if (action.type === 'delete') {
+        // Delete again
+        await apiCall('/api/line/delete', 'POST', { line_id: action.lineId });
+        document.querySelector(`[data-line-id="${action.lineId}"]`)?.remove();
+        updateLineNumber();
+        showToast('Redo: line deleted', 'success');
+    } else if (action.type === 'add') {
+        // Re-add the line
+        socket.emit('new_line', {
+            session_id: SESSION_ID,
+            content: action.data.text,
+            section: action.data.section || 'Verse'
+        });
+        showToast('Redo: line added', 'success');
+    } else if (action.type === 'update') {
+        // Re-apply the edit
+        socket.emit('update_line', {
+            session_id: SESSION_ID,
+            line_id: action.lineId,
+            content: action.data.newText
+        });
+        showToast('Redo: edit reapplied', 'success');
+    }
+}
+
+// =============================================================================
+// KEYBOARD SHORTCUTS
+// =============================================================================
+let shortcutsModalVisible = false;
+
+function showShortcutsModal() {
+    const existing = document.getElementById('shortcuts-modal');
+    if (existing) {
+        existing.remove();
+        shortcutsModalVisible = false;
+        return;
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'shortcuts-modal';
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h2>⌨️ Keyboard Shortcuts</h2>
+                <button class="btn-icon" onclick="document.getElementById('shortcuts-modal').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Submit new line</td></tr>
+                    <tr><td><kbd>Tab</kbd></td><td>Accept AI suggestion</td></tr>
+                    <tr><td><kbd>Escape</kbd></td><td>Clear suggestion</td></tr>
+                    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo last action</td></tr>
+                    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Redo action</td></tr>
+                    <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+                </table>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    shortcutsModalVisible = true;
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// Global keyboard shortcut listener
+document.addEventListener('keydown', (e) => {
+    const isInput = e.target.matches('input, textarea, [contenteditable]');
+
+    // ? - Show shortcuts (only when not in input)
+    if (e.key === '?' && !isInput) {
+        e.preventDefault();
+        showShortcutsModal();
+        return;
+    }
+
+    // Ctrl+Enter - Submit line (works anywhere)
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        const input = document.getElementById('new-line-input');
+        if (input && input.value.trim()) {
+            addLine();
+        }
+        return;
+    }
+
+    // Ctrl+Z - Undo (only when not in input to avoid conflict with native undo)
+    if (e.ctrlKey && e.key === 'z' && !e.shiftKey && !isInput) {
+        e.preventDefault();
+        undoLine();
+        return;
+    }
+
+    // Ctrl+Shift+Z - Redo
+    if (e.ctrlKey && e.shiftKey && (e.key === 'Z' || e.key === 'z') && !isInput) {
+        e.preventDefault();
+        redoLine();
+        return;
+    }
+});
+
+// =============================================================================
+// SOCKET CONNECTION
+// =============================================================================
 socket.on('connect', () => {
     console.log('Connected to socket server');
     socket.emit('join', { session_id: SESSION_ID });
@@ -136,7 +327,11 @@ function toggleAIPanel() {
     panel.classList.toggle('active');
 }
 
-// Add line to session (Socket Version)
+/**
+ * Add a new line to the session
+ * Flushes user input to server and updates UI
+ * @returns {Promise<void>}
+ */
 async function addLine() {
     const input = document.getElementById('new-line-input');
     const lineContent = input.value.trim();
@@ -167,7 +362,7 @@ async function addLine() {
     const container = document.getElementById('lines-container');
     const lineRow = createLineElement(tempData, lineContent);
 
-    // Add visual indicator that it's syncing? (Optional, maybe opacity)
+    // Add visual indicator that it's syncing
     lineRow.style.opacity = '0.7';
     lineRow.dataset.pending = 'true';
 
@@ -178,6 +373,17 @@ async function addLine() {
     // Clear input immediately
     input.value = '';
     document.querySelector('.syllable-counter').textContent = '0 syllables';
+
+    // Clear suggestion
+    const ghostText = document.getElementById('ghost-text');
+    if (ghostText) ghostText.textContent = '';
+
+    // Add to undo history
+    pushHistory({
+        type: 'delete',
+        lineId: null, // Pending ID
+        data: { text: lineContent, section: section }
+    });
 
     // Emit to server
     socket.emit('new_line', {
@@ -237,44 +443,69 @@ function updateLineNumber() {
     }
 }
 
-// IDE-Style Ghost Text Autocomplete
+// Ide-Style Ghost Text Autocomplete
 let currentSuggestionText = '';
 let isLoadingSuggestion = false;
+let suggestionEventSource = null;
 
 async function suggestNext() {
     if (isLoadingSuggestion) return;
-    isLoadingSuggestion = true;
 
+    // Cancel previous stream if active
+    if (suggestionEventSource) {
+        suggestionEventSource.close();
+        suggestionEventSource = null;
+    }
+
+    isLoadingSuggestion = true;
     const ghostText = document.getElementById('ghost-text');
     const tabHint = document.getElementById('tab-hint');
     const input = document.getElementById('new-line-input');
 
-    ghostText.textContent = 'thinking...';
+    ghostText.textContent = ''; // Start fresh
     ghostText.classList.add('loading');
     currentSuggestionText = '';
 
+    const url = `/api/line/stream?session_id=${SESSION_ID}&current_line=${encodeURIComponent(input.value)}`;
+
     try {
-        const result = await apiCall('/api/line/suggest', 'POST', {
-            session_id: SESSION_ID,
-            action: 'next'
-        });
+        suggestionEventSource = new EventSource(url);
 
-        if (result.success && result.result && result.result.suggestion) {
-            currentSuggestionText = result.result.suggestion;
+        suggestionEventSource.onmessage = (e) => {
+            if (e.data === '[DONE]') {
+                suggestionEventSource.close();
+                suggestionEventSource = null;
+                isLoadingSuggestion = false;
+                ghostText.classList.remove('loading');
+                if (currentSuggestionText) tabHint.style.display = 'inline';
+                return;
+            }
 
-            // Show ghost text (what user has typed + suggestion continuation)
+            if (e.data.startsWith('[ERROR]')) {
+                console.error(e.data);
+                suggestionEventSource.close();
+                isLoadingSuggestion = false;
+                ghostText.classList.remove('loading');
+                return;
+            }
+
+            // Append chunk
+            currentSuggestionText += e.data;
             updateGhostText();
-            tabHint.style.display = 'inline';
-        } else {
-            ghostText.textContent = '';
-            currentSuggestionText = '';
-        }
+        };
+
+        suggestionEventSource.onerror = (e) => {
+            console.error('SSE Error:', e);
+            suggestionEventSource.close();
+            suggestionEventSource = null;
+            isLoadingSuggestion = false;
+            ghostText.classList.remove('loading');
+        };
+
     } catch (e) {
-        ghostText.textContent = '';
-        console.error('Suggestion error:', e);
-    } finally {
-        ghostText.classList.remove('loading');
+        console.error('Stream setup error:', e);
         isLoadingSuggestion = false;
+        ghostText.classList.remove('loading');
     }
 }
 
@@ -290,16 +521,20 @@ function updateGhostText() {
 
     const userText = input.value;
 
-    // Show full suggestion as ghost text
+    // In streaming mode, the AI might just return the text.
+    // Logic: If user text matches start of suggestion, show remainder.
+    // If suggestion is completely different, assumes suggestion acts as valid continuation? 
+    // Usually ghost text works best as simple suffix.
+
     if (userText.length === 0) {
         ghostText.textContent = currentSuggestionText;
     } else if (currentSuggestionText.toLowerCase().startsWith(userText.toLowerCase())) {
-        // User is typing matching the suggestion - show remaining part
+        // User typed prefix match
         ghostText.textContent = userText + currentSuggestionText.slice(userText.length);
     } else {
-        // User typed something different - clear ghost
+        // Mismatch - hide for now or show as separate suggestion?
+        // Standard ghost text hides on mismatch
         ghostText.textContent = '';
-        currentSuggestionText = '';
         document.getElementById('tab-hint').style.display = 'none';
     }
 }
@@ -341,9 +576,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Update ghost text as user types
+        // Update ghost text as user types AND fetch new suggestions
+        const debouncedSuggest = debounce(suggestNext, 300);
+
         input.addEventListener('input', () => {
-            updateGhostText();
+            updateGhostText(); // Immediate local filtering
+            debouncedSuggest(); // Debounced API fetch
         });
     }
 
