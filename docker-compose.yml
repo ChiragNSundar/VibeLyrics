@@ -1,0 +1,102 @@
+# VibeLyrics Docker Compose Configuration
+# Production-ready setup with Redis, Celery, and volume persistence
+
+version: '3.8'
+
+services:
+  # Redis for Celery message broker and result backend
+  redis:
+    image: redis:7-alpine
+    container_name: vibelyrics-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Main VibeLyrics application
+  vibelyrics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibelyrics
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Flask Configuration
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me-in-production}
+      - FLASK_DEBUG=false
+
+      # Redis for Celery
+      - REDIS_URL=redis://redis:6379/0
+
+      # AI Providers (set your keys in .env or here)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-gemini}
+
+      # Genius API (optional)
+      - GENIUS_ACCESS_TOKEN=${GENIUS_ACCESS_TOKEN:-}
+    volumes:
+      # Persist database and user uploads
+      - vibelyrics_data:/app/data
+      - vibelyrics_uploads:/app/app/static/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Celery worker for background tasks
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibelyrics-celery
+    restart: unless-stopped
+    command: celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me-in-production}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-gemini}
+    volumes:
+      - vibelyrics_data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Celery beat for scheduled tasks (optional)
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibelyrics-beat
+    restart: unless-stopped
+    command: celery -A app.celery_app:celery_app beat --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  vibelyrics_data:
+    driver: local
+  vibelyrics_uploads:
+    driver: local
+  redis_data:
+    driver: local

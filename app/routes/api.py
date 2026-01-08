@@ -1194,3 +1194,231 @@ def get_learning_status():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+
+# =============================================================================
+# HEALTH CHECK ENDPOINT
+# =============================================================================
+
+@api_bp.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint for Docker and monitoring systems.
+    Returns database connectivity status.
+    """
+    try:
+        # Test database connectivity
+        db.session.execute(db.text('SELECT 1'))
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
+    return jsonify({
+        "status": "healthy" if db_status == "connected" else "unhealthy",
+        "database": db_status,
+        "version": "1.0.0"
+    }), 200 if db_status == "connected" else 503
+
+
+# =============================================================================
+# STYLE TRANSFER ENDPOINTS
+# =============================================================================
+
+@api_bp.route('/styles', methods=['GET'])
+def get_styles():
+    """Get all available artist styles for style transfer"""
+    from app.ai.style_library import get_all_styles
+    
+    styles = get_all_styles()
+    return jsonify({
+        "success": True,
+        "styles": styles
+    })
+
+
+@api_bp.route('/line/transform', methods=['POST'])
+def transform_line():
+    """Transform a line to match a specific artist's style"""
+    data = request.json
+    line = data.get('line', '').strip()
+    style_key = data.get('style', '').lower()
+    session_id = data.get('session_id')
+    
+    if not line:
+        return jsonify({"error": "Line is required"}), 400
+    if not style_key:
+        return jsonify({"error": "Style is required"}), 400
+    
+    from app.ai.style_library import get_style_context
+    
+    style_context = get_style_context(style_key)
+    if not style_context:
+        return jsonify({"error": f"Unknown style: {style_key}"}), 400
+    
+    profile = UserProfile.get_or_create_default()
+    
+    try:
+        provider = get_provider(profile.preferred_provider)
+    except Exception as e:
+        return jsonify({"error": f"AI provider error: {str(e)}"}), 500
+    
+    # Get session context if available
+    session_context = {}
+    if session_id:
+        session = LyricSession.query.get(session_id)
+        if session:
+            session_context = {"bpm": session.bpm, "mood": session.mood}
+    
+    try:
+        # Build transform prompt
+        transform_prompt = f"""Transform this lyric line to match {style_context['style_name']}'s style.
+
+Original line: "{line}"
+
+{style_context['style_prompt']}
+
+AVOID: {', '.join(style_context.get('avoid', []))}
+
+Example patterns from this artist:
+{chr(10).join('- ' + ex for ex in style_context.get('examples', [])[:3])}
+
+Provide 3 variations of the transformed line. Keep the core meaning but adapt the style, vocabulary, and flow to match the artist.
+
+Format your response as:
+1. [first variation]
+2. [second variation]  
+3. [third variation]"""
+
+        result = provider.answer_user_question(transform_prompt, session_context)
+        
+        return jsonify({
+            "success": True,
+            "original": line,
+            "style": style_context['style_name'],
+            "transformations": result
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route('/line/suggest_styled', methods=['POST'])
+def suggest_styled_line():
+    """Get AI suggestion in a specific artist's style"""
+    data = request.json
+    session_id = data.get('session_id')
+    style_key = data.get('style', '').lower()
+    
+    if not session_id:
+        return jsonify({"error": "session_id is required"}), 400
+    
+    from app.ai.style_library import get_style_context
+    
+    session = LyricSession.query.get_or_404(session_id)
+    profile = UserProfile.get_or_create_default()
+    
+    # Get previous lines
+    lines = session.lines.all()
+    previous_lines = [l.final_version or l.user_input for l in lines]
+    
+    # Get style context
+    style_context = {}
+    if style_key:
+        style_context = get_style_context(style_key)
+        if not style_context:
+            return jsonify({"error": f"Unknown style: {style_key}"}), 400
+    
+    # Get base style from user
+    style_extractor = StyleExtractor()
+    base_context = style_extractor.get_style_summary()
+    
+    # Merge contexts
+    if style_context:
+        base_context["artist_style"] = style_context.get("style_name", "")
+        base_context["style_prompt"] = style_context.get("style_prompt", "")
+        base_context["style_characteristics"] = style_context.get("characteristics", {})
+    
+    try:
+        provider = get_provider(profile.preferred_provider)
+        result = provider.suggest_next_line(
+            previous_lines=previous_lines,
+            bpm=session.bpm,
+            style_context=base_context
+        )
+        
+        return jsonify({
+            "success": True,
+            "result": result,
+            "style_applied": style_context.get("style_name", "native")
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# CALLBACK DETECTION ENDPOINTS
+# =============================================================================
+
+@api_bp.route('/line/detect_callbacks', methods=['POST'])
+def detect_callbacks():
+    """Detect if a line references or is similar to past lyrics"""
+    data = request.json
+    line = data.get('line', '').strip()
+    session_id = data.get('session_id')
+    
+    if not line:
+        return jsonify({"error": "Line is required"}), 400
+    
+    from app.analysis.callbacks import get_callback_detector
+    
+    detector = get_callback_detector()
+    callbacks = detector.detect_callbacks(line, session_id)
+    
+    return jsonify({
+        "success": True,
+        "line": line,
+        "callbacks": callbacks,
+        "has_callbacks": len(callbacks) > 0
+    })
+
+
+@api_bp.route('/session/<int:session_id>/callbacks', methods=['GET'])
+def get_session_callbacks(session_id):
+    """Get all callbacks detected in a session"""
+    from app.analysis.callbacks import get_callback_detector
+    
+    detector = get_callback_detector()
+    summary = detector.get_callback_summary(session_id)
+    
+    if "error" in summary:
+        return jsonify(summary), 404
+    
+    return jsonify({
+        "success": True,
+        **summary
+    })
+
+
+# =============================================================================
+# SESSIONS LIST ENDPOINT
+# =============================================================================
+
+@api_bp.route('/sessions', methods=['GET'])
+def list_sessions():
+    """List all sessions for reference selection"""
+    sessions = LyricSession.query.order_by(LyricSession.updated_at.desc()).limit(50).all()
+    
+    return jsonify({
+        "success": True,
+        "sessions": [
+            {
+                "id": s.id,
+                "title": s.title,
+                "bpm": s.bpm,
+                "line_count": s.line_count,
+                "created_at": s.created_at.isoformat()
+            }
+            for s in sessions
+        ]
+    })
+

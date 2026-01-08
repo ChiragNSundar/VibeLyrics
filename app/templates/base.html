@@ -35,6 +35,10 @@
                 class="nav-link {% if request.endpoint and 'education' in request.endpoint %}active{% endif %}">
                 <span class="icon">🎓</span> Learn
             </a>
+            <a href="{{ url_for('stats.index') }}"
+                class="nav-link {% if request.endpoint and 'stats' in request.endpoint %}active{% endif %}">
+                <span class="icon">📊</span> Stats
+            </a>
             <a href="{{ url_for('settings.index') }}"
                 class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}">
                 <span class="icon">⚙️</span> Settings
@@ -46,11 +50,59 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner large"></div>
+        <p class="loading-text">Loading...</p>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <footer class="footer">
         <p>VibeLyrics - Collaborative Hip-Hop Lyric Writing</p>
     </footer>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Toast notification helper
+        window.showToast = function (message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || icons.info}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        };
+
+        // Loading overlay helpers
+        window.showLoading = function (text = 'Loading...') {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.querySelector('.loading-text').textContent = text;
+            overlay.classList.add('active');
+        };
+
+        window.hideLoading = function () {
+            document.getElementById('loading-overlay').classList.remove('active');
+        };
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 

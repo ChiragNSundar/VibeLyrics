@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Writing Stats - VibeLyrics{% endblock %}
+
+{% block content %}
+<div class="stats-container">
+    <div class="page-header">
+        <h1>📊 Writing Stats</h1>
+        <p class="subtitle">Track your lyric writing progress and achievements</p>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="stats-grid" id="overview-cards">
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value" id="total-lines">-</div>
+            <div class="stat-label">Total Lines</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🎵</div>
+            <div class="stat-value" id="total-sessions">-</div>
+            <div class="stat-label">Sessions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💬</div>
+            <div class="stat-value" id="total-words">-</div>
+            <div class="stat-label">Words Written</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-value" id="unique-vocab">-</div>
+            <div class="stat-label">Unique Words</div>
+        </div>
+        <div class="stat-card highlight">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-value" id="current-streak">-</div>
+            <div class="stat-label">Day Streak</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-value" id="lines-today">-</div>
+            <div class="stat-label">Lines Today</div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="card chart-card">
+            <h3>📈 Lines Per Day (Last 30 Days)</h3>
+            <canvas id="daily-chart"></canvas>
+        </div>
+        <div class="card chart-card">
+            <h3>📚 Vocabulary Growth</h3>
+            <canvas id="vocab-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="bottom-row">
+        <!-- Rhyme Schemes -->
+        <div class="card">
+            <h3>🎯 Top Rhyme Schemes</h3>
+            <div id="rhyme-schemes" class="schemes-list">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="card achievements-card">
+            <h3>🏆 Achievements</h3>
+            <div id="achievements" class="achievements-grid">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-glow);
+    }
+
+    .stat-card.highlight {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.1));
+        border-color: var(--accent-primary);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    .charts-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        min-height: 300px;
+    }
+
+    .chart-card canvas {
+        max-height: 250px;
+    }
+
+    .bottom-row {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 1.5rem;
+    }
+
+    .schemes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .scheme-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: var(--bg-hover);
+        border-radius: var(--border-radius-sm);
+    }
+
+    .scheme-name {
+        font-family: var(--font-mono);
+        font-size: 1.1rem;
+        color: var(--accent-primary);
+    }
+
+    .scheme-count {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .achievements-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .achievement {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        background: var(--bg-hover);
+        border-radius: var(--border-radius);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .achievement:hover {
+        transform: scale(1.05);
+        background: var(--border-color);
+    }
+
+    .achievement-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .achievement-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .achievement-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .achievement.locked {
+        opacity: 0.4;
+        filter: grayscale(1);
+    }
+
+    @media (max-width: 768px) {
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+
+        .bottom-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let dailyChart, vocabChart;
+
+    async function loadStats() {
+        // Load overview
+        const overviewRes = await fetch('/stats/api/overview');
+        const overview = await overviewRes.json();
+
+        if (overview.success) {
+            document.getElementById('total-lines').textContent = overview.stats.total_lines.toLocaleString();
+            document.getElementById('total-sessions').textContent = overview.stats.total_sessions.toLocaleString();
+            document.getElementById('total-words').textContent = overview.stats.total_words.toLocaleString();
+            document.getElementById('unique-vocab').textContent = overview.stats.unique_vocabulary.toLocaleString();
+            document.getElementById('lines-today').textContent = overview.stats.lines_today;
+        }
+
+        // Load history for charts
+        const historyRes = await fetch('/stats/api/history');
+        const history = await historyRes.json();
+
+        if (history.success) {
+            renderDailyChart(history.daily_lines);
+            renderVocabChart(history.vocabulary_growth);
+        }
+
+        // Load rhyme schemes
+        const schemesRes = await fetch('/stats/api/rhyme_schemes');
+        const schemes = await schemesRes.json();
+
+        if (schemes.success) {
+            renderSchemes(schemes.schemes);
+        }
+
+        // Load achievements
+        const achievementsRes = await fetch('/stats/api/achievements');
+        const achievements = await achievementsRes.json();
+
+        if (achievements.success) {
+            document.getElementById('current-streak').textContent = achievements.current_streak;
+            renderAchievements(achievements.achievements);
+        }
+    }
+
+    function renderDailyChart(data) {
+        const ctx = document.getElementById('daily-chart').getContext('2d');
+
+        dailyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.date.slice(5)), // MM-DD
+                datasets: [{
+                    label: 'Lines Written',
+                    data: data.map(d => d.lines),
+                    backgroundColor: 'rgba(139, 92, 246, 0.6)',
+                    borderColor: 'rgba(139, 92, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#a0a0b0' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#a0a0b0', maxTicksLimit: 10 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderVocabChart(data) {
+        const ctx = document.getElementById('vocab-chart').getContext('2d');
+
+        vocabChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.session),
+                datasets: [{
+                    label: 'Vocabulary Size',
+                    data: data.map(d => d.vocabulary),
+                    borderColor: 'rgba(6, 182, 212, 1)',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#a0a0b0' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#a0a0b0', maxTicksLimit: 8 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderSchemes(schemes) {
+        const container = document.getElementById('rhyme-schemes');
+
+        if (schemes.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted)">No rhyme schemes detected yet. Write more!</p>';
+            return;
+        }
+
+        container.innerHTML = schemes.map(s => `
+            <div class="scheme-item">
+                <span class="scheme-name">${s.scheme}</span>
+                <span class="scheme-count">${s.count} sessions</span>
+            </div>
+        `).join('');
+    }
+
+    function renderAchievements(achievements) {
+        const container = document.getElementById('achievements');
+
+        if (achievements.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted)">Start writing to unlock achievements!</p>';
+            return;
+        }
+
+        container.innerHTML = achievements.map(a => `
+            <div class="achievement">
+                <span class="achievement-icon">${a.icon}</span>
+                <span class="achievement-name">${a.name}</span>
+                <span class="achievement-desc">${a.desc}</span>
+            </div>
+        `).join('');
+    }
+
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endblock %}

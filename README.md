@@ -1,189 +1,54 @@
 # VibeLyrics 🎤
 
-**VibeLyrics** is a powerful hip-hop lyric writing assistant and analysis tool. It combines traditional songwriting tools with advanced algorithmic analysis and AI assistance to help artists craft complex rhymes, study references, and improve their pen game.
+**VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
 ---
 
 ## 🌟 Key Features
 
-### 🌐 Smart Workspace
+### 📖 Smart Writing Interface
 
-- **Instant Analysis**: Updates appear instantly as you write.
-- **Auto-Sync**: Your progress is saved automatically and synced across your devices.
+- **Split View Mode**: View reference tracks or past sessions side-by-side while writing.
+- **Teleprompter View**: Auto-scrolling, high-contrast view for recording sessions.
+- **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang, Emotional intensity).
+- **Export Options**: Export to PDF (styled), TXT, or JSON backup.
 
-### 📝 Smart Lyric Editor
+### 🎨 AI Style Transfer
 
-- **Distraction-free interface** for focused writing with song structure blocks.
-- **Smart Dictionary**: Right-click *any* word to open the **Inline Lookup Panel**.
-  - **Rhymes**: Improved engine detecting slant rhymes and slang.
-  - **Synonyms & Antonyms**: Powered by NLTK WordNet.
-  - **Click-to-Insert**: Directly click suggestions to insert them into your lyrics.
-- **AI Assistance**: Get suggestions for next lines or improvements.
+Write in the signature style of legendary artists:
+- **Available Styles**: Eminem, Kendrick Lamar, Drake, J. Cole, Nas, Travis Scott, Jay-Z, Kanye West.
+- **Style Characteristics**: Mimics rhyme patterns, vocabulary density, and flow structures.
+- **Transformation**: Rewrite your lines to match a specific artist's voice.
 
-### 🎵 Studio Mode & Audio
+### 📊 Stats & Gamification
 
-- **Waveform Player**: Visualize your beat with a professional waveform display (powered by Wavesurfer.js).
-- **A-B Looping**: Set loop points to practice specific bars efficiently.
-- **Speed Control**: Adjust playback speed (0.5x - 1.5x) to master fast flows.
-- **Auto-BPM Detection**: Automatically identifies the tempo (BPM) of uploaded beats using advanced signal processing.
-- **Flow Visualization**: Real-time bar charts with bar-level grouping and density color coding (Green=Laid back, Red=Chopper).
+- **Writing Dashboard**: Track lines written, vocabulary growth, and daily consistency.
+- **Rhyme Scheme Analysis**: See which schemes you use most (AABB, ABAB, Compound).
+- **Achievements**: Unlock badges for streaks, complex multi-syllabics, and flow mastery.
 
-### 🧠 Advanced Analysis Engine
+### 🔍 Search & Recall
 
-- **Stress Pattern Visualization**: Visual dots (●○) show the rhythmic stress of your lyrics (stressed vs unstressed).
-- **Rhyme Density Heatmap**: Visual glow (Red → Orange → Green) highlighting the technical complexity of your verses.
-- **Rhyme Scheme Detection**: Automatically identifies AABB, ABAB, and complex multis.
-- **Ultra-Detailed Thesaurus**: Right-click *any* word for 6-layer analysis:
-  - **Formal**: Standard English synonyms/antonyms
-  - **Slang**: 50+ street/hip-hop terms ("money" → "guap", "racks")
-  - **Emotional**: 4-level intensity spectrum ("sad" → "devastated")
-  - **Indian**: 200+ Hindi/Kannada words
-  - **AI Fallback**: Auto-generates suggestions for unknown words
-- **Hindi/Kannada Engine**: Full romanized support:
-  - **Syllable Counting**: Accurate counts for 150+ common words + phonetic heuristic.
-  - **Rhyme Finder**: Detects Kannada verb endings (*-odu*, *-ali*), pronouns (*naanu/neenu*), and Hindi patterns.
-  - **Vowel-Based Rhymes**: Phonetic matching for Indian languages (last 2 vowels).
-- **Complexity Scoring**: Rates verses on syllable density, rhyme richness, and unique word count.
-- **Phonetic Highlighting**: Visualizes perfect, slant, and multi-syllabic rhymes.
+- **Full-Text Search**: Instantly find any line you've ever written, even with typos (fuzzy matching).
+- **Phonetic Search**: Find lines from your history that *sound* like your current idea.
+- **Callback Detection**: Automatic alerts when you reference your past work (perfect for callbacks).
 
-### � Continuous Learning Engine
+### ⚡ Background Processing
 
-- **Style DNA**: The app learns your unique voice—syllable counts, favorite rhyme schemes, and flow patterns.
-- **Reference Absorption**: Simply viewing lyrics in the library adds them to your knowledge base.
-- **Adaptive Suggestions**: AI suggestions get smarter the more you use them, prioritized by your writing history.
-- **Vocabulary Tracking**: Maintains a dynamic list of your favorite words, slangs, and avoided terms.
-
-### 🧠 Infinite Memory (RAG)
-
-- **Lyric Recall**: Every bar you write is indexed for instant retrieval later.
-- **Context-Aware AI**: AI suggestions reference your past lyrics for callbacks.
-- **TF-IDF Search**: Fast similarity matching across all your work.
-
-### 🎹 Audio-Reactive AI
-
-- **Energy Detection**: Detects calm/build/verse/drop sections in your beat.
-- **Flow Suggestions**: AI adjusts style based on beat energy (melodic vs aggressive).
-
-### 💡 Semantic Concept Rhymes
-
-- **Meaning + Sound**: Find words that both rhyme AND relate conceptually (King → reign, throne, crown).
-- **Hip-Hop Vocabulary**: 20+ curated concept clusters (money → bands, racks, paper, bread).
-- **Mind Map**: Auto-generates a "concept cloud" from your verse.
-
-### 🎤 Auto-Adlib Generator
-
-- **Mood Detection**: Analyzes line energy (hype, flex, aggressive, smooth, emotional).
-- **Pattern Insertion**: Finds optimal positions for adlibs (line endings, emphasis words).
-- **Contextual Adlibs**: 100+ hip-hop adlibs organized by mood (Yeah!, Skrrt!, What!, Brr!).
-
-### 🥊 Elite Lyric Tools
-
-- **Punch Line Engine**: Detects wordplay, double meanings ("bars" → prison/lyrics), and contrast ("love" vs "hate") to score your lines 1-10.
-- **Multi-Syllable Rhymes**: Finds complex 3-4 syllable rhymes (elevation → celebration, dedication).
-- **Metaphor Generator**: Instantly generates creative imagery ("Money like water", "Heart cold like December").
-- **RhymeWave Integration**: Built-in access to RhymeWave.com for phoneme-based rhyme finding.
-
-### 🧬 Adaptive Learning System
-
-- **Correction Tracking**: When you edit an AI suggestion, the system learns your preferences (shorter lines, simpler words, etc.).
-- **Explicit Feedback**: Thumbs up/down on suggestions teaches the AI what you like.
-- **Ultra-Detailed Highlighting**: End rhymes, internal rhymes, cross-line rhymes, alliteration, and assonance are all visually marked.
-- **Preference Injection**: Learned patterns are injected directly into AI prompts for personalized suggestions.
-- **Learning Status API**: Check what the AI has learned about your style (`/api/learning/status`).
-
-### ✍️ Elite Ghostwriting Engine
-
-- **Few-Shot Examples**: AI is primed with high-quality original examples for each mood (introspective, confident, storytelling).
-- **Technique Library**: Multi-syllabic rhymes, double entendres, metaphor chains, punchy closers, and more.
-- **Cliché Avoidance**: Automatically avoids overused rhyme pairs (love/above, heart/start).
-- **BPM-Aware Syllable Targets**: Suggests optimal syllable counts based on your beat's tempo.
-
-### 🎮 Gamification & Progress
-
-- **Daily Challenge**: "Word of the Day" prompt to spark your creativity and keep your streak alive.
-- **Daily Streaks**: Track your writing consistency with a daily streak counter.
-- **Stats Dashboard**: View customized stats like "Lines Dropped" and "Total Sessions".
-
-### 📚 Reference Library
-
-- **Genius Integration**: Search and import lyrics directly from Genius.com.
-- **Study Mode**: Analyze your favorite artists' tracks to understand their patterns.
+- **Async AI Generation**: Get suggestions without freezing your interface.
+- **Audio Analysis**: Background BPM detection and waveform generation.
+- **Task Queue**: Robust job processing powered by Celery & Redis.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Python 3.10+ with Flask & **Flask-SocketIO** (for Websockets)
-- **Frontend**: HTML5, CSS3 (Custom Design System), JavaScript (ES6)
-- **Data**: JSON-based local storage (no heavy database setup required for local use)
-- **NLP**: CMU Dict (Pronouncing), NLTK (WordNet)
-- **Audio Analysis**: **Librosa** & **Numpy** (for async BPM detection)
-- **AI Integration**: Support for OpenAI GPT-4, Google Gemini, and Perplexity AI
-- **Performance**: Singleton caching for dictionary lookups, background threading for audio processing
-- **Testing**: Pytest
-
----
-
-## 📂 Project Structure
-
-```
-vibelyrics/
-├── app/
-│   ├── ai/                 # AI provider integrations (Gemini, OpenAI,Anthropic)
-│   │   ├── __init__.py
-│   │   ├── base.py         # Abstract base class for providers
-│   │   ├── gemini.py       # Google Gemini integration
-│   │   ├── openai_prov.py  # OpenAI GPT-4 integration
-│   │   └── elite_knowledge.py # Technique library & few-shot examples
-│   ├── analysis/           # Core algorithms for rhyme & rhythm analysis
-│   │   ├── __init__.py
-│   │   ├── audio_analyzer.py  # BPM detection using Librosa
-│   │   ├── bpm_calculator.py  # Rhyme pocket & timing logic
-│   │   ├── complexity_scorer.py # SSS, unique word count, diversity metrics
-│   │   ├── indian_rhyme_finder.py # Rhyme groups & pattern matching for IN langs
-│   │   ├── indian_thesaurus.py # Hindi/Kannada synonyms & antonyms
-│   │   ├── rhyme_detector.py # End rhymes, internal rhymes, & heatmap logic
-│   │   ├── rhyme_dictionary.py # CMU Dict based rhyme lookups
-│   │   ├── syllable_counter.py # Syllable counting & stress patterns
-│   │   └── ultra_thesaurus.py # Unified engine (WordNet + Slang + Indian + AI)
-│   ├── learning/           # Adaptive learning inputs
-│   │   ├── correction_analyzer.py # Learns from user edits
-│   │   └── self_enhancer.py # Background learning thread
-│   ├── models/             # Flask-SQLAlchemy data models
-│   │   ├── __init__.py
-│   │   ├── lyrics.py       # LyricSession and LyricLine models
-│   │   └── journal.py      # Journal entry models
-│   ├── routes/             # Flask blueprints
-│   │   ├── __init__.py
-│   │   ├── api.py          # Data endpoints for dictionary & tools
-│   │   ├── workspace.py    # Main writing session routes
-│   │   ├── journal.py      # Journal management
-│   │   └── references.py   # Genius search & study mode
-│   ├── static/             # Frontend assets
-│   │   ├── css/
-│   │   │   └── style.css   # Main design system
-│   │   ├── js/
-│   │   │   ├── app.js      # Global UI logic
-│   │   │   ├── session.js  # Real-time writing & socket logic
-│   │   │   └── flow_viz.js # Canvas rhythm visualization
-│   │   └── uploads/        # User beats and audio
-│   └── templates/          # Jinja2 HTML templates
-│       ├── base.html       # Shared layout
-│       ├── workspace.html  # Session browser/dashboard
-│       ├── session.html    # Core writing interface
-│       ├── journal.html    # Lyric journal
-│       ├── references.html # Genius search results
-│       ├── reference_view.html # Song study mode
-│       ├── settings.html   # User profile & AI config
-│       └── export_print.html # Print-friendly view
-├── data/                   # SQLite database and local exports
-├── tests/                  # Pytest suite
-│   ├── test_analysis.py
-│   └── test_api.py
-├── run.py                  # Entry point with SocketIO support
-├── requirements.txt
-└── .env                    # Environment config
-```
+- **Backend**: Python 3.10+ with Flask
+- **Frontend**: Custom HTML5/CSS3 Design System + Vanilla JS
+- **Search Engine**: **Whoosh** (Pure Python Full-Text Search)
+- **Task Queue**: **Celery** + **Redis** (Async processing)
+- **Real-time**: Flask-SocketIO (WebSockets)
+- **AI**: OpenAI GPT-4, Google Gemini, Perplexity
+- **Audio**: Librosa & Wavesurfer.js
 
 ---
 
@@ -191,106 +56,93 @@ vibelyrics/
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- `pip` (Python package manager)
+- Python 3.8+
+- Docker & Docker Compose (Recommended)
 
-### Installation
+### Quick Start (Docker)
+
+The easiest way to run VibeLyrics with all features (Search, Redis, Celery) enabled.
 
 1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/vibelyrics.git
+   cd vibelyrics
+   ```
 
-    ```bash
-    git clone https://github.com/yourusername/vibelyrics.git
-    cd vibelyrics
-    ```
+2. **Configure Environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys (OPENAI_API_KEY, GEMINI_API_KEY)
+   ```
 
-2. **Create a virtual environment**:
+3. **Launch**:
+   ```bash
+   docker-compose up -d
+   ```
+   Access the app at `http://localhost:5000`
 
-    ```bash
-    python -m venv venv
-    
-    # Windows
-    venv\Scripts\activate
-    
-    # macOS/Linux
-    source venv/bin/activate
-    ```
+### Manual Installation (Local)
 
-3. **Install dependencies**:
+1. **Install Dependencies**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+2. **Run Redis** (Required for background tasks):
+   ```bash
+   redis-server
+   ```
 
-4. **Download NLTK Data** (Required for Smart Dictionary):
+3. **Start Worker** (In data terminal):
+   ```bash
+   celery -A app.celery_app:celery_app worker --loglevel=info
+   ```
 
-    ```bash
-    python -m nltk.downloader wordnet
-    ```
-
-### Configuration
-
-VibeLyrics relies on environment variables for API keys and configuration.
-
-1. **Copy the example config**:
-
-    ```bash
-    cp .env.example .env
-    ```
-
-2. **Edit `.env`** with your details:
-
-    | Variable | Description | Required |
-    |----------|-------------|----------|
-    | `FLASK_SECRET_KEY` | Random string for session security | Yes |
-    | `GENIUS_ACCESS_TOKEN` | Token from Genius API clients | Optional (for scraping) |
-    | `GEMINI_API_KEY` | Google Gemini API Key | Optional (for AI features) |
-    | `OPENAI_API_KEY` | OA API Key | Optional (for AI features) |
-    | `DEFAULT_AI_PROVIDER` | `gemini` or `openai` | Yes (if using AI) |
+4. **Start App**:
+   ```bash
+   python run.py
+   ```
 
 ---
 
-## 🏃‍♂️ Running the Application
+## 🔍 API Documentation
 
-To start the local development server (with WebSocket support):
+### Search API
+- `GET /api/search?q=<query>` - Full text search
+- `GET /api/search/rhymes?word=<word>` - Phonetic rhyme search
+- `POST /api/search/reindex` - Rebuild search index
 
-```bash
-python run.py
-```
+### Style API
+- `GET /api/styles` - List available artist styles
+- `POST /api/line/transform` - Style transfer
 
-The application will be accessible at `http://127.0.0.1:5000`.
+### Stats API
+- `GET /stats/api/overview` - Writing stats
+- `GET /stats/api/history` - Activity charts
 
 ---
 
-## 🧪 Running Tests
+## 🐳 Docker Services
 
-We use `pytest` to ensure the core analysis logic remains accurate.
-
-1. **Run all tests**:
-
-    ```bash
-    pytest
-    ```
-
-2. **Run with coverage report**:
-
-    ```bash
-    pytest --cov=app tests/
-    ```
+| Service | Description | Port |
+|---------|-------------|------|
+| `vibelyrics` | Main Web Application | 5000 |
+| `vibelyrics-redis` | Message Broker & Cache | 6379 |
+| `vibelyrics-celery` | Background Task Worker | - |
+| `vibelyrics-beat` | Scheduled Tasks | - |
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome! Please run tests before submitting PRs:
 
-1. Fork the project.
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
-
----
+```bash
+pytest
+```
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.

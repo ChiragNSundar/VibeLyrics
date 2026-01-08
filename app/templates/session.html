@@ -28,8 +28,29 @@
                 <option value="perplexity" {% if profile.preferred_provider=='perplexity' %}selected{% endif %}>
                     Perplexity</option>
             </select>
-            <a href="{{ url_for('workspace.export_print', session_id=session.id) }}" target="_blank"
-                class="btn btn-secondary">📄 Export</a>
+            <div class="export-dropdown" style="position:relative;">
+                <button class="btn btn-secondary" onclick="toggleExportMenu()">📄 Export ▾</button>
+                <div id="export-menu" class="dropdown-menu"
+                    style="display:none; position:absolute; right:0; top:100%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; min-width:180px; z-index:100; margin-top:4px;">
+                    <a href="{{ url_for('export.export_txt', session_id=session.id) }}" class="dropdown-item"
+                        style="display:block; padding:0.75rem 1rem; color:var(--text-primary); text-decoration:none;">📝
+                        Plain Text (.txt)</a>
+                    <a href="{{ url_for('export.export_pdf', session_id=session.id) }}" class="dropdown-item"
+                        style="display:block; padding:0.75rem 1rem; color:var(--text-primary); text-decoration:none;">📄
+                        Styled PDF</a>
+                    <a href="{{ url_for('export.export_teleprompter', session_id=session.id) }}" target="_blank"
+                        class="dropdown-item"
+                        style="display:block; padding:0.75rem 1rem; color:var(--text-primary); text-decoration:none;">📺
+                        Teleprompter</a>
+                    <a href="{{ url_for('export.export_json', session_id=session.id) }}" class="dropdown-item"
+                        style="display:block; padding:0.75rem 1rem; color:var(--text-primary); text-decoration:none;">💾
+                        Backup (JSON)</a>
+                    <a href="{{ url_for('workspace.export_print', session_id=session.id) }}" target="_blank"
+                        class="dropdown-item"
+                        style="display:block; padding:0.75rem 1rem; color:var(--text-primary); text-decoration:none; border-top:1px solid var(--border-color);">🖨️
+                        Print View</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -72,7 +93,32 @@
     </div>
 
     <!-- Main Writing Area -->
-    <div class="writing-area">
+    <div class="writing-area" id="writing-area">
+        <!-- Reference Panel (Split View) -->
+        <div class="reference-panel" id="reference-panel" style="display:none;">
+            <div class="reference-header">
+                <h3>📚 Reference</h3>
+                <div class="reference-controls">
+                    <select id="reference-select" class="input small" onchange="loadReference(this.value)">
+                        <option value="">Select reference...</option>
+                    </select>
+                    <button class="btn-icon" onclick="toggleSplitView()" title="Close split view">✕</button>
+                </div>
+            </div>
+            <div class="reference-content" id="reference-content">
+                <p class="placeholder-text">Select a reference to view lyrics side-by-side while you write.</p>
+            </div>
+            <div class="reference-actions"
+                style="padding:0.5rem; border-top:1px solid var(--border-color); display:none;" id="reference-actions">
+                <button class="btn btn-secondary small" onclick="copyRhymeWord()">Copy Rhyme</button>
+            </div>
+        </div>
+
+        <!-- Split View Toggle Button -->
+        <button class="split-view-toggle" id="split-toggle" onclick="toggleSplitView()" title="Toggle Split View">
+            📖
+        </button>
+
         <!-- Lyrics Panel -->
         <div class="lyrics-panel">
             <div class="lines-container" id="lines-container">
@@ -375,6 +421,150 @@
                 input.focus();
             }
         }
+
+        function toggleExportMenu() {
+            const menu = document.getElementById('export-menu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Close export menu when clicking elsewhere
+        document.addEventListener('click', function (e) {
+            const exportDropdown = document.querySelector('.export-dropdown');
+            const menu = document.getElementById('export-menu');
+            if (exportDropdown && menu && !exportDropdown.contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        });
+
+        // ============================================
+        // SPLIT VIEW MODE
+        // ============================================
+        let splitViewActive = false;
+
+        function toggleSplitView() {
+            splitViewActive = !splitViewActive;
+            const panel = document.getElementById('reference-panel');
+            const writingArea = document.getElementById('writing-area');
+            const toggle = document.getElementById('split-toggle');
+
+            if (splitViewActive) {
+                panel.style.display = 'flex';
+                writingArea.classList.add('split-mode');
+                toggle.classList.add('active');
+                loadReferenceOptions();
+            } else {
+                panel.style.display = 'none';
+                writingArea.classList.remove('split-mode');
+                toggle.classList.remove('active');
+            }
+        }
+
+        async function loadReferenceOptions() {
+            const select = document.getElementById('reference-select');
+
+            try {
+                // Load saved sessions as references
+                const res = await fetch('/api/sessions');
+                if (res.ok) {
+                    const data = await res.json();
+                    const sessions = data.sessions || [];
+
+                    // Clear existing options
+                    select.innerHTML = '<option value="">Select reference...</option>';
+
+                    sessions.forEach(s => {
+                        if (s.id !== SESSION_ID) {
+                            const opt = document.createElement('option');
+                            opt.value = `session:${s.id}`;
+                            opt.textContent = `📝 ${s.title}`;
+                            select.appendChild(opt);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log('Could not load references:', e);
+            }
+        }
+
+        async function loadReference(value) {
+            const content = document.getElementById('reference-content');
+            const actions = document.getElementById('reference-actions');
+
+            if (!value) {
+                content.innerHTML = '<p class="placeholder-text">Select a reference to view lyrics side-by-side.</p>';
+                actions.style.display = 'none';
+                return;
+            }
+
+            const [type, id] = value.split(':');
+
+            if (type === 'session') {
+                try {
+                    const res = await fetch(`/export/${id}/json`);
+                    const data = await res.json();
+
+                    let html = `<div class="reference-title">${data.title}</div>`;
+                    html += '<div class="reference-lines">';
+
+                    let currentSection = '';
+                    data.lines.forEach(line => {
+                        if (line.section !== currentSection) {
+                            currentSection = line.section;
+                            html += `<div class="ref-section">[${currentSection}]</div>`;
+                        }
+                        html += `<div class="ref-line" onclick="copyToInput('${line.text.replace(/'/g, "\\'")}')">${line.text}</div>`;
+                    });
+
+                    html += '</div>';
+                    content.innerHTML = html;
+                    actions.style.display = 'block';
+                } catch (e) {
+                    content.innerHTML = '<p class="error">Failed to load reference.</p>';
+                }
+            }
+        }
+
+        function copyToInput(text) {
+            const input = document.getElementById('new-line-input');
+            if (input) {
+                input.value = text;
+                input.focus();
+                showToast('Line copied to input', 'success');
+            }
+        }
+
+        // ============================================
+        // STYLE SELECTOR
+        // ============================================
+        let currentStyle = '';
+
+        async function loadStyleOptions() {
+            try {
+                const res = await fetch('/api/styles');
+                const data = await res.json();
+
+                if (data.success) {
+                    const container = document.getElementById('style-selector');
+                    if (container) {
+                        let html = '<option value="">Your Style</option>';
+                        for (const [key, style] of Object.entries(data.styles)) {
+                            html += `<option value="${key}">${style.icon} ${style.name}</option>`;
+                        }
+                        container.innerHTML = html;
+                    }
+                }
+            } catch (e) {
+                console.log('Could not load styles');
+            }
+        }
+
+        function setStyle(styleKey) {
+            currentStyle = styleKey;
+            showToast(styleKey ? `Style: ${styleKey}` : 'Using your style', 'info');
+        }
+
+        // Load styles on page load
+        document.addEventListener('DOMContentLoaded', loadStyleOptions);
 
         async function uploadAudio(input) {
             if (!input.files[0]) return;

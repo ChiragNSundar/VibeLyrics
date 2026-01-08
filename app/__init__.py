@@ -36,6 +36,10 @@ def create_app(config_class=Config):
     from .routes.settings import settings_bp
     from .routes.api import api_bp
     from .routes.education import education_bp
+    from .routes.stats import stats_bp
+    from .routes.export import export_bp
+    from .routes.search import search_bp
+    from .routes.task_status import task_status_bp
     
     app.register_blueprint(workspace_bp)
     app.register_blueprint(journal_bp, url_prefix="/journal")
@@ -43,6 +47,10 @@ def create_app(config_class=Config):
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(education_bp, url_prefix="/education")
+    app.register_blueprint(stats_bp, url_prefix="/stats")
+    app.register_blueprint(export_bp, url_prefix="/export")
+    app.register_blueprint(search_bp, url_prefix="/api")
+    app.register_blueprint(task_status_bp, url_prefix="/api")
     
     # Import socket events to register them
     from . import events
