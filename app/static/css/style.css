@@ -1498,18 +1498,26 @@ textarea.input {
     right: 0;
     bottom: 0;
     padding: 1rem;
-    color: var(--text-muted);
-    opacity: 0.5;
+    color: #a78bfa;
+    opacity: 0.7;
     pointer-events: none;
     font-size: 1.1rem;
     z-index: 1;
     white-space: nowrap;
     overflow: hidden;
+    font-style: italic;
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
 }
 
 .ghost-text.loading {
+    color: var(--text-muted);
     font-style: italic;
     animation: pulse 1.5s ease-in-out infinite;
+}
+
+.ghost-text.error {
+    color: var(--accent-danger);
+    opacity: 0.6;
 }
 
 @keyframes pulse {
@@ -2623,13 +2631,19 @@ html {
 }
 
 .reference-panel {
-    display: flex;
+    display: none;
     flex-direction: column;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     height: calc(100vh - 300px);
     overflow: hidden;
+    position: relative;
+    z-index: 10;
+}
+
+.writing-area.split-mode .reference-panel {
+    display: flex;
 }
 
 .reference-header {

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="session-container">
     <!-- Session Header -->
-    <div class="session-header-bar">
+    <div class="session-header-bar tw-backdrop-blur-md tw-border-b tw-border-white/10">
         <div class="session-info">
             <a href="{{ url_for('workspace.index') }}" class="back-link">← Back</a>
             <h1 class="session-title" contenteditable="true" data-session-id="{{ session.id }}">{{ session.title }}</h1>
@@ -19,8 +19,10 @@
                 Beat</button>
             <input type="file" id="audio-upload" style="display:none" accept="audio/*" onchange="uploadAudio(this)">
             {% endif %}
-            <button class="btn btn-secondary" onclick="analyzeSession()">📊 Analyze</button>
-            <button class="btn btn-secondary" onclick="openAIHelp()">🤖 AI Help</button>
+            <button class="btn btn-secondary tw-transition-all tw-duration-200 hover:tw-shadow-glow-cyan"
+                onclick="analyzeSession()">📊 Analyze</button>
+            <button class="btn btn-secondary tw-transition-all tw-duration-200 hover:tw-shadow-glow-purple"
+                onclick="openAIHelp()">🤖 AI Help</button>
             <button class="btn btn-secondary" onclick="openRhymeWave()">🌊 RhymeWave</button>
             <select id="provider-select" class="input small" onchange="switchProvider(this.value)">
                 <option value="openai" {% if profile.preferred_provider=='openai' %}selected{% endif %}>OpenAI</option>
@@ -96,7 +98,7 @@
     <!-- Main Writing Area -->
     <div class="writing-area" id="writing-area">
         <!-- Reference Panel (Split View) -->
-        <div class="reference-panel" id="reference-panel">
+        <div class="reference-panel" id="reference-panel" style="display: none;">
             <div class="reference-header">
                 <h3>📚 Reference</h3>
                 <div class="reference-controls">
@@ -130,8 +132,8 @@
                     <span class="section-label">{{ line.section }}</span>
                 </div>
                 {% endif %}
-                <div class="line-row {{ line.heatmap_class }}" data-line-id="{{ line.id }}"
-                    data-line-number="{{ line.line_number }}">
+                <div class="line-row tw-transition-all tw-duration-200 hover:tw-translate-x-1 {{ line.heatmap_class }}"
+                    data-line-id="{{ line.id }}" data-line-number="{{ line.line_number }}">
                     <span class="line-number">{{ line.line_number }}</span>
                     <div class="line-content">
                         <span class="line-text" oncontextmenu="handleWordRightClick(event)">{{ line.highlighted_html |

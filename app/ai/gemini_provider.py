@@ -11,31 +11,89 @@ from .prompts import LyricPrompts
 
 
 class GeminiProvider(BaseAIProvider):
-    """Google Gemini implementation for lyric operations"""
+    """Google Gemini implementation for lyric operations with model rotation"""
+    
+    # Model rotation hierarchy (lowest tier to highest tier)
+    # When quota is exceeded, we try the next model in the list
+    MODEL_HIERARCHY = [
+        'gemma-3n-e4b-it',       # Lowest tier - Gemma (always available)
+        'gemini-2.0-flash-lite',  # Gemini 2.0 Flash Lite
+        'gemini-2.0-flash',       # Gemini 2.0 Flash
+        'gemini-2.5-flash',       # Gemini 2.5 Flash (highest/preferred)
+    ]
     
     def __init__(self):
         genai.configure(api_key=Config.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        # Start with highest-tier model
+        self.current_model_index = len(self.MODEL_HIERARCHY) - 1
+        self._init_model()
+    
+    def _init_model(self):
+        """Initialize the generative model with current model selection"""
+        model_name = self.MODEL_HIERARCHY[self.current_model_index]
+        self.model = genai.GenerativeModel(model_name)
+        self.current_model_name = model_name
+    
+    def _rotate_to_next_model(self) -> bool:
+        """Rotate to the next available model in the fallback hierarchy.
+        Returns True if a model is available, False if all exhausted."""
+        if self.current_model_index > 0:
+            self.current_model_index -= 1
+            self._init_model()
+            print(f"[AI] Rotating to fallback model: {self.current_model_name}")
+            return True
+        return False
+    
+    def get_current_model_info(self) -> dict:
+        """Get information about the current model being used"""
+        return {
+            'model_name': self.current_model_name,
+            'tier': self.current_model_index + 1,
+            'total_tiers': len(self.MODEL_HIERARCHY),
+            'is_fallback': self.current_model_index < len(self.MODEL_HIERARCHY) - 1
+        }
+    
+    def reset_to_best_model(self):
+        """Reset to the highest-tier model (useful when quota resets)"""
+        self.current_model_index = len(self.MODEL_HIERARCHY) - 1
+        self._init_model()
+        print(f"[AI] Reset to best model: {self.current_model_name}")
         
     def _call_api(self, user_prompt: str, temperature: float = 0.8) -> str:
-        """Make API call to Gemini"""
-        try:
-            # Combine system prompt with user prompt
-            full_prompt = f"{LyricPrompts.SYSTEM_PROMPT}\n\n---\n\n{user_prompt}"
-            
-            generation_config = genai.types.GenerationConfig(
-                temperature=temperature,
-                max_output_tokens=1000
-            )
-            
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=generation_config
-            )
-            
-            return response.text
-        except Exception as e:
-            raise Exception(f"Gemini API error: {str(e)}")
+        """Make API call to Gemini with automatic model rotation on quota errors"""
+        max_retries = len(self.MODEL_HIERARCHY)
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                # Combine system prompt with user prompt
+                full_prompt = f"{LyricPrompts.SYSTEM_PROMPT}\n\n---\n\n{user_prompt}"
+                
+                generation_config = genai.types.GenerationConfig(
+                    temperature=temperature,
+                    max_output_tokens=1000
+                )
+                
+                response = self.model.generate_content(
+                    full_prompt,
+                    generation_config=generation_config
+                )
+                
+                return response.text
+            except Exception as e:
+                error_str = str(e).lower()
+                # Check for quota/rate limit errors
+                if 'quota' in error_str or 'rate' in error_str or 'exhausted' in error_str or 'resource' in error_str or '429' in error_str:
+                    last_error = e
+                    print(f"[AI] Quota exceeded for {self.current_model_name}: {str(e)[:100]}")
+                    if not self._rotate_to_next_model():
+                        raise Exception(f"All Gemini models exhausted. Last error: {str(e)}")
+                    continue
+                else:
+                    # Non-quota error, raise immediately
+                    raise Exception(f"Gemini API error ({self.current_model_name}): {str(e)}")
+        
+        raise Exception(f"Failed after {max_retries} model rotation attempts. Last error: {str(last_error)}")
     
     def _parse_json_response(self, response: str) -> Dict:
         """Parse JSON from response, handling markdown code blocks"""

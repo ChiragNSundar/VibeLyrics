@@ -486,11 +486,32 @@ async function suggestNext() {
                 suggestionEventSource.close();
                 isLoadingSuggestion = false;
                 ghostText.classList.remove('loading');
+                ghostText.textContent = ''; // Clear any error text
+                currentSuggestionText = '';
+                return;
+            }
+
+            // Filter out error messages from suggestion text
+            const chunk = e.data;
+            const errorPatterns = ['429', 'error', 'exceeded', 'quota', 'rate limit', 'Error:', '{\"error'];
+            const isErrorChunk = errorPatterns.some(pattern =>
+                chunk.toLowerCase().includes(pattern.toLowerCase())
+            );
+
+            if (isErrorChunk) {
+                console.warn('Filtered error from suggestion:', chunk.substring(0, 50));
+                // Don't show error in ghost text, just clear and stop
+                suggestionEventSource.close();
+                suggestionEventSource = null;
+                isLoadingSuggestion = false;
+                ghostText.classList.remove('loading');
+                ghostText.textContent = '';
+                currentSuggestionText = '';
                 return;
             }
 
             // Append chunk
-            currentSuggestionText += e.data;
+            currentSuggestionText += chunk;
             updateGhostText();
         };
 

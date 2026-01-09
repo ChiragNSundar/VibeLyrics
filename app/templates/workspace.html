@@ -10,29 +10,34 @@
     </div>
 
     <!-- Gamification Dashboard -->
-    <div class="card stats-dashboard"
+    <div class="card stats-dashboard tw-backdrop-blur-md tw-bg-white/5 tw-border tw-border-white/10"
         style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; text-align: center;">
-        <div class="stat-item">
+        <div
+            class="stat-item tw-transition-all tw-duration-300 hover:tw-scale-105 hover:tw-bg-white/5 tw-rounded-lg tw-p-4">
             <h3 style="margin:0; font-size:2rem; color:var(--accent-primary);">{{ profile.current_streak }} 🔥</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Day Streak</p>
         </div>
-        <div class="stat-item">
+        <div
+            class="stat-item tw-transition-all tw-duration-300 hover:tw-scale-105 hover:tw-bg-white/5 tw-rounded-lg tw-p-4">
             <h3 style="margin:0; font-size:2rem; color:var(--accent-secondary);">{{ profile.total_lines_written }} ✍️
             </h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Lines Dropped</p>
         </div>
-        <div class="stat-item">
+        <div
+            class="stat-item tw-transition-all tw-duration-300 hover:tw-scale-105 hover:tw-bg-white/5 tw-rounded-lg tw-p-4">
             <h3 style="margin:0; font-size:2rem; color:var(--accent-warning);">{{ profile.longest_streak }} 🏆</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Best Streak</p>
         </div>
-        <div class="stat-item">
+        <div
+            class="stat-item tw-transition-all tw-duration-300 hover:tw-scale-105 hover:tw-bg-white/5 tw-rounded-lg tw-p-4">
             <h3 style="margin:0; font-size:2rem; color:var(--accent-success);">{{ profile.total_sessions }} 📀</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Projects</p>
         </div>
     </div>
 
     <!-- Daily Challenge Card -->
-    <div class="card challenge-card" style="background:linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); color:white;">
+    <div class="card challenge-card tw-transition-all tw-duration-300 hover:tw-shadow-glow-purple hover:tw-scale-[1.01]"
+        style="background:linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); color:white;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
                 <h3 style="margin:0; font-size:1.2rem;">🎯 Daily Challenge</h3>
@@ -81,7 +86,8 @@
     </script>
 
     <!-- Artist DNA Card -->
-    <div class="card dna-card" style="background:var(--bg-hover);">
+    <div class="card dna-card tw-transition-all tw-duration-300 hover:tw-border-vibe-purple/50"
+        style="background:var(--bg-hover);">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <h2>🧬 Artist DNA</h2>
@@ -185,7 +191,8 @@
         {% if sessions %}
         <div class="sessions-grid">
             {% for session in sessions %}
-            <a href="{{ url_for('workspace.edit_session', session_id=session.id) }}" class="session-card">
+            <a href="{{ url_for('workspace.edit_session', session_id=session.id) }}"
+                class="session-card tw-transition-all tw-duration-300 hover:tw-shadow-glow-purple hover:tw-translate-y-[-4px]">
                 <div class="session-header">
                     <h3>{{ session.title }}</h3>
                     <span class="bpm-badge">{{ session.bpm }} BPM</span>

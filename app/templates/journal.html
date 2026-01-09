@@ -10,7 +10,8 @@
     </div>
 
     <!-- Quick Post (Twitter-style) -->
-    <div class="thought-composer">
+    <div
+        class="thought-composer tw-backdrop-blur-md tw-bg-white/5 tw-border tw-border-white/10 tw-transition-all tw-duration-300 hover:tw-border-vibe-purple/30">
         <div class="composer-avatar">💡</div>
         <div class="composer-input">
             <textarea id="quick-thought" class="thought-input"
@@ -53,7 +54,8 @@
     <div class="thought-feed" id="thought-feed">
         {% if entries %}
         {% for entry in entries %}
-        <div class="thought-card" data-id="{{ entry.id }}">
+        <div class="thought-card tw-transition-all tw-duration-300 hover:tw-bg-white/5 hover:tw-translate-x-1"
+            data-id="{{ entry.id }}">
             <div class="thought-content">
                 <p>{{ entry.content }}</p>
             </div>
