@@ -21,17 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ⚡ Improved
 
+- **Session UI Redesign**:
+  - Replaced right-side AI panel with **Left-Side Split Panels** for better workflow.
+  - Added floating toggle buttons for **RhymeWave** (🌊) and **AI Help** (🤖).
+  - Panels are non-intrusive and hidden by default.
 - **Ghost Text UX**:
   - Enhanced visibility with brighter purple color and text shadow.
   - Added italic styling to better distinguish from user input.
-- **Reference Panel**:
-  - Improved split-view layout to prevent overlapping main content.
-  - Panel is now hidden by default until split-view is toggled.
+- **Audio Upload**:
+  - Added loading indicator during beat upload.
+  - Improved error handling and initialization for the waveform player.
 
 ### 🐛 Fixed
 
-- **AI Error Handling**: Fixed issue where API error JSON (e.g., "Your quota exceeded") was displayed as ghost text suggestions.
-- **CSS Conflicts**: Resolved specificity issues between vanilla CSS and Tailwind by managing preflight and layer ordering.
+- **Layout Stability**: Fixed broken HTML structure (extra closing tags) that caused buttons to malfunction.
+- **AI Error Handling**: Fixed issue where API error JSON was displayed as ghost text suggestions.
+- **CSS Conflicts**: Resolved specificity issues between vanilla CSS and Tailwind.
 
 ## [1.1.0] - 2026-01-08
 

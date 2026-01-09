@@ -8,11 +8,11 @@
 
 ### 📖 Smart Writing Interface
 
-- **Real-Time AI Streaming**: Ghost text streams in instantly as you type (like ChatGPT), powered by Server-Sent Events.
-- **Split View Mode**: View reference tracks or past sessions side-by-side while writing.
-- **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading for instant performance.
-- **Offline Support**: Full functionality offline via Service Workers (auto-caching assets & dictionaries).
-- **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang, Emotional intensity).
+- **Left-Side Split Panels**: New intuitive layout with floating toggles for **RhymeWave** (rhyme dictionary) and **AI Help**.
+- **Real-Time AI Streaming**: Ghost text streams in instantly as you type (like ChatGPT).
+- **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading.
+- **Offline Support**: Full functionality offline via Service Workers.
+- **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang).
 - **Export Options**: Export to PDF (styled), TXT, or JSON backup.
 
 ### 🎨 Modern Design System
