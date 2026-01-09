@@ -2630,6 +2630,88 @@ html {
     gap: 1rem;
 }
 
+/* Left Toggle Buttons Container */
+.left-toggle-buttons {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 50;
+}
+
+.left-toggle-buttons .split-view-toggle {
+    position: relative;
+    top: auto;
+    transform: none;
+}
+
+.left-toggle-buttons .ai-toggle {
+    background: var(--accent-secondary);
+    border-color: var(--accent-secondary);
+}
+
+.left-toggle-buttons .ai-toggle:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+/* RhymeWave Panel (Left Side) */
+.rhymewave-panel {
+    display: none;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    height: calc(100vh - 300px);
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+}
+
+.rhymewave-panel.active {
+    display: flex;
+}
+
+.writing-area.rhymewave-mode {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 1rem;
+}
+
+.writing-area.rhymewave-mode .rhymewave-panel {
+    display: flex;
+}
+
+/* AI Help Panel (Left Side) */
+.ai-help-panel {
+    display: none;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    height: calc(100vh - 300px);
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+}
+
+.ai-help-panel.active {
+    display: flex;
+}
+
+.writing-area.ai-help-mode {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 1rem;
+}
+
+.writing-area.ai-help-mode .ai-help-panel {
+    display: flex;
+}
+
 .reference-panel {
     display: none;
     flex-direction: column;

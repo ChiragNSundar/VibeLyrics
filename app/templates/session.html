@@ -21,9 +21,6 @@
             {% endif %}
             <button class="btn btn-secondary tw-transition-all tw-duration-200 hover:tw-shadow-glow-cyan"
                 onclick="analyzeSession()">📊 Analyze</button>
-            <button class="btn btn-secondary tw-transition-all tw-duration-200 hover:tw-shadow-glow-purple"
-                onclick="openAIHelp()">🤖 AI Help</button>
-            <button class="btn btn-secondary" onclick="openRhymeWave()">🌊 RhymeWave</button>
             <select id="provider-select" class="input small" onchange="switchProvider(this.value)">
                 <option value="openai" {% if profile.preferred_provider=='openai' %}selected{% endif %}>OpenAI</option>
                 <option value="gemini" {% if profile.preferred_provider=='gemini' %}selected{% endif %}>Gemini</option>
@@ -97,29 +94,65 @@
 
     <!-- Main Writing Area -->
     <div class="writing-area" id="writing-area">
-        <!-- Reference Panel (Split View) -->
-        <div class="reference-panel" id="reference-panel" style="display: none;">
+        <!-- RhymeWave Panel (Left Side) -->
+        <div class="rhymewave-panel" id="rhymewave-panel" style="display: none;">
             <div class="reference-header">
-                <h3>📚 Reference</h3>
+                <h3>🌊 RhymeWave</h3>
                 <div class="reference-controls">
-                    <select id="reference-select" class="input small" onchange="loadReference(this.value)">
-                        <option value="">Select reference...</option>
-                    </select>
-                    <button class="btn-icon" onclick="toggleSplitView()" title="Close split view">✕</button>
+                    <button class="btn-icon" onclick="toggleRhymeWavePanel()" title="Close RhymeWave">✕</button>
                 </div>
             </div>
-            <div class="reference-content" id="reference-content">
-                <p class="placeholder-text">Select a reference to view lyrics side-by-side while you write.</p>
-            </div>
-            <div class="reference-actions" id="reference-actions">
-                <button class="btn btn-secondary small" onclick="copyRhymeWord()">Copy Rhyme</button>
+            <div class="rhymewave-content" style="flex: 1; overflow: hidden;">
+                <iframe id="rhymewave-iframe" src=""
+                    style="width:100%; height:100%; border:none; background:white;"></iframe>
             </div>
         </div>
 
-        <!-- Split View Toggle Button -->
-        <button class="split-view-toggle" id="split-toggle" onclick="toggleSplitView()" title="Toggle Split View">
-            📖
-        </button>
+        <!-- AI Help Panel (Left Side) -->
+        <div class="ai-help-panel" id="ai-help-panel" style="display: none;">
+            <div class="reference-header">
+                <h3>🤖 AI Help</h3>
+                <div class="reference-controls">
+                    <button class="btn-icon" onclick="toggleAIHelpPanel()" title="Close AI Help">✕</button>
+                </div>
+            </div>
+            <div class="ai-help-content" style="flex: 1; padding: 1rem; overflow-y: auto;">
+                <!-- Improvement Section -->
+                <div class="ai-section" id="improvement-section-left">
+                    <h4>✨ Improve Line</h4>
+                    <div class="improvement-types">
+                        <button class="chip active" data-type="rhyme" onclick="setImprovementType('rhyme')">🎯
+                            Rhyme</button>
+                        <button class="chip" data-type="flow" onclick="setImprovementType('flow')">🌊 Flow</button>
+                        <button class="chip" data-type="wordplay" onclick="setImprovementType('wordplay')">🔤
+                            Wordplay</button>
+                        <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎 Depth</button>
+                    </div>
+                    <div class="improvement-result" id="improvement-result-left"></div>
+                </div>
+                <!-- Ask AI -->
+                <div class="ai-section" style="margin-top: 1rem;">
+                    <h4>💬 Ask AI</h4>
+                    <div class="ask-input-row">
+                        <input type="text" id="ask-input-left" class="input" placeholder="Ask about rhymes, flow...">
+                        <button class="btn btn-primary" onclick="askAIFromLeft()">Ask</button>
+                    </div>
+                    <div class="ask-response" id="ask-response-left"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Toggle Buttons (Left Side) -->
+        <div class="left-toggle-buttons">
+            <button class="split-view-toggle" id="rhymewave-toggle" onclick="toggleRhymeWavePanel()"
+                title="Toggle RhymeWave">
+                🌊
+            </button>
+            <button class="split-view-toggle ai-toggle" id="ai-help-toggle" onclick="toggleAIHelpPanel()"
+                title="Toggle AI Help">
+                🤖
+            </button>
+        </div>
 
         <!-- Lyrics Panel -->
         <div class="lyrics-panel">
@@ -192,56 +225,26 @@
             </div>
         </div>
 
-        <!-- AI Panel (collapsible) - Alpine.js managed -->
+        <!-- AI Panel (collapsible) - Word Lookup Only -->
         <div class="ai-panel" id="ai-panel" x-data="sidebarPanel" :class="{ 'active': $store.aiPanel.open }">
             <div class="ai-header">
                 <div class="sidebar-tabs">
-                    <button class="tab-btn" :class="{ 'active': activeTab === 'ai' }" @click="activeTab = 'ai'">🤖 AI
-                        Coach</button>
-                    <button class="tab-btn" :class="{ 'active': activeTab === 'rhymewave' }"
-                        @click="activeTab = 'rhymewave'">🌊 RhymeWave</button>
+                    <button class="tab-btn active">📚 Word Lookup</button>
                 </div>
-                <!-- Controls -->
                 <div class="ai-panel-controls">
                     <button class="btn-icon" @click="$store.aiPanel.toggle()">✕</button>
                 </div>
             </div>
 
             <div class="ai-content">
-                <!-- AI Coach Tab -->
-                <div id="tab-ai" class="sidebar-tab-content" x-show="activeTab === 'ai'">
-                    Wordplay</button>
-                    <button class="chip" data-type="depth" onclick="setImprovementType('depth')">💎
-                        Depth</button>
+                <!-- Word Lookup Panel -->
+                <div class="ai-section" id="lookup-section">
+                    <div id="lookup-word-header"
+                        style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
+                    <div id="lookup-results" style="max-height:400px; overflow-y:auto;">
+                        <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or synonyms.</p>
+                    </div>
                 </div>
-                <div class="improvement-result" id="improvement-result"></div>
-            </div>
-
-            <!-- Ask AI -->
-            <div class="ai-section">
-                <h4>Ask AI</h4>
-                <div class="ask-input-row">
-                    <input type="text" id="ask-input" class="input" placeholder="Ask about rhymes, flow, technique...">
-                    <button class="btn btn-primary" onclick="askAI()">Ask</button>
-                </div>
-                <div class="ask-response" id="ask-response"></div>
-            </div>
-
-            <!-- Word Lookup Panel -->
-            <div class="ai-section" id="lookup-section">
-                <h4>📚 Word Lookup</h4>
-                <div id="lookup-word-header"
-                    style="font-weight:bold; color:var(--accent-primary); margin-bottom:0.5rem;"></div>
-                <div id="lookup-results" style="max-height:200px; overflow-y:auto;">
-                    <p class="placeholder-text">Right-click a word in your lyrics to look up rhymes or
-                        synonyms.</p>
-                </div>
-            </div>
-            <!-- RhymeWave Tab -->
-            <div id="tab-rhymewave" class="sidebar-tab-content" x-show="activeTab === 'rhymewave'" style="height:100%;">
-                <!-- Lazy-load: only set src when tab is active -->
-                <iframe :src="activeTab === 'rhymewave' ? 'https://rhymewave.com' : ''"
-                    style="width:100%; height:100%; border:none; background:white;"></iframe>
             </div>
         </div>
     </div>
@@ -291,24 +294,84 @@
 
     // Legacy function wrappers for button onclick handlers
     function openAIHelp() {
-        const panel = document.getElementById('ai-panel');
-        const component = Alpine.$data(panel);
-        if (Alpine.store('aiPanel').open && component.activeTab === 'ai') {
-            Alpine.store('aiPanel').open = false;
-        } else {
-            Alpine.store('aiPanel').open = true;
-            component.activeTab = 'ai';
-        }
+        toggleAIHelpPanel();
     }
 
     function openRhymeWave() {
-        const panel = document.getElementById('ai-panel');
-        const component = Alpine.$data(panel);
-        if (Alpine.store('aiPanel').open && component.activeTab === 'rhymewave') {
-            Alpine.store('aiPanel').open = false;
+        toggleRhymeWavePanel();
+    }
+
+    // Toggle RhymeWave Panel (Left Side)
+    function toggleRhymeWavePanel() {
+        const writingArea = document.getElementById('writing-area');
+        const panel = document.getElementById('rhymewave-panel');
+        const toggle = document.getElementById('rhymewave-toggle');
+        const iframe = document.getElementById('rhymewave-iframe');
+
+        // Close AI Help panel if open
+        if (writingArea.classList.contains('ai-help-mode')) {
+            toggleAIHelpPanel();
+        }
+
+        if (writingArea.classList.contains('rhymewave-mode')) {
+            writingArea.classList.remove('rhymewave-mode');
+            panel.style.display = 'none';
+            toggle.classList.remove('active');
+            iframe.src = ''; // Unload iframe when closed
         } else {
-            Alpine.store('aiPanel').open = true;
-            component.activeTab = 'rhymewave';
+            writingArea.classList.add('rhymewave-mode');
+            panel.style.display = 'flex';
+            toggle.classList.add('active');
+            iframe.src = 'https://rhymewave.com'; // Load iframe when opened
+        }
+    }
+
+    // Toggle AI Help Panel (Left Side)
+    function toggleAIHelpPanel() {
+        const writingArea = document.getElementById('writing-area');
+        const panel = document.getElementById('ai-help-panel');
+        const toggle = document.getElementById('ai-help-toggle');
+
+        // Close RhymeWave panel if open
+        if (writingArea.classList.contains('rhymewave-mode')) {
+            toggleRhymeWavePanel();
+        }
+
+        if (writingArea.classList.contains('ai-help-mode')) {
+            writingArea.classList.remove('ai-help-mode');
+            panel.style.display = 'none';
+            toggle.classList.remove('active');
+        } else {
+            writingArea.classList.add('ai-help-mode');
+            panel.style.display = 'flex';
+            toggle.classList.add('active');
+        }
+    }
+
+    // Ask AI from left panel
+    async function askAIFromLeft() {
+        const input = document.getElementById('ask-input-left');
+        const responseDiv = document.getElementById('ask-response-left');
+        const question = input.value.trim();
+
+        if (!question) return;
+
+        responseDiv.innerHTML = '<p>Thinking...</p>';
+
+        try {
+            const result = await apiCall('/api/ask', 'POST', {
+                question: question,
+                session_id: SESSION_ID
+            });
+
+            if (result.success) {
+                responseDiv.innerHTML = `<div class="ai-answer">${escapeHtml(result.answer)}</div>`;
+                input.value = '';
+            } else {
+                responseDiv.innerHTML = `<p class="error">${result.error}</p>`;
+            }
+        } catch (e) {
+            responseDiv.innerHTML = `<p class="error">Error: ${e.message}</p>`;
         }
     }
 
