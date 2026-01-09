@@ -249,8 +249,6 @@
         </div>
     </div>
 </div>
-</div>
-</div>
 
 <!-- Power Tools Context Menu -->
 <div id="context-menu" class="context-menu"
@@ -579,19 +577,34 @@
 
     async function uploadAudio(input) {
         if (!input.files[0]) return;
+
+        // Show loading state
+        const btn = document.querySelector('button[onclick*="audio-upload"]');
+        if (btn) btn.textContent = '⏳ Uploading...';
+
         const formData = new FormData();
         formData.append('audio_file', input.files[0]);
 
-        const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-        if (data.success) {
-            if (data.detected_bpm > 0) {
-                alert(`Beat uploaded! Auto-detected BPM: ${data.detected_bpm}`);
+        try {
+            const res = await fetch(`/session/${SESSION_ID}/upload_audio`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert('Audio uploaded successfully! BPM detection is running in the background.');
+                location.reload();
+            } else {
+                alert('Upload failed: ' + (data.error || 'Unknown error'));
+                if (btn) btn.textContent = '🎵 Add Beat';
+                input.value = ''; // Reset input
             }
-            location.reload();
+        } catch (e) {
+            console.error('Upload error:', e);
+            alert('Upload failed: ' + e.message);
+            if (btn) btn.textContent = '🎵 Add Beat';
+            input.value = '';
         }
     }
 </script>
@@ -606,13 +619,29 @@
 <script src="{{ url_for('static', filename='js/session.js') }}"></script>
 <script>
     // Init Flow Viz
-    const viz = new FlowVisualizer('flow-canvas');
-    const linesData = JSON.parse(document.getElementById('lines-data-json').textContent);
-    viz.update(linesData);
+    try {
+        const viz = new FlowVisualizer('flow-canvas');
+        const linesDataEl = document.getElementById('lines-data-json');
+        if (linesDataEl) {
+            const linesData = JSON.parse(linesDataEl.textContent);
+            viz.update(linesData);
+        }
+    } catch (e) {
+        console.error('Flow Viz Init Error:', e);
+    }
 
     // Init Waveform Player if audio exists
     {% if session.audio_path %}
-    initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
+    try {
+        // Wait for WaveSurfer to load
+        if (typeof WaveSurfer !== 'undefined') {
+            initWaveformPlayer('waveform-container', '{{ url_for("static", filename=session.audio_path) }}');
+        } else {
+            console.error('WaveSurfer library not loaded');
+        }
+    } catch (e) {
+        console.error('Waveform Player Init Error:', e);
+    }
     {% endif %}
 </script>
 <script type="application/json" id="lines-data-json">
