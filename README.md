@@ -63,7 +63,7 @@ Write in the signature style of legendary artists:
 - **Real-time**: Server-Sent Events (SSE) & Flask-SocketIO
 - **Search Engine**: **Whoosh** (Pure Python Full-Text Search)
 - **Task Queue**: **Celery** + **Redis** (Async processing)
-- **AI**: OpenAI GPT-4, Google Gemini, Perplexity
+- **AI**: OpenAI GPT-4, Google Gemini, lmstudio
 - **Audio**: Librosa & Wavesurfer.js
 
 ---
@@ -76,7 +76,7 @@ vibelyrics/
 │   ├── ai/                 # AI Logic
 │   │   ├── openai_provider.py
 │   │   ├── gemini_provider.py
-│   │   ├── perplexity_provider.py
+│   │   ├── lmstudio_provider.py
 │   │   ├── context_builder.py
 │   │   ├── prompts.py
 │   │   └── style_library.py

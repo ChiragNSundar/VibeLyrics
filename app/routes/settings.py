@@ -10,6 +10,59 @@ from app.config import Config
 
 settings_bp = Blueprint('settings', __name__)
 
+def check_lmstudio():
+    """Check if LM Studio is running locally"""
+    import requests
+    try:
+        # Check standard port 1234
+        response = requests.get("http://localhost:1234/v1/models", timeout=0.2)
+        return response.status_code == 200
+    except:
+        return False
+
+def check_openai():
+    """Check if OpenAI API key is valid"""
+    import os
+    from openai import OpenAI
+    key = os.getenv("OPENAI_API_KEY")
+    if not key: return False
+    try:
+        client = OpenAI(api_key=key, timeout=3.0)
+        client.models.list()
+        return True
+    except:
+        return False
+
+def check_gemini():
+    """Check if Gemini API key is valid"""
+    import os
+    import google.generativeai as genai
+    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not key: return False
+    try:
+        genai.configure(api_key=key)
+        # Just try to fetch one model to verify auth
+        list(genai.list_models(limit=1))
+        return True
+    except:
+        return False
+
+
+
+def check_genius():
+    """Check if Genius API token is valid"""
+    import os
+    import requests
+    token = os.getenv("GENIUS_ACCESS_TOKEN")
+    if not token: return False
+    try:
+        headers = {"Authorization": f"Bearer {token}"}
+        # Lightweight search to verify token
+        response = requests.get("https://api.genius.com/search?q=test", headers=headers, timeout=2.0)
+        return response.status_code == 200
+    except:
+        return False
+
 
 @settings_bp.route('/')
 def index():
@@ -30,9 +83,10 @@ def index():
                          vocab=vocab_context,
                          corrections=correction_insights,
                          config={
-                             "openai_configured": bool(Config.OPENAI_API_KEY),
-                             "gemini_configured": bool(Config.GEMINI_API_KEY),
-                             "genius_configured": bool(Config.GENIUS_ACCESS_TOKEN)
+                             "openai_configured": check_openai(),
+                             "gemini_configured": check_gemini(),
+                             "genius_configured": check_genius(),
+                             "lmstudio_configured": check_lmstudio()
                          })
 
 
@@ -79,9 +133,10 @@ def update_settings():
                          vocab=vocab_manager.get_vocabulary_context(),
                          corrections=correction_tracker.get_correction_insights(),
                          config={
-                             "openai_configured": bool(Config.OPENAI_API_KEY),
-                             "gemini_configured": bool(Config.GEMINI_API_KEY),
-                             "genius_configured": bool(Config.GENIUS_ACCESS_TOKEN)
+                             "openai_configured": check_openai(),
+                             "gemini_configured": check_gemini(),
+                             "genius_configured": check_genius(),
+                             "lmstudio_configured": check_lmstudio()
                          },
                          message="Settings saved!")
 

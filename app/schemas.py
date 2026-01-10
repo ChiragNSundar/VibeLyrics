@@ -47,7 +47,7 @@ class DeleteLineRequest(BaseModel):
 
 class SwitchProviderRequest(BaseModel):
     """Request schema for switching AI provider"""
-    provider: Literal["openai", "gemini", "perplexity"]
+    provider: Literal["openai", "gemini", "lmstudio"]
 
 
 # =============================================================================

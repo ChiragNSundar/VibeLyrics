@@ -4,7 +4,7 @@ AI package initialization
 from .base_provider import BaseAIProvider
 from .openai_provider import OpenAIProvider
 from .gemini_provider import GeminiProvider
-from .perplexity_provider import PerplexityProvider
+from .lmstudio_provider import LMStudioProvider
 from .prompts import LyricPrompts
 from .context_builder import ContextBuilder
 
@@ -12,7 +12,7 @@ __all__ = [
     'BaseAIProvider',
     'OpenAIProvider', 
     'GeminiProvider',
-    'PerplexityProvider',
+    'LMStudioProvider',
     'LyricPrompts',
     'ContextBuilder',
     'get_provider',
@@ -35,10 +35,8 @@ def get_provider(provider_name: str = None):
         if not os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
             raise ValueError("GEMINI_API_KEY not set")
         return GeminiProvider()
-    elif provider_name == "perplexity":
-        if not os.getenv("PERPLEXITY_API_KEY"):
-            raise ValueError("PERPLEXITY_API_KEY not set")
-        return PerplexityProvider()
+    elif provider_name == "lmstudio":
+        return LMStudioProvider()
     else:
         raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -48,8 +46,9 @@ def get_provider_with_fallback(preferred: str = None):
     import os
     from app.config import Config
     
+    
     # Order of preference for fallback
-    providers = ['gemini', 'openai', 'perplexity']
+    providers = ['gemini', 'openai', 'lmstudio']
     
     # Try preferred first
     if preferred:

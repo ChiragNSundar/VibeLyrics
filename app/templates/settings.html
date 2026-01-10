@@ -21,6 +21,8 @@
                             (GPT-4)</option>
                         <option value="gemini" {% if profile.preferred_provider=='gemini' %}selected{% endif %}>Google
                             Gemini</option>
+                        <option value="lmstudio" {% if profile.preferred_provider=='lmstudio' %}selected{% endif %}>LM
+                            Studio (Local)</option>
                     </select>
                 </div>
 
@@ -80,6 +82,12 @@
                     <span class="status-label">Genius</span>
                     <span class="status-indicator {{ 'active' if config.genius_configured else 'inactive' }}">
                         {{ '✅ Configured' if config.genius_configured else '❌ Not configured' }}
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">LM Studio</span>
+                    <span class="status-indicator {{ 'active' if config.lmstudio_configured else 'inactive' }}">
+                        {{ '✅ Local (Port 1234)' if config.lmstudio_configured else '❌ Not running (Check Port 1234)' }}
                     </span>
                 </div>
             </div>

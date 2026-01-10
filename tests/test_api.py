@@ -113,17 +113,6 @@ class TestProviderAPI:
         assert data['success'] is True
         assert data['provider'] == 'gemini'
     
-    def test_switch_to_perplexity(self, client):
-        """Test switching to Perplexity provider"""
-        response = client.post('/api/provider/switch',
-            data=json.dumps({'provider': 'perplexity'}),
-            content_type='application/json'
-        )
-        
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['provider'] == 'perplexity'
-    
     def test_switch_invalid_provider(self, client):
         """Test switching to invalid provider returns error"""
         response = client.post('/api/provider/switch',

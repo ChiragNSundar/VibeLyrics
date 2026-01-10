@@ -24,8 +24,8 @@
             <select id="provider-select" class="input small" onchange="switchProvider(this.value)">
                 <option value="openai" {% if profile.preferred_provider=='openai' %}selected{% endif %}>OpenAI</option>
                 <option value="gemini" {% if profile.preferred_provider=='gemini' %}selected{% endif %}>Gemini</option>
-                <option value="perplexity" {% if profile.preferred_provider=='perplexity' %}selected{% endif %}>
-                    Perplexity</option>
+                <option value="lmstudio" {% if profile.preferred_provider=='lmstudio' %}selected{% endif %}>
+                    LM Studio</option>
             </select>
             <div class="export-dropdown" style="position:relative;" x-data="{ open: false }">
                 <button class="btn btn-secondary" @click="open = !open">📄 Export ▾</button>
@@ -605,6 +605,20 @@
             alert('Upload failed: ' + e.message);
             if (btn) btn.textContent = '🎵 Add Beat';
             input.value = '';
+        }
+    }
+
+    async function switchProvider(provider) {
+        try {
+            const res = await apiCall('/api/provider/switch', 'POST', { provider });
+            if (res.success) {
+                showToast(`Switched to ${provider}`, 'success');
+            } else {
+                showToast(res.error || 'Failed to switch provider', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to switch provider', 'error');
         }
     }
 </script>
