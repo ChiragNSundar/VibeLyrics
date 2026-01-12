@@ -140,6 +140,13 @@ Only output the completion, not the original text. Keep it concise (one line).""
         partial = context.get("partial", "")
         action = context.get("action", "continue")
         
+        # Fetch journal context (simulated or real if passed)
+        # In a real app, we'd pass this in `context` from the router
+        journal_context = context.get("journal_entries", [])
+        journal_text = ""
+        if journal_context:
+            journal_text = "USER'S THOUGHTS (Use this for inspiration/mood):\n" + "\n".join([f"- {e['content']} ({e['mood']})" for e in journal_context[:3]])
+        
         prompt = f"""ROLE:
 You are the world's greatest ghostwriter, a musical genius who understands the soul of the artist. You are NOT an AI assistant; you are a collaborative partner. Your name is Vibe.
 You possess deep knowledge of all genres (Hip-Hop, R&B, Pop, Rock, Poetry) and literary devices (internal rhyme, multi-syllabic rhyme, assonance, consonance, metonymy, synecdoche).
@@ -161,6 +168,8 @@ SESSION CONTEXT:
 - **BPM**: {session.get('bpm', 140)} (Adjust flow to match this tempo)
 - **Mood**: {session.get('mood', 'Passionate')}
 - **Theme**: {session.get('theme', 'Life')}
+
+{journal_text}
 
 CURRENT LYRICS (Study this style):
 {chr(10).join(lines[-16:]) if lines else '(This is the start of the song. Set the tone.)'}

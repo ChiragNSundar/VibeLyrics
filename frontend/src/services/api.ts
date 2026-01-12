@@ -11,7 +11,7 @@ interface ApiResponse<T = unknown> {
     [key: string]: T | boolean | string | undefined;
 }
 
-async function request<T>(
+export async function request<T>(
     endpoint: string,
     options: RequestInit = {}
 ): Promise<T> {

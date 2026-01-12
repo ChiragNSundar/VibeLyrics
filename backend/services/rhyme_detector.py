@@ -375,38 +375,98 @@ class RhymeDetector:
         return list(self.SLANG.keys())
     
     def get_rhyme_scheme_string(self, lines: List[str]) -> str:
-        """Get rhyme scheme as string (e.g., AABB, ABAB)"""
+        """
+        Identify common 4-line rhyme schemes (ABAB, AABB, etc.)
+        Returns the specific name of the scheme if matched, otherwise the raw pattern (e.g., 'ABCA').
+        """
         if not lines:
             return ""
         
-        endings = []
-        for line in lines:
-            words = line.split()
-            if words:
-                endings.append(self.get_rhyme_ending(words[-1]))
-            else:
-                endings.append("")
+        # We only care about the last 4 lines for identifying specific stanzas
+        # If fewer than 4, just return standard ABC
+        target_lines = lines[-4:]
+        if len(target_lines) < 4:
+            return self._generate_raw_scheme(target_lines)
+
+        endings = [self.get_rhyme_ending(line.split()[-1] if line.split() else "") for line in target_lines]
         
+        # Generate generic pattern (A, B, C...)
         scheme = []
         seen = {}
-        current = 'A'
+        current_char = 'A'
         
-        for ending in endings:
-            if not ending:
+        for end in endings:
+            if not end:
                 scheme.append('X')
                 continue
-            
+                
             found = None
-            for known, letter in seen.items():
-                if self._endings_rhyme(ending, known):
-                    found = letter
+            for known_end, char in seen.items():
+                if self._endings_rhyme(end, known_end):
+                    found = char
                     break
             
             if found:
                 scheme.append(found)
             else:
-                scheme.append(current)
-                seen[ending] = current
-                current = chr(ord(current) + 1)
+                scheme.append(current_char)
+                seen[end] = current_char
+                current_char = chr(ord(current_char) + 1)
         
-        return ''.join(scheme)
+        raw_pattern = "".join(scheme)
+        
+        # Map common patterns to user-friendly names
+        patterns = {
+            "AABB": "AABB (Couplets)",
+            "ABAB": "ABAB (Alternating)",
+            "AAAA": "AAAA (Monorhyme)",
+            "XAXA": "XAXA (Simple 4-line)",
+            "ABBA": "ABBA (Enclosed)",
+            "AXAA": "AXAA",
+            "AAXA": "AAXA",
+            "AAAX": "AAAX",
+            "AXXA": "AXXA"
+        }
+        
+        # Normalize pattern to always start with A (handled by logic above), 
+        # but handling 'X' requires care.
+        # The above logic generates ABC... 
+        # We need to map 'unrhymed' to X if the user prefers that specific notation for non-rhymes?
+        # Standard notation usually allows C, D, etc. 
+        # However, specifically for "XAXA", that implies line 1 and 3 DO NOT rhyme with anything.
+        
+        # Let's do a strict check against the requested patterns using the generated ABC form.
+        # The generated form will maximize rhyme matching.
+        # e.g. XAXA in standard form is ABCB (where A!=C and B=B).
+        
+        # Let's convert our ABC form to the user's requested "X" form if unique.
+        
+        # Check specific known mappings from ABC format
+        if raw_pattern == "ABCB": return "XAXA" # Popular ballad meter often called this
+        if raw_pattern == "ABAC": return "AXXA" # Not quite standard but fits
+        
+        return patterns.get(raw_pattern, raw_pattern)
+
+    def _generate_raw_scheme(self, lines: List[str]) -> str:
+        """Generate standard ABCD rhyme scheme string"""
+        endings = [self.get_rhyme_ending(line.split()[-1] if line.split() else "") for line in lines]
+        scheme = []
+        seen = {}
+        current_char = 'A'
+        
+        for end in endings:
+            if not end:
+                scheme.append('X')
+                continue
+            found = None
+            for known_end, char in seen.items():
+                if self._endings_rhyme(end, known_end):
+                    found = char
+                    break
+            if found:
+                scheme.append(found)
+            else:
+                scheme.append(current_char)
+                seen[end] = current_char
+                current_char = chr(ord(current_char) + 1)
+        return "".join(scheme)

@@ -125,6 +125,11 @@ class UserProfile(Base):
     complexity_level: Mapped[str] = mapped_column(String(50), default="medium")
     rhyme_style: Mapped[str] = mapped_column(String(50), default="mixed")
     
+    # Vocabulary Preferences
+    favorite_words: Mapped[Optional[str]] = mapped_column(Text, default="[]") # JSON list
+    banned_words: Mapped[Optional[str]] = mapped_column(Text, default="[]") # JSON list
+    slang_preferences: Mapped[Optional[str]] = mapped_column(Text, default="[]") # JSON list
+    
     # Stats
     total_sessions: Mapped[int] = mapped_column(Integer, default=0)
     total_lines_written: Mapped[int] = mapped_column(Integer, default=0)
@@ -134,12 +139,16 @@ class UserProfile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def to_dict(self):
+        import json
         return {
             "id": self.id,
             "preferred_provider": self.preferred_provider,
             "default_bpm": self.default_bpm,
             "complexity_level": self.complexity_level,
             "rhyme_style": self.rhyme_style,
+            "favorite_words": json.loads(self.favorite_words) if self.favorite_words else [],
+            "banned_words": json.loads(self.banned_words) if self.banned_words else [],
+            "slang_preferences": json.loads(self.slang_preferences) if self.slang_preferences else [],
             "total_sessions": self.total_sessions,
             "total_lines_written": self.total_lines_written,
             "total_corrections": self.total_corrections

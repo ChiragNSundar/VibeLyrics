@@ -1,39 +1,45 @@
 .journal-page {
-    max-width: 800px;
+    max_width: 1200px;
     margin: 0 auto;
-    padding: var(--spacing-xl);
+    padding: var(--spacing-lg);
 }
 
-.page-header {
-    margin-bottom: var(--spacing-xl);
+.journal-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-lg);
 }
 
-.page-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
+.journal-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
 }
 
-.page-header .subtitle {
-    color: var(--text-secondary);
+.journal-sidebar {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
 }
 
-.journal-card {
-    margin-bottom: var(--spacing-xl);
+.composer-card {
+    padding: var(--spacing-lg);
 }
 
 .journal-textarea {
     width: 100%;
-    min-height: 400px;
-    padding: var(--spacing-lg);
-    background: var(--bg-input);
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
+    min-height: 120px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
     color: var(--text-primary);
     font-family: inherit;
-    font-size: 1.1rem;
-    line-height: 1.8;
     resize: vertical;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: var(--spacing-md);
 }
 
 .journal-textarea:focus {
@@ -41,33 +47,52 @@
     border-color: var(--accent-primary);
 }
 
-.journal-textarea::placeholder {
+.composer-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.journal-feed {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.journal-entry {
+    padding: var(--spacing-lg);
+    border-left: 3px solid var(--accent-secondary);
+}
+
+.entry-content {
+    white-space: pre-wrap;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.entry-meta {
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
-.journal-tips {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: var(--spacing-lg);
-}
-
 .journal-tips h3 {
-    font-size: 1rem;
     margin-bottom: var(--spacing-md);
-    color: var(--text-secondary);
+    color: var(--accent-primary);
 }
 
 .journal-tips ul {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .journal-tips li {
-    padding: 0.5rem 0;
+    margin-bottom: 0.75rem;
     padding-left: 1.5rem;
     position: relative;
-    color: var(--text-muted);
+    font-size: 0.95rem;
+    color: var(--text-secondary);
 }
 
 .journal-tips li::before {

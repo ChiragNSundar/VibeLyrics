@@ -4,10 +4,9 @@ AI suggestions, improvements, and Q&A
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
+from sqlalchemy import select, desc
 from ..database import get_db
-from ..models import LyricSession, LyricLine, UserProfile
+from ..models import LyricSession, LyricLine, UserProfile, JournalEntry
 from ..schemas import SuggestRequest, ImproveRequest, AskRequest, ProviderSwitch
 from ..services.ai_provider import get_ai_provider, set_provider
 
@@ -34,12 +33,19 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
     )
     lines = lines_result.scalars().all()
     
+    # Fetch recent journal entries for inspiration
+    journal_result = await db.execute(
+        select(JournalEntry).order_by(desc(JournalEntry.created_at)).limit(5)
+    )
+    journal_entries = journal_result.scalars().all()
+    
     # Build context
     context = {
         "session": session.to_dict(),
         "lines": [l.final_version or l.user_input for l in lines],
         "partial": data.partial_text,
-        "action": data.action
+        "action": data.action,
+        "journal_entries": [e.to_dict() for e in journal_entries]
     }
     
     # Get suggestion
