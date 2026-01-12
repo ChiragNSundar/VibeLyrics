@@ -95,18 +95,97 @@ export const LearningPage: React.FC = () => {
                 <div className="tips-grid">
                     <Card className="tip-card" hover>
                         <h3>📚 Rhyme Schemes</h3>
-                        <p>AABB, ABAB, and more. Learn how to structure your verses.</p>
-                        <Button variant="secondary" size="sm">Coming Soon</Button>
+                        <p className="tip-desc">The blueprint of your verse.</p>
+                        <div className="scheme-examples">
+                            <div className="scheme-item">
+                                <span className="scheme-label">AABB</span>
+                                <span className="scheme-expl">Couplets. Simple, punchy.</span>
+                            </div>
+                            <div className="scheme-item">
+                                <span className="scheme-label">ABAB</span>
+                                <span className="scheme-expl">Cross rhyme. Storytelling flow.</span>
+                            </div>
+                            <div className="scheme-item">
+                                <span className="scheme-label">AAAA</span>
+                                <span className="scheme-expl">Monorhyme. Intense buildup.</span>
+                            </div>
+                        </div>
                     </Card>
+
                     <Card className="tip-card" hover>
                         <h3>🎼 Rhythm & Flow</h3>
-                        <p>Mastering syllable counts and stress patterns.</p>
-                        <Button variant="secondary" size="sm">Coming Soon</Button>
+                        <div className="flow-content">
+                            <p><strong>Stressed (/) vs Unstressed (x)</strong></p>
+                            <p className="example-text">
+                                "To <strong className="stress">be</strong> or <strong className="stress">not</strong> to <strong className="stress">be</strong>"
+                                <br />
+                                <span className="pattern">x / x / x /</span>
+                            </p>
+                            <p className="tip-sub">Match your beat's kick/snare pattern for maximum impact.</p>
+                        </div>
                     </Card>
+
                     <Card className="tip-card" hover>
-                        <h3>✍️ Metaphors</h3>
-                        <p>Advanced literary devices to elevate your lyrics.</p>
-                        <Button variant="secondary" size="sm">Coming Soon</Button>
+                        <h3>✍️ Metaphors & Similes</h3>
+                        <div className="device-content">
+                            <div className="device-item">
+                                <strong>Simile (like/as)</strong>
+                                <p>"Cold as ice"</p>
+                            </div>
+                            <div className="device-item">
+                                <strong>Metaphor (is)</strong>
+                                <p>"My heart is a ghost town"</p>
+                            </div>
+                            <div className="device-item">
+                                <strong>Double Entendre</strong>
+                                <p>Two meanings, one line.</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="tip-card" hover>
+                        <h3>🏗️ Song Structure</h3>
+                        <div className="structure-content">
+                            <div className="struct-item">
+                                <strong>Verse</strong>
+                                <p>Sets the scene, tells the story. Lower energy.</p>
+                            </div>
+                            <div className="struct-item">
+                                <strong>Chorus (Hook)</strong>
+                                <p>The main message. Catchy, repetitive, high energy.</p>
+                            </div>
+                            <div className="struct-item">
+                                <strong>Bridge</strong>
+                                <p>The twist or peak emotion. Connects last chorus.</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="tip-card" hover>
+                        <h3>📖 Storytelling</h3>
+                        <div className="story-content">
+                            <p className="rule"><strong>"Show, Don't Tell"</strong></p>
+                            <div className="comparison">
+                                <div className="bad">
+                                    <span>❌ Tell:</span> "I was sad."
+                                </div>
+                                <div className="good">
+                                    <span>✅ Show:</span> "Staring at the ceiling, waiting for the rain to stop."
+                                </div>
+                            </div>
+                            <p className="tip-sub">Use sensory details: minor chords, cold coffee, visuals.</p>
+                        </div>
+                    </Card>
+
+                    <Card className="tip-card" hover>
+                        <h3>🎤 Performance & Delivery</h3>
+                        <div className="perf-content">
+                            <ul className="perf-list">
+                                <li><strong>Cadence:</strong> Switch up your speeds (fast triplets vs slow drag).</li>
+                                <li><strong>Breath Control:</strong> Write pauses into your bars.</li>
+                                <li><strong>Inflection:</strong> Pitch up for questions, down for statements.</li>
+                            </ul>
+                        </div>
                     </Card>
                 </div>
             </div>

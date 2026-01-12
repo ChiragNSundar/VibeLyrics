@@ -6,6 +6,7 @@ import { lineApi } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
 import { LineRow } from './LineRow.tsx';
 import { Autocomplete } from './Autocomplete';
+import { AnalysisStrip } from './AnalysisStrip';
 import { Button } from '../ui/Button';
 import './LyricsEditor.css';
 
@@ -236,13 +237,16 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines }) 
                 </div>
 
                 <div className="input-hints">
-                    <span className="syllable-counter">{syllableCount} syllables</span>
-                    {ghostText && (
-                        <span className="tab-hint">
-                            Press <kbd>Tab</kbd> to accept
-                        </span>
-                    )}
+                    <div className="hints-left">
+                        {ghostText && (
+                            <span className="tab-hint">
+                                Press <kbd>Tab</kbd> to accept
+                            </span>
+                        )}
+                    </div>
                 </div>
+
+                <AnalysisStrip text={inputValue} />
             </div>
         </div>
     );

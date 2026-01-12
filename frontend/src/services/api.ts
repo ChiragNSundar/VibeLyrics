@@ -88,7 +88,14 @@ export const lineApi = {
 // Tool APIs
 export const toolApi = {
     lookup: (word: string, type: 'rhyme' | 'synonym') =>
-        request<LookupResponse>(`/api/tools/lookup?word=${encodeURIComponent(word)}&type=${type}`),
+        request<LookupResponse>('/api/thesaurus/lookup', {
+            method: 'POST',
+            body: JSON.stringify({
+                word,
+                include_rhymes: type === 'rhyme',
+                include_synonyms: type === 'synonym'
+            })
+        }),
 
     getConceptRhymes: (word: string) =>
         request<ConceptRhymesResponse>(`/api/concept-rhymes/${encodeURIComponent(word)}`),

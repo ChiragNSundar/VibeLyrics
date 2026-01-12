@@ -57,10 +57,29 @@ async def add_line(data: LineCreate, db: AsyncSession = Depends(get_db)):
     db.add(line)
     await db.flush()
     await db.refresh(line)
+
+    # Add highlighting for response
+    # We need the context of other lines to do proper highlighting (e.g. alliteration/rhyme finding)
+    # But for a single line response, we can at least return the self-contained properties 
+    # OR we really should re-fetch the whole session context to be perfect, but that's expensive.
+    # For now, let's at least populate the HTML property so frontend doesn't crash or show raw text.
+    # Actually, the RhymeDetector needs the list of lines to find matches.
+    # A simple localized highlight (e.g. just internal rhymes) is better than nothing, 
+    # but to get 'rhyme-word' relative to OTHERS, we need others.
+    # Let's do a quick fetch of recent lines? No, let's just use the `highlight_lyrics` on this single line
+    # knowing it won't find inter-line rhymes yet, but will format it correctly.
+    # Wait, the frontend might rely on this HTML.
+    
+    # Better approach: The frontend triggers a re-fetch of the session or the line update should include context.
+    # Given the user wants "interactivity", let's try to do it right.
+    
+    highlighted = rhyme_detector.highlight_lyrics([line.final_version or line.user_input])
+    # Note: this won't show rhymes with *other* lines, but ensures the field exists.
+    line.highlighted_html = highlighted[0] if highlighted else line.user_input
     
     return {
         "success": True,
-        "line": line.to_dict()
+        "line": line.to_dict(include_highlights=True)
     }
 
 
@@ -85,10 +104,13 @@ async def update_line(line_id: int, data: LineUpdate, db: AsyncSession = Depends
     words = data.content.split()
     if words:
         line.rhyme_end = rhyme_detector.get_rhyme_ending(words[-1])
+        
+    highlighted = rhyme_detector.highlight_lyrics([line.final_version or line.user_input])
+    line.highlighted_html = highlighted[0] if highlighted else line.user_input
     
     return {
         "success": True,
-        "line": line.to_dict()
+        "line": line.to_dict(include_highlights=True)
     }
 
 
