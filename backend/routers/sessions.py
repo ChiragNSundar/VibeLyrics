@@ -76,9 +76,15 @@ async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
     rhyme_detector = RhymeDetector()
     text_lines = [l.final_version or l.user_input for l in lines]
     
+    session_data = session.to_dict()
+    
     if text_lines:
         highlighted = rhyme_detector.highlight_lyrics(text_lines)
         heatmap = rhyme_detector.get_density_heatmap(text_lines)
+        rhyme_scheme = rhyme_detector.get_rhyme_scheme_string(text_lines)
+        
+        # Add rhyme scheme to session response
+        session_data["rhyme_scheme"] = rhyme_scheme
         
         for line, html, hm in zip(lines, highlighted, heatmap):
             line.highlighted_html = html
@@ -86,7 +92,7 @@ async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
     
     return {
         "success": True,
-        "session": session.to_dict(),
+        "session": session_data,
         "lines": [l.to_dict(include_highlights=True) for l in lines]
     }
 

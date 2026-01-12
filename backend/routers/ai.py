@@ -38,6 +38,10 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         select(JournalEntry).order_by(desc(JournalEntry.created_at)).limit(5)
     )
     journal_entries = journal_result.scalars().all()
+
+    # Fetch User Preferences
+    profile_result = await db.execute(select(UserProfile).limit(1))
+    profile = profile_result.scalar_one_or_none()
     
     # Build context
     context = {
@@ -45,7 +49,8 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         "lines": [l.final_version or l.user_input for l in lines],
         "partial": data.partial_text,
         "action": data.action,
-        "journal_entries": [e.to_dict() for e in journal_entries]
+        "journal_entries": [e.to_dict() for e in journal_entries],
+        "preferences": profile.to_dict() if profile else {}
     }
     
     # Get suggestion

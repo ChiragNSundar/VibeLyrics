@@ -3,9 +3,10 @@ import './AnalysisStrip.css';
 
 interface AnalysisStripProps {
     text: string;
+    rhymeScheme?: string;
 }
 
-export const AnalysisStrip: React.FC<AnalysisStripProps> = ({ text }) => {
+export const AnalysisStrip: React.FC<AnalysisStripProps> = ({ text, rhymeScheme }) => {
     const analysis = useMemo(() => {
         if (!text.trim()) return null;
 
@@ -46,12 +47,21 @@ export const AnalysisStrip: React.FC<AnalysisStripProps> = ({ text }) => {
                 <span className="analysis-value">{analysis.syllables}</span>
             </div>
 
-            <div className="analysis-pill">
-                <span className="analysis-label">Flow</span>
-                <span className="analysis-value">
-                    {analysis.syllables % 2 === 0 ? 'Even' : 'Odd'}
-                </span>
-            </div>
+            {rhymeScheme && (
+                <div className="analysis-pill">
+                    <span className="analysis-label">Scheme</span>
+                    <span className="analysis-value">{rhymeScheme}</span>
+                </div>
+            )}
+
+            {!rhymeScheme && (
+                <div className="analysis-pill">
+                    <span className="analysis-label">Flow</span>
+                    <span className="analysis-value">
+                        {analysis.syllables % 2 === 0 ? 'Even' : 'Odd'}
+                    </span>
+                </div>
+            )}
 
             {analysis.figures.map(fig => (
                 <div key={fig} className="analysis-pill figure">

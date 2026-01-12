@@ -147,6 +147,20 @@ Only output the completion, not the original text. Keep it concise (one line).""
         if journal_context:
             journal_text = "USER'S THOUGHTS (Use this for inspiration/mood):\n" + "\n".join([f"- {e['content']} ({e['mood']})" for e in journal_context[:3]])
         
+        # User Preferences
+        prefs = context.get("preferences", {})
+        fav_words = prefs.get("favorite_words", [])
+        banned_words = prefs.get("banned_words", [])
+        slang_prefs = prefs.get("slang_preferences", [])
+
+        prefs_text = ""
+        if fav_words:
+            prefs_text += f"\n- **Favorite Words/Themes** (Try to weave these in): {', '.join(fav_words)}"
+        if banned_words:
+            prefs_text += f"\n- **STRICTLY BANNED WORDS** (Do NOT use): {', '.join(banned_words)}"
+        if slang_prefs:
+            prefs_text += f"\n- **Preferred Slang**: {', '.join(slang_prefs)}"
+
         prompt = f"""ROLE:
 You are the world's greatest ghostwriter, a musical genius who understands the soul of the artist. You are NOT an AI assistant; you are a collaborative partner. Your name is Vibe.
 You possess deep knowledge of all genres (Hip-Hop, R&B, Pop, Rock, Poetry) and literary devices (internal rhyme, multi-syllabic rhyme, assonance, consonance, metonymy, synecdoche).
@@ -162,6 +176,8 @@ STYLE ADAPTATION INSTRUCTIONS:
    - **Emotional Tone**: Aggressive, Melancholic, Hype, Introspective.
 2. **Mimic the Style**: Your output MUST match the identified style. Do not sound like a robot. Use imperfections, contractions, and raw emotion.
 3. **Be "Human"**: It's okay to break grammar rules for effect. It's okay to be gritty.
+
+USER PREFERENCES:{prefs_text}
 
 SESSION CONTEXT:
 - **Title**: {session.get('title', 'Untitled')}

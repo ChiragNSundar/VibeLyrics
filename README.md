@@ -23,7 +23,17 @@
 - **Tailwind CSS**: Professional styling with a custom "Vibe" aesthetic.
 - **Glassmorphism**: Premium frosted-glass UI elements for improved depth and visual hierarchy.
 - **Micro-Interactions**: Smooth hover effects, transitions, and glow animations.
-- **Responsive Layouts**: Properly optimized for all screen sizes with split-view capabilities.
+
+## ✨ Key Features
+
+- **👻 AI Ghostwriter ("Vibe")**: An advanced AI partner that mimics your unique style, vocabulary, and emotional tone. It learns from your **Journal** and respects your **Banned/Favorite Words**.
+- **📓 Private Journal**: Capture loose thoughts and daily emotions. The AI reads this context to provide suggestions that match your current headspace.
+- **🎤 Advanced Rhyme Engine**:
+  - **Multi-Color Highlights**: Visualizes assonance, consonance, and internal rhymes in real-time.
+  - **Scheme Detection**: Automatically identifies patterns like **ABAB**, **AABB**, and **XAXA** as you write.
+- **🎛️ Deep Customization**: Set your **Favorite Words**, **Banned Words**, and **Slang Preferences** to tailor the AI's vocabulary.
+- **📚 Learning Center**: Interactive modules on Song Structure, Storytelling, and Performance.
+- **⚡ Real-time Analysis**: Instant feedback on syllable counts, stress patterns, and figures of speech.
 
 ### 🧠 Robust AI Engine
 

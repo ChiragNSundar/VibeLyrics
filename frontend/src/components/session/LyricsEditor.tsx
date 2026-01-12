@@ -14,9 +14,10 @@ interface LyricsEditorProps {
     sessionId: number;
     lines: LyricLine[];
     bpm: number;
+    rhymeScheme?: string;
 }
 
-export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines }) => {
+export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rhymeScheme }) => {
     const { setLines, setGhostText, ghostText, currentSection, setCurrentSection } =
         useSessionStore();
 
@@ -246,7 +247,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines }) 
                     </div>
                 </div>
 
-                <AnalysisStrip text={inputValue} />
+                <AnalysisStrip text={inputValue} rhymeScheme={rhymeScheme} />
             </div>
         </div>
     );
