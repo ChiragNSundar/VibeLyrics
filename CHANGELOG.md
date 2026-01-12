@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented automatic model fallback hierarchy for Gemini provider.
   - Chain: `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.0-flash-lite` → `gemma-3n-e4b-it`.
   - Automatically handles quota exhaustion (429 errors) and rotates to available models.
+- **Enhanced Rhyme Detection**:
+  - **Multi-Language Support**: Added phonetic rhyme detection for **Hindi** and **Kannada**.
+  - **Expanded Rhyme Families**: Integrated 50+ new rhyme families including common verb endings (e.g., -odu, -ana) and noun patterns.
+  - **Phonetic Matching**: Improved algorithm to detect slant rhymes based on vowel sounds and coda compatibility across languages.
 
 ### ⚡ Improved
 

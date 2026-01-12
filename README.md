@@ -13,6 +13,7 @@
 - **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading.
 - **Offline Support**: Full functionality offline via Service Workers.
 - **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang).
+- **Multi-Language Rhymes**: Native support for **English, Hindi, and Kannada** phonetic rhymes.
 - **Export Options**: Export to PDF (styled), TXT, or JSON backup.
 
 ### 🎨 Modern Design System
