@@ -1,93 +1,112 @@
 """
-Test fixtures and configuration for VibeLyrics tests
+Pytest Configuration and Fixtures
+Fixed for async SQLAlchemy
 """
 import pytest
+import asyncio
+from typing import AsyncGenerator
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import StaticPool
+
+import sys
 import os
-import tempfile
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set test environment before importing app
-os.environ['FLASK_DEBUG'] = 'false'
+from backend.database import Base, get_db
+from backend.main import app
 
-from app import create_app
-from app.models import db, LyricSession, LyricLine, JournalEntry, UserProfile
+
+# Test database URL (in-memory SQLite with static pool)
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create event loop for async tests"""
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="function")
+async def test_engine():
+    """Create a test database engine"""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False}
+    )
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    yield engine
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    
+    await engine.dispose()
+
+
+@pytest.fixture(scope="function")
+async def test_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
+    """Create a test database session"""
+    async_session_maker = async_sessionmaker(
+        test_engine, 
+        class_=AsyncSession, 
+        expire_on_commit=False
+    )
+    
+    async with async_session_maker() as session:
+        yield session
+
+
+@pytest.fixture(scope="function")
+async def client(test_engine) -> AsyncGenerator[AsyncClient, None]:
+    """Create test client with overridden database"""
+    
+    async_session_maker = async_sessionmaker(
+        test_engine, 
+        class_=AsyncSession, 
+        expire_on_commit=False
+    )
+    
+    async def override_get_db():
+        async with async_session_maker() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def app():
-    """Create test application"""
-    # Create temp dir for lyrics
-    lyrics_dir = tempfile.mkdtemp()
-    
-    test_config = {
-        'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-        'WTF_CSRF_ENABLED': False,
-        'SECRET_KEY': 'test-secret-key',
-        'LYRICS_FOLDER': lyrics_dir
+def sample_session_data():
+    """Sample session data for tests"""
+    return {
+        "title": "Test Session",
+        "bpm": 120,
+        "mood": "confident",
+        "theme": "success"
     }
-    
-    app = create_app(test_config)
-    
-    with app.app_context():
-        db.create_all()
-        yield app
-        db.session.remove()
 
 
 @pytest.fixture
-def client(app):
-    """Test client for making requests"""
-    return app.test_client()
-
-
-@pytest.fixture
-def runner(app):
-    """CLI runner for testing commands"""
-    return app.test_cli_runner()
-
-
-@pytest.fixture
-def sample_session(app):
-    """Create a sample lyric session"""
-    with app.app_context():
-        session = LyricSession(
-            title="Test Session",
-            bpm=140,
-            mood="confident",
-            theme="hustle"
-        )
-        db.session.add(session)
-        db.session.commit()
-        
-        # Add some lines
-        lines = [
-            "I'm on the grind every single day",
-            "Making moves, there's no other way",
-            "Stack my bread, keep the haters at bay"
-        ]
-        
-        for i, text in enumerate(lines, 1):
-            line = LyricLine(
-                session_id=session.id,
-                line_number=i,
-                user_input=text,
-                final_version=text,
-                syllable_count=8
-            )
-            db.session.add(line)
-        
-        db.session.commit()
-        return session.id
-
-
-@pytest.fixture
-def sample_journal_entry(app):
-    """Create a sample journal entry"""
-    with app.app_context():
-        entry = JournalEntry(
-            content="Feeling motivated today, ready to create something fire",
-            mood="motivated"
-        )
-        db.session.add(entry)
-        db.session.commit()
-        return entry.id
+def sample_line_data():
+    """Sample line data for tests"""
+    return {
+        "content": "I'm on top of the world tonight",
+        "section": "Verse"
+    }

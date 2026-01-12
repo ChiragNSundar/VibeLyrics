@@ -1,8 +1,10 @@
-# Environment and secrets
+# Environment and Secrets
 .env
-*.env.local
+.env.*
+!.env.example
+*.local
 
-# Python
+# Python / Backend
 __pycache__/
 *.py[cod]
 *$py.class
@@ -23,43 +25,41 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual environments
+.pytest_cache/
+.coverage
+htmlcov/
 venv/
-ENV/
-env/
 .venv/
+env/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.DS_Store
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# Database
+# Database & Data
 *.db
 *.sqlite3
+data/vibelyrics.db
+data/user_style.json
+data/vocabulary.json
+data/corrections.json
+uploads/
 
-# Logs
-*.log
-logs/
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
-
-# Test coverage
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Keep these (use .gitkeep)
-!data/references/.gitkeep

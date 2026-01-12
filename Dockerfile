@@ -1,62 +1,49 @@
 # VibeLyrics Docker Image
-# Multi-stage build for optimized image size
+# Multi-stage build for FastAPI Backend + React Frontend
 
-FROM python:3.11-slim AS builder
+# Stage 1: Build Frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ .
+RUN npm run build
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir gunicorn
-
-# Download NLTK data
-RUN python -c "import nltk; nltk.download('wordnet', download_dir='/opt/nltk_data'); nltk.download('punkt', download_dir='/opt/nltk_data'); nltk.download('averaged_perceptron_tagger', download_dir='/opt/nltk_data')"
-
-
-# Production stage
-FROM python:3.11-slim AS production
+# Stage 2: Python Runtime
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONFAULTHANDLER=1 \
-    NLTK_DATA=/opt/nltk_data \
-    PATH="/opt/venv/bin:$PATH"
+    Start_Command="uvicorn backend.main:app --host 0.0.0.0 --port 5000"
 
-# Install runtime dependencies only
+WORKDIR /app
+
+# Install system dependencies
+# libsndfile1 and ffmpeg needed for audio analysis (librosa)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     ffmpeg \
     curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --shell /bin/bash vibelyrics
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environment and NLTK data from builder
-COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /opt/nltk_data /opt/nltk_data
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Set working directory
-WORKDIR /app
+# Create directories
+RUN mkdir -p /app/data /app/uploads/audio
 
-# Copy application code
-COPY --chown=vibelyrics:vibelyrics . .
+# Copy Backend Code
+COPY backend /app/backend
+COPY run.py /app/
 
-# Create data directories
-RUN mkdir -p /app/data /app/app/static/uploads && \
-    chown -R vibelyrics:vibelyrics /app/data /app/app/static/uploads
-
-# Switch to non-root user
-USER vibelyrics
+# Copy Built Frontend from Stage 1 (Optional: if serving static files from FastAPI)
+# For this setup, we'll keep them separate or assume the user mounts them,
+# BUT for a single container deploy, copying to a static folder is best.
+# Creating a static directory for FastAPI to serve if configured.
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Expose port
 EXPOSE 5000
@@ -65,5 +52,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/api/health || exit 1
 
-# Run with Gunicorn + eventlet for WebSocket support
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "run:app"]
+# Run Application
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "5000"]

@@ -1,0 +1,936 @@
+C:\Users\intern\AppData\Roaming\Python\Python314\site-packages\pronouncing\__init__.py:3: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_stream
+INFO:     Started server process [4456]
+INFO:     Waiting for application startup.
+[DEBUG] CWD: C:\Github\vibelyrics
+[DEBUG] DB URL: sqlite+aiosqlite:///./data/vibelyrics.db
+2026-01-12 14:34:52,836 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:34:52,837 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("lyric_sessions")
+2026-01-12 14:34:52,837 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-12 14:34:52,841 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("lyric_lines")
+2026-01-12 14:34:52,841 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-12 14:34:52,843 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("journal_entries")
+2026-01-12 14:34:52,844 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-12 14:34:52,846 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("user_profiles")
+2026-01-12 14:34:52,846 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-12 14:34:52,849 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8003 (Press CTRL+C to quit)
+[OK] Database tables created
+2026-01-12 14:36:48,520 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:48,525 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:48,525 INFO sqlalchemy.engine.Engine [generated in 0.00038s] ()
+2026-01-12 14:36:48,537 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:48,537 INFO sqlalchemy.engine.Engine [generated in 0.00049s] (1,)
+INFO:     127.0.0.1:50868 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:48,543 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:48,555 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:48,556 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:48,556 INFO sqlalchemy.engine.Engine [cached since 0.0308s ago] ()
+2026-01-12 14:36:48,559 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:48,559 INFO sqlalchemy.engine.Engine [cached since 0.0222s ago] (1,)
+INFO:     127.0.0.1:50870 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:48,563 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:50,688 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:50,689 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:50,689 INFO sqlalchemy.engine.Engine [cached since 2.164s ago] ()
+2026-01-12 14:36:50,693 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:50,693 INFO sqlalchemy.engine.Engine [cached since 2.156s ago] (1,)
+INFO:     127.0.0.1:50890 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:50,697 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:50,708 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:50,709 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:50,709 INFO sqlalchemy.engine.Engine [cached since 2.184s ago] ()
+2026-01-12 14:36:50,713 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:50,713 INFO sqlalchemy.engine.Engine [cached since 2.176s ago] (1,)
+INFO:     127.0.0.1:50892 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:50,718 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:50,737 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:50,737 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:50,737 INFO sqlalchemy.engine.Engine [cached since 2.212s ago] ()
+2026-01-12 14:36:50,740 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:50,741 INFO sqlalchemy.engine.Engine [cached since 2.204s ago] (1,)
+INFO:     127.0.0.1:50894 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:50,744 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:50,759 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:50,760 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:50,760 INFO sqlalchemy.engine.Engine [cached since 2.235s ago] ()
+2026-01-12 14:36:50,763 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:50,764 INFO sqlalchemy.engine.Engine [cached since 2.227s ago] (1,)
+INFO:     127.0.0.1:50896 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:50,769 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:52,574 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:52,575 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:52,575 INFO sqlalchemy.engine.Engine [cached since 4.05s ago] ()
+2026-01-12 14:36:52,578 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:52,578 INFO sqlalchemy.engine.Engine [cached since 4.042s ago] (1,)
+INFO:     127.0.0.1:50912 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:52,583 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:52,604 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:52,605 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:52,605 INFO sqlalchemy.engine.Engine [cached since 4.08s ago] ()
+2026-01-12 14:36:52,608 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:52,608 INFO sqlalchemy.engine.Engine [cached since 4.072s ago] (1,)
+INFO:     127.0.0.1:50914 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:52,613 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:52,625 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:52,626 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:52,626 INFO sqlalchemy.engine.Engine [cached since 4.101s ago] ()
+2026-01-12 14:36:52,629 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:52,629 INFO sqlalchemy.engine.Engine [cached since 4.092s ago] (1,)
+INFO:     127.0.0.1:50916 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:52,634 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:52,641 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:52,642 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:52,642 INFO sqlalchemy.engine.Engine [cached since 4.117s ago] ()
+2026-01-12 14:36:52,645 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:52,645 INFO sqlalchemy.engine.Engine [cached since 4.108s ago] (1,)
+INFO:     127.0.0.1:50918 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:52,650 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:52,667 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:52,668 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:52,668 INFO sqlalchemy.engine.Engine [cached since 4.143s ago] ()
+2026-01-12 14:36:52,672 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:52,672 INFO sqlalchemy.engine.Engine [cached since 4.135s ago] (1,)
+INFO:     127.0.0.1:50920 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:52,676 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:52,684 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:52,685 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:52,685 INFO sqlalchemy.engine.Engine [cached since 4.16s ago] ()
+2026-01-12 14:36:52,688 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:52,689 INFO sqlalchemy.engine.Engine [cached since 4.152s ago] (1,)
+INFO:     127.0.0.1:50922 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:52,693 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:53,101 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:53,101 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:53,102 INFO sqlalchemy.engine.Engine [cached since 4.577s ago] ()
+2026-01-12 14:36:53,106 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:53,106 INFO sqlalchemy.engine.Engine [cached since 4.569s ago] (1,)
+INFO:     127.0.0.1:50928 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:53,110 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:36:53,118 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:36:53,119 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:36:53,119 INFO sqlalchemy.engine.Engine [cached since 4.594s ago] ()
+2026-01-12 14:36:53,125 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:36:53,125 INFO sqlalchemy.engine.Engine [cached since 4.588s ago] (1,)
+INFO:     127.0.0.1:50930 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:36:53,129 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:38:22,091 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:38:22,092 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:38:22,092 INFO sqlalchemy.engine.Engine [cached since 93.57s ago] ()
+2026-01-12 14:38:22,096 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:38:22,097 INFO sqlalchemy.engine.Engine [cached since 93.56s ago] (1,)
+INFO:     127.0.0.1:50965 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:38:22,132 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:38:22,160 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:38:22,160 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:38:22,161 INFO sqlalchemy.engine.Engine [cached since 93.64s ago] ()
+2026-01-12 14:38:22,178 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?) ORDER BY lyric_lines.line_number
+2026-01-12 14:38:22,179 INFO sqlalchemy.engine.Engine [cached since 93.64s ago] (1,)
+INFO:     127.0.0.1:50967 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:38:22,187 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:50984 - "POST /api/session/create HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:50997 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50997 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51030 - "OPTIONS /api/sessions HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:50998 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50998 - "GET /openapi.json HTTP/1.1" 200 OK
+2026-01-12 14:41:25,229 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:41:25,232 INFO sqlalchemy.engine.Engine INSERT INTO lyric_sessions (title, bpm, mood, theme, audio_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+2026-01-12 14:41:25,232 INFO sqlalchemy.engine.Engine [generated in 0.00067s] ('Final Test', 140, None, None, None, '2026-01-12 09:11:25.231876', '2026-01-12 09:11:25.231885')
+2026-01-12 14:41:25,240 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:41:25,241 INFO sqlalchemy.engine.Engine [generated in 0.00045s] (2,)
+INFO:     127.0.0.1:51043 - "POST /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:41:25,244 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:41:55,023 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:41:55,039 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:41:55,039 INFO sqlalchemy.engine.Engine [cached since 306.5s ago] ()
+2026-01-12 14:41:55,042 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:41:55,042 INFO sqlalchemy.engine.Engine [cached since 306.5s ago] (2, 1)
+INFO:     127.0.0.1:51062 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:41:55,050 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:41:55,314 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:41:55,322 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:41:55,322 INFO sqlalchemy.engine.Engine [cached since 306.8s ago] ()
+2026-01-12 14:41:55,326 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:41:55,326 INFO sqlalchemy.engine.Engine [cached since 306.8s ago] (2, 1)
+INFO:     127.0.0.1:51064 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:41:55,331 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51073 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51076 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+2026-01-12 14:42:25,049 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:42:25,049 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:42:25,050 INFO sqlalchemy.engine.Engine [cached since 336.5s ago] ()
+2026-01-12 14:42:25,052 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:42:25,053 INFO sqlalchemy.engine.Engine [cached since 336.5s ago] (2, 1)
+INFO:     127.0.0.1:51079 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:42:25,058 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:42:25,225 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:42:25,226 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:42:25,226 INFO sqlalchemy.engine.Engine [cached since 336.7s ago] ()
+2026-01-12 14:42:25,235 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:42:25,236 INFO sqlalchemy.engine.Engine [cached since 336.7s ago] (2, 1)
+INFO:     127.0.0.1:51082 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:42:25,243 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51086 - "GET /api/session/2/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51089 - "GET /api/session/2/full HTTP/1.1" 404 Not Found
+2026-01-12 14:42:26,706 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:42:26,706 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:42:26,707 INFO sqlalchemy.engine.Engine [cached since 338.2s ago] ()
+2026-01-12 14:42:26,712 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:42:26,712 INFO sqlalchemy.engine.Engine [cached since 338.2s ago] (2, 1)
+INFO:     127.0.0.1:51092 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:42:26,716 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:42:26,730 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:42:26,730 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:42:26,730 INFO sqlalchemy.engine.Engine [cached since 338.2s ago] ()
+2026-01-12 14:42:26,735 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:42:26,735 INFO sqlalchemy.engine.Engine [cached since 338.2s ago] (2, 1)
+INFO:     127.0.0.1:51095 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:42:26,742 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51098 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51101 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+2026-01-12 14:42:31,941 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:42:31,942 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:42:31,942 INFO sqlalchemy.engine.Engine [cached since 343.4s ago] ()
+2026-01-12 14:42:31,946 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:42:31,946 INFO sqlalchemy.engine.Engine [cached since 343.4s ago] (2, 1)
+INFO:     127.0.0.1:51105 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:42:31,951 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:42:31,961 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:42:31,962 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:42:31,962 INFO sqlalchemy.engine.Engine [cached since 343.4s ago] ()
+2026-01-12 14:42:31,965 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:42:31,965 INFO sqlalchemy.engine.Engine [cached since 343.4s ago] (2, 1)
+INFO:     127.0.0.1:51108 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:42:31,969 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:41,237 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:41,238 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:41,238 INFO sqlalchemy.engine.Engine [cached since 412.7s ago] ()
+2026-01-12 14:43:41,243 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:41,243 INFO sqlalchemy.engine.Engine [cached since 412.7s ago] (2, 1)
+INFO:     127.0.0.1:51178 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:41,249 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:41,257 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:41,257 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:41,258 INFO sqlalchemy.engine.Engine [cached since 412.7s ago] ()
+2026-01-12 14:43:41,263 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:41,263 INFO sqlalchemy.engine.Engine [cached since 412.7s ago] (2, 1)
+INFO:     127.0.0.1:51180 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:41,267 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51182 - "GET /api/session/2/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51184 - "GET /api/session/2/full HTTP/1.1" 404 Not Found
+2026-01-12 14:43:43,353 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:43,354 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:43,354 INFO sqlalchemy.engine.Engine [cached since 414.8s ago] ()
+2026-01-12 14:43:43,358 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:43,358 INFO sqlalchemy.engine.Engine [cached since 414.8s ago] (2, 1)
+INFO:     127.0.0.1:51186 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:43,363 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:43,373 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:43,373 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:43,373 INFO sqlalchemy.engine.Engine [cached since 414.8s ago] ()
+2026-01-12 14:43:43,377 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:43,377 INFO sqlalchemy.engine.Engine [cached since 414.8s ago] (2, 1)
+INFO:     127.0.0.1:51188 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:43,382 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:46,954 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:46,955 INFO sqlalchemy.engine.Engine INSERT INTO lyric_sessions (title, bpm, mood, theme, audio_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+2026-01-12 14:43:46,955 INFO sqlalchemy.engine.Engine [cached since 141.7s ago] ('dawd', 140, '', '', None, '2026-01-12 09:13:46.955006', '2026-01-12 09:13:46.955012')
+2026-01-12 14:43:46,961 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:43:46,961 INFO sqlalchemy.engine.Engine [cached since 141.7s ago] (3,)
+INFO:     127.0.0.1:51191 - "POST /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:46,965 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51194 - "GET /api/session/3/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51197 - "GET /api/session/3/full HTTP/1.1" 404 Not Found
+2026-01-12 14:43:50,185 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:50,186 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:50,186 INFO sqlalchemy.engine.Engine [cached since 421.7s ago] ()
+2026-01-12 14:43:50,190 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:50,190 INFO sqlalchemy.engine.Engine [cached since 421.7s ago] (3, 2, 1)
+INFO:     127.0.0.1:51201 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:50,195 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:50,206 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:50,207 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:50,207 INFO sqlalchemy.engine.Engine [cached since 421.7s ago] ()
+2026-01-12 14:43:50,211 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:50,212 INFO sqlalchemy.engine.Engine [cached since 421.7s ago] (3, 2, 1)
+INFO:     127.0.0.1:51204 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:50,217 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:52,571 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:52,572 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:52,572 INFO sqlalchemy.engine.Engine [cached since 424s ago] ()
+2026-01-12 14:43:52,576 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:52,576 INFO sqlalchemy.engine.Engine [cached since 424s ago] (3, 2, 1)
+INFO:     127.0.0.1:51209 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:52,581 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:43:52,592 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:43:52,593 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:43:52,593 INFO sqlalchemy.engine.Engine [cached since 424.1s ago] ()
+2026-01-12 14:43:52,596 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:43:52,596 INFO sqlalchemy.engine.Engine [cached since 424.1s ago] (3, 2, 1)
+INFO:     127.0.0.1:51212 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:43:52,601 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:39,697 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:39,698 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:39,698 INFO sqlalchemy.engine.Engine [cached since 531.2s ago] ()
+2026-01-12 14:45:39,723 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:39,723 INFO sqlalchemy.engine.Engine [cached since 531.2s ago] (3, 2, 1)
+INFO:     127.0.0.1:51263 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:39,729 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:40,759 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:40,760 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:40,760 INFO sqlalchemy.engine.Engine [cached since 532.2s ago] ()
+2026-01-12 14:45:40,765 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:40,765 INFO sqlalchemy.engine.Engine [cached since 532.2s ago] (3, 2, 1)
+INFO:     127.0.0.1:51268 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:40,768 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:40,840 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:40,841 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:40,841 INFO sqlalchemy.engine.Engine [cached since 532.3s ago] ()
+2026-01-12 14:45:40,844 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:40,845 INFO sqlalchemy.engine.Engine [cached since 532.3s ago] (3, 2, 1)
+INFO:     127.0.0.1:51270 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:40,850 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:41,616 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:41,617 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:41,617 INFO sqlalchemy.engine.Engine [cached since 533.1s ago] ()
+2026-01-12 14:45:41,622 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:41,622 INFO sqlalchemy.engine.Engine [cached since 533.1s ago] (3, 2, 1)
+INFO:     127.0.0.1:51275 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:41,626 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:41,638 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:41,638 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:41,638 INFO sqlalchemy.engine.Engine [cached since 533.1s ago] ()
+2026-01-12 14:45:41,642 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:41,642 INFO sqlalchemy.engine.Engine [cached since 533.1s ago] (3, 2, 1)
+INFO:     127.0.0.1:51278 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:41,648 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:41,740 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:41,741 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:41,741 INFO sqlalchemy.engine.Engine [cached since 533.2s ago] ()
+2026-01-12 14:45:41,745 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:41,745 INFO sqlalchemy.engine.Engine [cached since 533.2s ago] (3, 2, 1)
+INFO:     127.0.0.1:51281 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:41,750 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:41,858 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:41,859 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:41,859 INFO sqlalchemy.engine.Engine [cached since 533.3s ago] ()
+2026-01-12 14:45:41,864 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:41,864 INFO sqlalchemy.engine.Engine [cached since 533.3s ago] (3, 2, 1)
+INFO:     127.0.0.1:51284 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:41,868 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:41,999 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:42,000 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:42,000 INFO sqlalchemy.engine.Engine [cached since 533.5s ago] ()
+2026-01-12 14:45:42,004 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:42,004 INFO sqlalchemy.engine.Engine [cached since 533.5s ago] (3, 2, 1)
+INFO:     127.0.0.1:51287 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:42,008 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:45:42,022 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:45:42,023 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:45:42,023 INFO sqlalchemy.engine.Engine [cached since 533.5s ago] ()
+2026-01-12 14:45:42,026 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:45:42,027 INFO sqlalchemy.engine.Engine [cached since 533.5s ago] (3, 2, 1)
+INFO:     127.0.0.1:51289 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:45:42,032 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:46:06,508 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:06,509 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:06,509 INFO sqlalchemy.engine.Engine [cached since 558s ago] ()
+2026-01-12 14:46:06,556 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:06,556 INFO sqlalchemy.engine.Engine [cached since 558s ago] (3, 2, 1)
+INFO:     127.0.0.1:51315 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:06,563 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:46:06,611 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:06,612 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:06,615 INFO sqlalchemy.engine.Engine [cached since 558.1s ago] ()
+2026-01-12 14:46:06,627 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:06,627 INFO sqlalchemy.engine.Engine [cached since 558.1s ago] (3, 2, 1)
+INFO:     127.0.0.1:51317 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:06,637 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51321 - "GET /api/session/3/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51324 - "GET /api/session/3/full HTTP/1.1" 404 Not Found
+2026-01-12 14:46:15,187 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:15,188 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:15,188 INFO sqlalchemy.engine.Engine [cached since 566.7s ago] ()
+2026-01-12 14:46:15,191 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:15,192 INFO sqlalchemy.engine.Engine [cached since 566.7s ago] (3, 2, 1)
+INFO:     127.0.0.1:51327 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:15,197 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:46:15,243 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:15,244 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:15,244 INFO sqlalchemy.engine.Engine [cached since 566.7s ago] ()
+2026-01-12 14:46:15,247 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:15,248 INFO sqlalchemy.engine.Engine [cached since 566.7s ago] (3, 2, 1)
+INFO:     127.0.0.1:51330 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:15,253 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51333 - "GET /api/session/2/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51336 - "GET /api/session/2/full HTTP/1.1" 404 Not Found
+2026-01-12 14:46:17,097 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:17,098 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:17,098 INFO sqlalchemy.engine.Engine [cached since 568.6s ago] ()
+2026-01-12 14:46:17,113 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:17,113 INFO sqlalchemy.engine.Engine [cached since 568.6s ago] (3, 2, 1)
+INFO:     127.0.0.1:51339 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:17,119 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:46:17,175 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:17,177 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:17,177 INFO sqlalchemy.engine.Engine [cached since 568.7s ago] ()
+2026-01-12 14:46:17,189 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:17,190 INFO sqlalchemy.engine.Engine [cached since 568.7s ago] (3, 2, 1)
+INFO:     127.0.0.1:51342 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:17,195 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51345 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51348 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+2026-01-12 14:46:34,676 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:34,677 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:34,677 INFO sqlalchemy.engine.Engine [cached since 586.2s ago] ()
+2026-01-12 14:46:34,687 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:34,687 INFO sqlalchemy.engine.Engine [cached since 586.2s ago] (3, 2, 1)
+INFO:     127.0.0.1:51353 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:34,703 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:46:34,800 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:34,802 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:34,803 INFO sqlalchemy.engine.Engine [cached since 586.3s ago] ()
+2026-01-12 14:46:34,807 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:34,807 INFO sqlalchemy.engine.Engine [cached since 586.3s ago] (3, 2, 1)
+INFO:     127.0.0.1:51356 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:34,812 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:46:59,979 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:46:59,979 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:46:59,979 INFO sqlalchemy.engine.Engine [cached since 611.5s ago] ()
+2026-01-12 14:46:59,983 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:46:59,983 INFO sqlalchemy.engine.Engine [cached since 611.4s ago] (3, 2, 1)
+INFO:     127.0.0.1:51367 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:46:59,989 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51367 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51368 - "GET /api/session/1/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51369 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51369 - "GET /openapi.json HTTP/1.1" 200 OK
+2026-01-12 14:48:42,133 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:48:42,133 INFO sqlalchemy.engine.Engine INSERT INTO lyric_sessions (title, bpm, mood, theme, audio_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+2026-01-12 14:48:42,134 INFO sqlalchemy.engine.Engine [cached since 436.9s ago] ('UX Verified', 140, '', '', None, '2026-01-12 09:18:42.133704', '2026-01-12 09:18:42.133711')
+2026-01-12 14:48:42,138 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:48:42,138 INFO sqlalchemy.engine.Engine [cached since 436.9s ago] (4,)
+INFO:     127.0.0.1:51399 - "POST /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:48:42,143 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51402 - "GET /api/session/4/full HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51405 - "GET /api/session/4/full HTTP/1.1" 404 Not Found
+2026-01-12 14:48:49,688 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:48:49,688 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:48:49,689 INFO sqlalchemy.engine.Engine [cached since 721.2s ago] ()
+2026-01-12 14:48:49,692 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:48:49,693 INFO sqlalchemy.engine.Engine [cached since 721.2s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51414 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:48:49,698 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51426 - "GET /session/4 HTTP/1.1" 404 Not Found
+2026-01-12 14:49:45,218 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:49:45,221 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:49:45,221 INFO sqlalchemy.engine.Engine [generated in 0.00039s] (4,)
+2026-01-12 14:49:45,227 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:49:45,227 INFO sqlalchemy.engine.Engine [generated in 0.00038s] (4,)
+INFO:     127.0.0.1:51415 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:49:45,231 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51543 - "GET /session/4 HTTP/1.1" 404 Not Found
+2026-01-12 14:51:31,906 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:51:31,907 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:51:31,907 INFO sqlalchemy.engine.Engine [cached since 883.4s ago] ()
+2026-01-12 14:51:31,910 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:51:31,911 INFO sqlalchemy.engine.Engine [cached since 883.4s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51556 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:51:31,917 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:51:31,927 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:51:31,927 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:51:31,928 INFO sqlalchemy.engine.Engine [cached since 883.4s ago] ()
+2026-01-12 14:51:31,936 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:51:31,936 INFO sqlalchemy.engine.Engine [cached since 883.4s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51558 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:51:31,942 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:52:37,795 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:52:37,796 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:52:37,796 INFO sqlalchemy.engine.Engine [cached since 172.6s ago] (4,)
+2026-01-12 14:52:37,800 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:52:37,801 INFO sqlalchemy.engine.Engine [cached since 172.6s ago] (4,)
+INFO:     127.0.0.1:51581 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:52:37,805 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:52:38,423 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:52:38,423 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:52:38,424 INFO sqlalchemy.engine.Engine [cached since 173.2s ago] (4,)
+2026-01-12 14:52:38,431 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:52:38,432 INFO sqlalchemy.engine.Engine [cached since 173.2s ago] (4,)
+INFO:     127.0.0.1:51584 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:52:38,435 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:40,068 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:40,069 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:53:40,069 INFO sqlalchemy.engine.Engine [cached since 1012s ago] ()
+2026-01-12 14:53:40,073 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:53:40,074 INFO sqlalchemy.engine.Engine [cached since 1012s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51614 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:53:40,079 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:40,089 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:40,089 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:53:40,090 INFO sqlalchemy.engine.Engine [cached since 1012s ago] ()
+2026-01-12 14:53:40,093 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:53:40,093 INFO sqlalchemy.engine.Engine [cached since 1012s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51617 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:53:40,098 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:40,997 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:40,997 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:53:40,997 INFO sqlalchemy.engine.Engine [cached since 235.8s ago] (4,)
+2026-01-12 14:53:41,000 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:53:41,001 INFO sqlalchemy.engine.Engine [cached since 235.8s ago] (4,)
+INFO:     127.0.0.1:51620 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:53:41,010 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:41,018 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:41,019 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:53:41,019 INFO sqlalchemy.engine.Engine [cached since 235.8s ago] (4,)
+2026-01-12 14:53:41,023 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:53:41,023 INFO sqlalchemy.engine.Engine [cached since 235.8s ago] (4,)
+INFO:     127.0.0.1:51623 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:53:41,026 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:41,759 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:41,759 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:53:41,759 INFO sqlalchemy.engine.Engine [cached since 1013s ago] ()
+2026-01-12 14:53:41,764 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:53:41,765 INFO sqlalchemy.engine.Engine [cached since 1013s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51626 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:53:41,769 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:41,781 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:41,781 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:53:41,782 INFO sqlalchemy.engine.Engine [cached since 1013s ago] ()
+2026-01-12 14:53:41,785 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:53:41,785 INFO sqlalchemy.engine.Engine [cached since 1013s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51629 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:53:41,790 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:42,437 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:42,438 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:53:42,438 INFO sqlalchemy.engine.Engine [cached since 237.2s ago] (1,)
+2026-01-12 14:53:42,442 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:53:42,443 INFO sqlalchemy.engine.Engine [cached since 237.2s ago] (1,)
+INFO:     127.0.0.1:51632 - "GET /api/sessions/1 HTTP/1.1" 200 OK
+2026-01-12 14:53:43,700 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:53:43,711 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:53:43,712 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:53:43,712 INFO sqlalchemy.engine.Engine [cached since 238.5s ago] (1,)
+2026-01-12 14:53:43,715 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:53:43,715 INFO sqlalchemy.engine.Engine [cached since 238.5s ago] (1,)
+INFO:     127.0.0.1:51635 - "GET /api/sessions/1 HTTP/1.1" 200 OK
+2026-01-12 14:53:43,731 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51661 - "GET /api/line/stream?session_id=1&current_line=dawdawdaw HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51664 - "GET /api/line/stream?session_id=1&current_line=dawdawdawddw%20 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51668 - "GET /api/line/stream?session_id=1&current_line=dawdawdawddw%20is%20the%20like%20 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51672 - "GET /api/line/stream?session_id=1&current_line=dawdawdawddw%20is%20the%20like%20me%20 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51782 - "GET /session/1 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51785 - "GET /session/1 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51804 - "GET /session/4 HTTP/1.1" 404 Not Found
+2026-01-12 14:58:07,096 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:58:07,098 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:58:07,098 INFO sqlalchemy.engine.Engine [cached since 1279s ago] ()
+2026-01-12 14:58:07,105 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:58:07,106 INFO sqlalchemy.engine.Engine [cached since 1279s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51814 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:58:07,132 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:58:07,559 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:58:07,572 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:58:07,573 INFO sqlalchemy.engine.Engine [cached since 1279s ago] ()
+2026-01-12 14:58:07,579 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:58:07,581 INFO sqlalchemy.engine.Engine [cached since 1279s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51816 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:58:07,630 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:58:17,807 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:58:17,808 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:58:17,808 INFO sqlalchemy.engine.Engine [cached since 512.6s ago] (4,)
+2026-01-12 14:58:17,811 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:58:17,811 INFO sqlalchemy.engine.Engine [cached since 512.6s ago] (4,)
+INFO:     127.0.0.1:51820 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:58:17,814 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 14:58:17,878 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:58:17,879 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 14:58:17,880 INFO sqlalchemy.engine.Engine [cached since 512.7s ago] (4,)
+2026-01-12 14:58:17,887 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 14:58:17,887 INFO sqlalchemy.engine.Engine [cached since 512.7s ago] (4,)
+INFO:     127.0.0.1:51823 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 14:58:17,894 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51830 - "GET /api/line/stream?session_id=4&current_line=big%20bad%20cat HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51836 - "POST /api/line/add HTTP/1.1" 405 Method Not Allowed
+2026-01-12 14:59:13,827 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 14:59:13,828 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 14:59:13,828 INFO sqlalchemy.engine.Engine [cached since 1345s ago] ()
+2026-01-12 14:59:13,831 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 14:59:13,831 INFO sqlalchemy.engine.Engine [cached since 1345s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51846 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 14:59:13,837 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51847 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51847 - "GET /openapi.json HTTP/1.1" 200 OK
+2026-01-12 15:00:57,338 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:00:57,339 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 15:00:57,339 INFO sqlalchemy.engine.Engine [cached since 672.1s ago] (4,)
+2026-01-12 15:00:57,356 INFO sqlalchemy.engine.Engine SELECT count(lyric_lines.id) AS count_1 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ?
+2026-01-12 15:00:57,356 INFO sqlalchemy.engine.Engine [generated in 0.00055s] (4,)
+2026-01-12 15:00:57,364 INFO sqlalchemy.engine.Engine INSERT INTO lyric_lines (session_id, line_number, user_input, ai_suggestion, final_version, section, syllable_count, stress_pattern, rhyme_end, has_internal_rhyme, complexity_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+2026-01-12 15:00:57,365 INFO sqlalchemy.engine.Engine [generated in 0.00074s] (4, 1, 'big bad cat', None, 'big bad cat', 'Verse', 3, '/ / /', 'AE1 T', 0, None, '2026-01-12 09:30:57.364627')
+2026-01-12 15:00:57,373 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.id = ?
+2026-01-12 15:00:57,373 INFO sqlalchemy.engine.Engine [generated in 0.00037s] (25,)
+INFO:     127.0.0.1:51867 - "POST /api/lines HTTP/1.1" 200 OK
+2026-01-12 15:00:57,376 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:00:57,450 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:00:57,450 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 15:00:57,451 INFO sqlalchemy.engine.Engine [cached since 672.2s ago] (4,)
+2026-01-12 15:00:57,454 INFO sqlalchemy.engine.Engine SELECT count(lyric_lines.id) AS count_1 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ?
+2026-01-12 15:00:57,454 INFO sqlalchemy.engine.Engine [cached since 0.0988s ago] (4,)
+2026-01-12 15:00:57,457 INFO sqlalchemy.engine.Engine INSERT INTO lyric_lines (session_id, line_number, user_input, ai_suggestion, final_version, section, syllable_count, stress_pattern, rhyme_end, has_internal_rhyme, complexity_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+2026-01-12 15:00:57,458 INFO sqlalchemy.engine.Engine [cached since 0.09376s ago] (4, 2, 'fat rat', None, 'fat rat', 'Verse', 2, '/ /', 'AE1 T', 0, None, '2026-01-12 09:30:57.457815')
+2026-01-12 15:00:57,465 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.id = ?
+2026-01-12 15:00:57,465 INFO sqlalchemy.engine.Engine [cached since 0.09198s ago] (26,)
+INFO:     127.0.0.1:51867 - "POST /api/lines HTTP/1.1" 200 OK
+2026-01-12 15:00:57,470 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:01:06,062 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:01:06,063 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 15:01:06,063 INFO sqlalchemy.engine.Engine [cached since 680.8s ago] (4,)
+2026-01-12 15:01:06,066 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 15:01:06,066 INFO sqlalchemy.engine.Engine [cached since 680.8s ago] (4,)
+INFO:     127.0.0.1:51868 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 15:01:06,071 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:51879 - "GET /session/4 HTTP/1.1" 404 Not Found
+2026-01-12 15:01:26,748 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:01:26,749 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:01:26,749 INFO sqlalchemy.engine.Engine [cached since 1478s ago] ()
+2026-01-12 15:01:26,767 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:01:26,767 INFO sqlalchemy.engine.Engine [cached since 1478s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51888 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:01:26,782 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:01:26,814 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:01:26,814 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:01:26,814 INFO sqlalchemy.engine.Engine [cached since 1478s ago] ()
+2026-01-12 15:01:26,819 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:01:26,820 INFO sqlalchemy.engine.Engine [cached since 1478s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:51890 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:01:26,829 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:26:58,704 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:26:58,714 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:26:58,715 INFO sqlalchemy.engine.Engine [cached since 3010s ago] ()
+2026-01-12 15:26:58,728 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:26:58,729 INFO sqlalchemy.engine.Engine [cached since 3010s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:52984 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:26:58,749 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:26:58,760 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:26:58,761 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:26:58,761 INFO sqlalchemy.engine.Engine [cached since 3010s ago] ()
+2026-01-12 15:26:58,765 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:26:58,765 INFO sqlalchemy.engine.Engine [cached since 3010s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:52986 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:26:58,770 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:27:18,966 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:27:18,967 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:27:18,967 INFO sqlalchemy.engine.Engine [cached since 3030s ago] ()
+2026-01-12 15:27:19,004 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:27:19,004 INFO sqlalchemy.engine.Engine [cached since 3030s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:52995 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:27:19,012 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:27:19,134 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:27:19,135 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:27:19,135 INFO sqlalchemy.engine.Engine [cached since 3031s ago] ()
+2026-01-12 15:27:19,139 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:27:19,139 INFO sqlalchemy.engine.Engine [cached since 3031s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:52998 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:27:19,148 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:27:29,248 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:27:29,249 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 15:27:29,249 INFO sqlalchemy.engine.Engine [cached since 2264s ago] (4,)
+2026-01-12 15:27:29,268 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 15:27:29,269 INFO sqlalchemy.engine.Engine [cached since 2264s ago] (4,)
+INFO:     127.0.0.1:53003 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 15:27:29,280 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:27:29,354 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:27:29,356 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions 
+WHERE lyric_sessions.id = ?
+2026-01-12 15:27:29,356 INFO sqlalchemy.engine.Engine [cached since 2264s ago] (4,)
+2026-01-12 15:27:29,371 INFO sqlalchemy.engine.Engine SELECT lyric_lines.id, lyric_lines.session_id, lyric_lines.line_number, lyric_lines.user_input, lyric_lines.ai_suggestion, lyric_lines.final_version, lyric_lines.section, lyric_lines.syllable_count, lyric_lines.stress_pattern, lyric_lines.rhyme_end, lyric_lines.has_internal_rhyme, lyric_lines.complexity_score, lyric_lines.created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id = ? ORDER BY lyric_lines.line_number
+2026-01-12 15:27:29,372 INFO sqlalchemy.engine.Engine [cached since 2264s ago] (4,)
+INFO:     127.0.0.1:53006 - "GET /api/sessions/4 HTTP/1.1" 200 OK
+2026-01-12 15:27:29,381 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:53019 - "GET /api/line/stream?session_id=4&current_line=big%20bad%20cat HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53023 - "POST /api/line/add HTTP/1.1" 405 Method Not Allowed
+2026-01-12 15:32:17,184 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:32:17,186 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:32:17,186 INFO sqlalchemy.engine.Engine [cached since 3329s ago] ()
+2026-01-12 15:32:17,193 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:32:17,193 INFO sqlalchemy.engine.Engine [cached since 3329s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:53107 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:32:17,201 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-12 15:32:17,210 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-12 15:32:17,212 INFO sqlalchemy.engine.Engine SELECT lyric_sessions.id, lyric_sessions.title, lyric_sessions.bpm, lyric_sessions.mood, lyric_sessions.theme, lyric_sessions.audio_path, lyric_sessions.created_at, lyric_sessions.updated_at 
+FROM lyric_sessions ORDER BY lyric_sessions.updated_at DESC
+2026-01-12 15:32:17,212 INFO sqlalchemy.engine.Engine [cached since 3329s ago] ()
+2026-01-12 15:32:17,215 INFO sqlalchemy.engine.Engine SELECT lyric_lines.session_id AS lyric_lines_session_id, lyric_lines.id AS lyric_lines_id, lyric_lines.line_number AS lyric_lines_line_number, lyric_lines.user_input AS lyric_lines_user_input, lyric_lines.ai_suggestion AS lyric_lines_ai_suggestion, lyric_lines.final_version AS lyric_lines_final_version, lyric_lines.section AS lyric_lines_section, lyric_lines.syllable_count AS lyric_lines_syllable_count, lyric_lines.stress_pattern AS lyric_lines_stress_pattern, lyric_lines.rhyme_end AS lyric_lines_rhyme_end, lyric_lines.has_internal_rhyme AS lyric_lines_has_internal_rhyme, lyric_lines.complexity_score AS lyric_lines_complexity_score, lyric_lines.created_at AS lyric_lines_created_at 
+FROM lyric_lines 
+WHERE lyric_lines.session_id IN (?, ?, ?, ?) ORDER BY lyric_lines.line_number
+2026-01-12 15:32:17,216 INFO sqlalchemy.engine.Engine [cached since 3329s ago] (4, 3, 2, 1)
+INFO:     127.0.0.1:53110 - "GET /api/sessions HTTP/1.1" 200 OK
+2026-01-12 15:32:17,222 INFO sqlalchemy.engine.Engine COMMIT

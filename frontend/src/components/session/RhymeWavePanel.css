@@ -1,0 +1,32 @@
+.rhymewave-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.panel-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.rhymewave-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
