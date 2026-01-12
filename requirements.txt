@@ -30,9 +30,10 @@ python-multipart>=0.0.6
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 
-# Optional: Audio Analysis
-# librosa>=0.10.0
-# numpy>=1.26.0
+# Audio Analysis
+librosa>=0.10.0
+numpy>=1.26.0
+soundfile>=0.12.1
 
 # Optional: Genius Lyrics
 # lyricsgenius>=3.0.0

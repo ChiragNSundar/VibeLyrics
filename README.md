@@ -82,15 +82,21 @@ graph TD
         API[API Router]
         Services[Services Layer]
         DB_Layer[Async DB Session]
+        
+        subgraph "Core Services"
+            Rhyme[Rhyme Engine]
+            Audio[Audio Analyzer]
+            AI_Service[AI Provider]
+        end
     end
     
-    subgraph "External"
+    subgraph "External Providers"
         Gemini[Google Gemini]
         OpenAI[OpenAI GPT]
-        Ext_Audio[Audio Libs]
+        LMStudio[Local LLM]
     end
     
-    subgraph "Data"
+    subgraph "Persistence"
         SQLite[(SQLite DB)]
         Files[File System]
     end
@@ -99,10 +105,15 @@ graph TD
     Client <-->|REST / SSE| API
     
     API --> Services
-    Services -->|AI Request| Gemini & OpenAI
-    Services -->|Analysis| Ext_Audio
-    Services -->|Read/Write| DB_Layer
+    Services --> Rhyme
+    Services --> Audio
+    Services --> AI_Service
     
+    AI_Service -->|Prompting| Gemini
+    AI_Service -->|Prompting| OpenAI
+    AI_Service -->|Inference| LMStudio
+    
+    Services -->|Read/Write| DB_Layer
     DB_Layer -->|Async SQL| SQLite
     Services -->|Manage| Files
 ```
@@ -115,9 +126,9 @@ graph TD
 - **Frontend**: **React 18** + TypeScript + Vite + Tailwind CSS
 - **Database**: SQLite + **SQLAlchemy (Async)**
 - **Real-time**: Native FastAPI StreamingResponse (SSE)
-- **AI**: Google Gemini / OpenAI integration
+- **AI**: Google Gemini / OpenAI / Local LLM integration
 - **Audio**: Librosa & Wavesurfer.js
-- **Testing**: Pytest (Async)
+- **Containerization**: Docker & Docker Compose
 
 ---
 
@@ -126,29 +137,30 @@ graph TD
 ```text
 vibelyrics/
 ├── backend/                # FastAPI Application
-│   ├── main.py             # App Entry Point
-│   ├── config.py           # Settings
-│   ├── database.py         # Async DB Setup
-│   ├── models/             # SQLAlchemy Models
-│   ├── routers/            # API Endpoints (Sessions, Lines, AI, etc.)
-│   ├── services/           # Business Logic
-│   │   ├── ai_provider.py      # Gemini/OpenAI Logic
-│   │   ├── rhyme_detector.py   # Multi-language Rhyme Engine
-│   │   ├── audio.py            # BPM & Waveform Analysis
-│   │   ├── learning.py         # Style Learning System
-│   │   └── references.py       # Reference Manager
-│   └── schemas/            # Pydantic Models
-├── frontend/               # React Application
+│   ├── main.py             # App Entry Point & Middleware
+│   ├── config.py           # Configuration & Settings
+│   ├── database.py         # Async Database Connection
+│   ├── models/             # SQLAlchemy Database Models
+│   ├── routers/            # API Route Handlers (Sessions, Lines, AI, Journal)
+│   ├── schemas/            # Pydantic Data Schemas
+│   └── services/           # Core Business Logic
+│       ├── ai_provider.py      # LLM Integration (Gemini/OpenAI)
+│       ├── rhyme_detector.py   # Phonetic Rhyme Engine
+│       ├── audio.py            # Audio Analysis (BPM)
+│       └── advanced_analysis.py # Concept Extraction
+├── frontend/               # React Frontend
 │   ├── src/
-│   │   ├── components/     # UI Components
-│   │   ├── pages/          # Route Pages
-│   │   ├── services/       # API Client
-│   │   └── styles/         # CSS Modules
-│   └── vite.config.ts
-├── tests/                  # Pytest Suite
-├── data/                   # Local Data Storage
-├── run.py                  # Unified Runner Script
-└── requirements.txt
+│   │   ├── components/     # Reusable UI Components (Session, Analysis, UI)
+│   │   ├── pages/          # Application Pages (Home, Session, Journal, Settings)
+│   │   ├── services/       # API Client & Types
+│   │   └── store/          # Zustand State Management
+│   └── vite.config.ts      # Vite Configuration
+├── data/                   # Local Persistence
+│   └── vibelyrics.db       # SQLite Database
+├── docker-compose.yml      # Container Orchestration
+├── Dockerfile              # Docker Build Instructions
+├── run.py                  # Unified Development Runner
+└── requirements.txt        # Python Dependencies
 ```
 
 ---
@@ -157,66 +169,113 @@ vibelyrics/
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js 18+
+- **Python 3.10+** (Recommend 3.11)
+- **Node.js 18+**
+- **Git**
 
-### Quick Start
+### 1. Setup
 
-1. **Clone the repository**:
+Clone the repository and enter the directory:
+
+```bash
+git clone https://github.com/yourusername/vibelyrics.git
+cd vibelyrics
+```
+
+Create a virtual environment and install backend dependencies:
+
+```bash
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# Mac/Linux
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+Install frontend dependencies:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 23. **Configure API Keys**
+
+   Copy the example environment file:
 
    ```bash
-   git clone https://github.com/yourusername/vibelyrics.git
-   cd vibelyrics
+   cp .env.example .env      # Mac/Linux
+   # OR
+   copy .env.example .env    # Windows
    ```
 
-2. **Setup Environment**:
-
-   ```bash
-   # Create virtual environment
-   python -m venv .venv
-   source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-   # Install Python dependencies
-   pip install -r requirements.txt
-
-   # Install Frontend dependencies
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-3. **Configure API Keys**:
-   Create a `.env` file in the root directory:
+   Then open `.env` and add your keys:
 
    ```env
    GEMINI_API_KEY=your_key_here
-   OPENAI_API_KEY=your_key_here
+   OPENAI_API_KEY=your_key_here    # Optional
    ```
 
-4. **Run Application**:
-   Use the unified runner to start both backend and frontend:
+### 3. Running the Application
 
-   ```bash
-   python run.py
-   ```
+#### Option A: Unified Runner (Recommended for simple dev)
 
-   - Frontend: `http://localhost:5173`
-   - Backend API: `http://localhost:5000`
-   - API Docs: `http://localhost:5000/docs`
+The `run.py` script starts both the FastAPI backend and the React frontend in a single terminal.
+
+```bash
+python run.py
+```
+
+- **Frontend**: <http://localhost:5173>
+- **Backend**: <http://localhost:5000>
+
+#### Option B: Manual Mode (Split Terminals)
+
+**Terminal 1: Backend**
+
+```bash
+python -m uvicorn backend.main:app --reload --port 8003
+```
+
+*Note: The app may default to port 8003 or 5000 depending on config. Check console output.*
+
+**Terminal 2: Frontend**
+
+```bash
+cd frontend
+npm run dev
+```
+
+#### Option C: Docker (Production-ready)
+
+Build and run the entire stack with Docker Compose:
+
+```bash
+docker-compose up --build
+```
 
 ---
 
 ## 🔍 API Documentation
 
-Interactive Swagger documentation is available at `/docs` when running the backend.
+Interactive Swagger documentation is auto-generated and available when the backend is running.
+
+- **Swagger UI**: `http://localhost:5000/docs` (or port 8003)
+- **ReDoc**: `http://localhost:5000/redoc`
 
 ### Core Endpoints
 
 - `GET /api/sessions`: List all sessions
 - `POST /api/lines`: Add a new lyric line
-- `POST /api/ai/suggest`: Get AI suggestions
-- `POST /api/rhymes/search`: Find rhymes
-- `GET /api/audio/analyze/{filename}`: Analyze audio file
+- `POST /api/ai/suggest`: Get AI suggestions (Streaming)
+- `POST /api/journal`: Create a journal entry
+- `POST /api/settings`: Update user preferences
 
 ---
 
