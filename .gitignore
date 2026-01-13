@@ -18,6 +18,7 @@ eggs/
 .eggs/
 lib/
 lib64/
+!frontend/src/lib/
 parts/
 sdist/
 var/
@@ -59,6 +60,10 @@ data/user_style.json
 data/vocabulary.json
 data/corrections.json
 uploads/
+
+# Backend Logs
+*.log
+backend_*.log
 
 # OS
 .DS_Store

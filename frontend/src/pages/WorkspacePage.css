@@ -1,20 +1,31 @@
+/* VibeLyrics - Enhanced WorkspacePage Styles */
+
 .workspace-page {
     max-width: 1200px;
     margin: 0 auto;
-    padding: var(--spacing-xl);
+    padding: var(--spacing-2xl) var(--spacing-xl);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   📋 PAGE HEADER
+   ═══════════════════════════════════════════════════════════ */
 
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-2xl);
 }
 
 .page-header h1 {
-    font-size: 2rem;
+    font-family: var(--font-display);
+    font-size: 2.25rem;
     font-weight: 700;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.35rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .page-header .subtitle {
@@ -22,15 +33,18 @@
     font-size: 1rem;
 }
 
-/* New Session Form */
+/* ═══════════════════════════════════════════════════════════
+   📝 NEW SESSION FORM
+   ═══════════════════════════════════════════════════════════ */
+
 .new-session-form {
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-2xl);
 }
 
 .form-row {
     display: flex;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
 }
 
 .form-group {
@@ -39,9 +53,11 @@
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
 }
 
 .input {
@@ -49,51 +65,77 @@
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1.1rem;
     color: var(--text-primary);
     font-size: 0.95rem;
-    transition: border-color var(--transition-fast);
+    transition: all var(--transition-normal);
+}
+
+.input:hover {
+    border-color: rgba(139, 92, 246, 0.3);
 }
 
 .input:focus {
     outline: none;
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15),
+        0 0 20px rgba(139, 92, 246, 0.1);
+    background: rgba(139, 92, 246, 0.03);
 }
 
 .input::placeholder {
     color: var(--text-muted);
 }
 
+/* Select dropdown */
+select.input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b5cf6' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-lg);
 }
 
-/* Sessions Grid */
+/* ═══════════════════════════════════════════════════════════
+   🗂️ SESSIONS GRID
+   ═══════════════════════════════════════════════════════════ */
+
 .sessions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: var(--spacing-lg);
 }
 
 .session-card {
     display: block;
     position: relative;
+    text-decoration: none;
 }
 
 .session-card .session-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .session-card h3 {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
+    transition: color var(--transition-fast);
+}
+
+.session-card:hover h3 {
+    color: var(--accent-primary-light);
 }
 
 .session-card .delete-btn {
@@ -105,84 +147,123 @@
     opacity: 1;
 }
 
+/* Meta info */
 .session-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .bpm-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
     background: var(--gradient-primary);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: white;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
 .mood-tag {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background: rgba(139, 92, 246, 0.2);
-    color: var(--accent-primary);
-    border-radius: 4px;
-    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: var(--accent-primary-light);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
     text-transform: capitalize;
 }
 
 .theme-tag {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background: rgba(6, 182, 212, 0.2);
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.25);
     color: var(--accent-secondary);
-    border-radius: 4px;
-    font-size: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
 }
 
+/* Stats footer */
 .session-stats {
     display: flex;
     justify-content: space-between;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
 }
 
-/* Loading & Empty States */
+.session-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📭 LOADING & EMPTY STATES
+   ═══════════════════════════════════════════════════════════ */
+
 .loading-state,
 .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-xl) * 2;
+    padding: 5rem 2rem;
     text-align: center;
 }
 
 .empty-state .empty-icon {
-    font-size: 4rem;
-    margin-bottom: var(--spacing-md);
-    opacity: 0.5;
+    font-size: 5rem;
+    margin-bottom: var(--spacing-lg);
+    filter: grayscale(0.3);
 }
 
 .empty-state h3 {
-    font-size: 1.25rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
     margin-bottom: 0.5rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .empty-state p {
     color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 300px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   📱 RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
     .workspace-page {
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
     }
 
     .page-header {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-md);
+    }
+
+    .page-header h1 {
+        font-size: 1.75rem;
     }
 
     .form-row {
