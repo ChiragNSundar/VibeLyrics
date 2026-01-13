@@ -1,4 +1,4 @@
-# VibeLyrics 🎤
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
@@ -144,11 +144,12 @@ graph TD
 - **Animations**: Framer Motion 12 (Page transitions, Micro-interactions)
 - **Visualization**: Canvas API (Audio Visualizer), Recharts (Style Stats)
 - **Virtualization**: react-window (Performance for long lists)
-- **Testing**: Playwright (E2E)
+- **Testing**: Playwright (E2E) + Vitest (Unit)
 
 ### 🔌 Backend (Async Power)
 
 - **Framework**: FastAPI (Python 3.11+)
+- **Testing**: Pytest + Pytest-Asyncio
 - **Database**: SQLAlchemy 2.0 (Async) + AIOSQLite
 - **Caching**: Redis (7-alpine) via Docker (falls back to no-op for local runs)
 - **Scraping**: BeautifulSoup4 + DuckDuckGo Search (No API Keys needed)
@@ -176,6 +177,7 @@ graph TD
 ```text
 vibelyrics/
 ├── backend/                # FastAPI Application
+│   ├── tests/              # Pytest Unit & Integration Tests
 │   ├── main.py             # App Entry Point & Middleware
 │   ├── config.py           # Configuration & Settings
 │   ├── database.py         # Async Database Connection
@@ -193,6 +195,7 @@ vibelyrics/
 ├── frontend/               # React Frontend (Vite)
 │   ├── e2e/                # Playwright E2E Tests
 │   ├── src/
+│   │   ├── tests/          # Vitest Unit Tests
 │   │   ├── components/     # UI Components
 │   │   │   ├── session/        # Core Editor Components
 │   │   │   │   ├── AudioVisualizer.tsx # Audio Reactive UI
@@ -356,8 +359,17 @@ The scraper service allows you to fetch training data from the web without needi
 
 Contributions are welcome! Please run tests before submitting PRs:
 
+### Backend Tests
+
 ```bash
 pytest
+```
+
+### Frontend Tests
+
+```bash
+npm run test:unit  # Unit tests
+npx playwright test # E2E tests
 ```
 
 ## 📄 License

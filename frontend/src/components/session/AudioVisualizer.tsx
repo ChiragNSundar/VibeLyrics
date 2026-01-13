@@ -42,7 +42,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         const height = canvas.height;
 
         // Get frequency data
-        analyser.getByteFrequencyData(dataArrayRef.current);
+        analyser.getByteFrequencyData(dataArrayRef.current as any);
         const dataArray = dataArrayRef.current;
 
         // Clear canvas with fade effect for trail

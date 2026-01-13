@@ -67,7 +67,7 @@ class TestRhymeDetector:
         lines = ["I am the king", "Watch me do my thing", "Another day", "In the fray"]
         scheme = detector.get_rhyme_scheme_string(lines)
         assert isinstance(scheme, str)
-        assert len(scheme) == 4
+        assert "AABB" in scheme
     
     def test_slang_categories(self):
         detector = RhymeDetector()

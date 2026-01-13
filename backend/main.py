@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="VibeLyrics API",
     description="AI-powered lyric writing assistant",
-    version="2.0.0",
+    version="2.2.1",
     lifespan=lifespan
 )
 
@@ -63,7 +63,7 @@ app.include_router(scraper.router, prefix="/api/scraper", tags=["Scraper"])
 async def root():
     return {
         "name": "VibeLyrics API",
-        "version": "2.1.0",
+        "version": "2.2.1",
         "docs": "/docs",
         "status": "running"
     }

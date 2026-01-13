@@ -2,6 +2,14 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.2.1] - 2026-01-13
+
+### Fixed
+
+- **Audio Visualizer**: Fixed TypeScript type mismatch error in audio buffer handling.
+- **Frontend Testing**: Fixed Vite configuration to correctly support Vitest globals and test properties.
+- **Version Consistency**: Unified version numbers across backend, frontend, and documentation.
+
 ## [2.2.0] - 2026-01-13
 
 ### 🎨 Design Restoration & Enhancement
@@ -32,6 +40,12 @@ All notable changes to the **VibeLyrics** project will be documented in this fil
 - **Performance**: Implemented code splitting with `React.lazy()` and `Suspense` for faster initial load.
 - **Error Handling**: Added global `ErrorBoundary` to catch and gracefully display UI crashes.
 - **Hooks Library**: Created reusable hooks `useKeyboardShortcuts` and `useAutoSave`.
+
+### 🧪 Testing Infrastructure (New)
+
+- **Backend**: Complete `pytest` suite for rhyme engine, scraper, and API endpoints (moved to `backend/tests`).
+- **Frontend**: Added `Vitest` and `React Testing Library` for fast component unit testing.
+- **E2E**: maintained `Playwright` suite for critical user flows.
 
 ## [2.1.0] - 2026-01-12
 
