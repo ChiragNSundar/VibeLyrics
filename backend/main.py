@@ -10,7 +10,7 @@ import os
 
 from .config import settings
 from .database import engine, Base
-from .routers import sessions, lines, ai, rhymes, journal, stats, user_settings, advanced
+from .routers import sessions, lines, ai, rhymes, journal, stats, user_settings, advanced, scraper
 
 
 @asynccontextmanager
@@ -56,6 +56,7 @@ app.include_router(journal.router, prefix="/api/journal", tags=["Journal"])
 app.include_router(stats.router, prefix="/api/stats", tags=["Stats"])
 app.include_router(user_settings.router, prefix="/api/settings", tags=["Settings"])
 app.include_router(advanced.router, prefix="/api", tags=["Advanced"])
+app.include_router(scraper.router, prefix="/api/scraper", tags=["Scraper"])
 
 
 @app.get("/")

@@ -90,6 +90,8 @@ graph TD
             Rhyme[Rhyme Engine]
             Audio[Audio Analyzer]
             AI_Service[AI Provider]
+            Scraper[Lyrics Scraper]
+            Cache[Redis Cache]
         end
     end
     
@@ -97,10 +99,13 @@ graph TD
         Gemini[Google Gemini]
         OpenAI[OpenAI GPT]
         LMStudio[Local LLM]
+        Duck[DuckDuckGo]
+        Web[Web Sources]
     end
     
     subgraph "Persistence"
         SQLite[(SQLite DB)]
+        Redis[(Redis)]
         Files[File System]
     end
 
@@ -108,16 +113,22 @@ graph TD
     Client <-->|REST / SSE| API
     
     API --> Services
+    
     Services --> Rhyme
     Services --> Audio
     Services --> AI_Service
+    Services --> Scraper
+    Services --> Cache
     
     AI_Service -->|Prompting| Gemini
     AI_Service -->|Prompting| OpenAI
     AI_Service -->|Inference| LMStudio
+    Scraper -->|Search| Duck
+    Duck -->|Scrape| Web
     
     Services -->|Read/Write| DB_Layer
     DB_Layer -->|Async SQL| SQLite
+    Cache -->|Cache| Redis
     Services -->|Manage| Files
 ```
 
@@ -131,16 +142,16 @@ graph TD
 - **Styling**: Tailwind CSS 4 + clsx + tailwind-merge
 - **State Management**: Zustand 5 (Atomic state)
 - **Animations**: Framer Motion 12 (Page transitions, Micro-interactions)
-- **Routing**: React Router v7
-- **Audio Visualization**: Wavesurfer.js 7
-- **Notifications**: React Hot Toast
+- **Visualization**: Canvas API (Audio Visualizer), Recharts (Style Stats)
+- **Virtualization**: react-window (Performance for long lists)
+- **Testing**: Playwright (E2E)
 
 ### 🔌 Backend (Async Power)
 
 - **Framework**: FastAPI (Python 3.11+)
 - **Database**: SQLAlchemy 2.0 (Async) + AIOSQLite
-- **Real-time**: WebSocket / SSE (Server-Sent Events)
-- **Validation**: Pydantic v2
+- **Caching**: Redis (7-alpine) via Docker (falls back to no-op for local runs)
+- **Scraping**: BeautifulSoup4 + DuckDuckGo Search (No API Keys needed)
 - **Audio Analysis**: Librosa + NumPy
 
 ### 🧠 AI & NLP Engine
@@ -148,7 +159,7 @@ graph TD
 - **LLM Providers**:
   - Google Gemini 2.0 (Primary)
   - OpenAI GPT-4o (Fallback)
-  - Local LLM (future support)
+  - Local LLM (LM Studio support)
 - **Rhyme Engine**: CMU Dict (`pronouncing`) + Phonetic Algorithms
 - **Concept Extraction**: Custom NLP pipeline using NLTK/Spacy (lightweight)
 
@@ -169,31 +180,31 @@ vibelyrics/
 │   ├── config.py           # Configuration & Settings
 │   ├── database.py         # Async Database Connection
 │   ├── models/             # SQLAlchemy Database Models
-│   ├── routers/            # API Route Handlers (Sessions, Lines, AI, Journal)
+│   ├── routers/            # API Route Handlers
+│   │   ├── ai.py               # AI Generation & Rhymes
+│   │   ├── scraper.py          # Lyrics Scraper Endpoint
+│   │   └── stats.py            # Style Analysis & Stats
 │   ├── schemas/            # Pydantic Data Schemas
 │   └── services/           # Core Business Logic
-│       ├── ai_provider.py      # LLM Integration (Gemini/OpenAI)
-│       ├── rhyme_detector.py   # Phonetic Rhyme Engine
-│       ├── audio.py            # Audio Analysis (BPM)
-│       └── advanced_analysis.py # Concept Extraction
+│       ├── ai_provider.py      # LLM Integration
+│       ├── cache.py            # Redis Caching Service
+│       ├── scraper.py          # Lyrics Scraper Logic
+│       └── rhyme_detector.py   # Phonetic Rhyme Engine
 ├── frontend/               # React Frontend (Vite)
+│   ├── e2e/                # Playwright E2E Tests
 │   ├── src/
 │   │   ├── components/     # UI Components
-│   │   │   ├── ui/             # Core Atoms (Button, Card, Skeleton)
-│   │   │   ├── layout/         # Layout (Navbar, Layout)
-│   │   │   └── session/        # Feature Components
-│   │   ├── hooks/          # Custom Hooks (useAutoSave, useKeyboardShortcuts)
-│   │   ├── pages/          # Application Pages
-│   │   ├── services/       # API Client & Types
-│   │   ├── store/          # Zustand State Management
-│   │   ├── styles/         # Global Styles & Variables (Dreamy Theme)
-│   │   └── types/          # TypeScript Definitions
+│   │   │   ├── session/        # Core Editor Components
+│   │   │   │   ├── AudioVisualizer.tsx # Audio Reactive UI
+│   │   │   │   ├── RhymeCompleter.tsx  # AI Rhyme Suggestions
+│   │   │   │   └── VirtualLineRow.tsx  # Optimized List Rendering
+│   │   │   └── stats/          # Analysis Components
+│   │   │       └── StyleDashboard.tsx  # Radar Charts
+│   │   ├── styles/         # Global Styles (Dreamy Theme)
 │   └── vite.config.ts      # Vite Configuration
 ├── data/                   # Local Persistence
-│   └── vibelyrics.db       # SQLite Database
-├── docker-compose.yml      # Container Orchestration
+├── docker-compose.yml      # Container Orchestration (App + Redis)
 ├── Dockerfile              # Docker Build Instructions
-├── run.py                  # Unified Development Runner
 └── requirements.txt        # Python Dependencies
 ```
 
@@ -310,6 +321,34 @@ Interactive Swagger documentation is auto-generated and available when the backe
 - `POST /api/ai/suggest`: Get AI suggestions (Streaming)
 - `POST /api/journal`: Create a journal entry
 - `POST /api/settings`: Update user preferences
+- `POST /api/scraper/scrape`: Scrape lyrics (No API Key)
+
+### 🕸️ Using the Lyrics Scraper
+
+The scraper service allows you to fetch training data from the web without needing API keys. It uses DuckDuckGo to search for the most relevant lyrics page (prioritizing AZLyrics) and scrapes the content.
+
+**Request:** `POST /api/scraper/scrape`
+
+```json
+{
+  "artist": "Kendrick Lamar",
+  "title": "DNA"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "title": "DNA",
+    "artist": "Kendrick Lamar",
+    "lyrics": "I got, I got, I got, I got...",
+    "source": "https://www.azlyrics.com/..."
+  }
+}
+```
 
 ---
 

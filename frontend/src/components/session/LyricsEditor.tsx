@@ -1,14 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { FixedSizeList as List } from 'react-window';
 import type { LyricLine } from '../../services/api';
 import { lineApi } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
 import { LineRow } from './LineRow.tsx';
+import { VirtualLineRow } from './VirtualLineRow';
 import { Autocomplete } from './Autocomplete';
 import { AnalysisStrip } from './AnalysisStrip';
 import { Button } from '../ui/Button';
 import './LyricsEditor.css';
+
+// Threshold for switching to virtualized rendering
+const VIRTUALIZATION_THRESHOLD = 50;
+const LINE_HEIGHT = 72; // px per line row
 
 interface LyricsEditorProps {
     sessionId: number;
@@ -184,22 +190,36 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
 
     return (
         <div className="lyrics-editor">
-            {/* Lines Container */}
-            <div className="lines-container" ref={containerRef}>
-                <AnimatePresence>
-                    {lines.map((line, index) => (
-                        <motion.div
-                            key={line.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <LineRow line={line} index={index} sessionId={sessionId} />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
+            {/* Lines Container - Virtualized for 50+ lines */}
+            {lines.length >= VIRTUALIZATION_THRESHOLD ? (
+                <div className="lines-container virtualized" ref={containerRef}>
+                    <List
+                        height={500}
+                        itemCount={lines.length}
+                        itemSize={LINE_HEIGHT}
+                        width="100%"
+                        itemData={{ lines, sessionId }}
+                    >
+                        {VirtualLineRow}
+                    </List>
+                </div>
+            ) : (
+                <div className="lines-container" ref={containerRef}>
+                    <AnimatePresence>
+                        {lines.map((line, index) => (
+                            <motion.div
+                                key={line.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <LineRow line={line} index={index} sessionId={sessionId} />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )}
 
             {/* Input Area */}
             <div className="input-area glass">

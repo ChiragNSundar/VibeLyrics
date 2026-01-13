@@ -22,6 +22,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       # Database
       - DATABASE_URL=sqlite+aiosqlite:///./data/vibelyrics.db
+      # Redis Cache
+      - REDIS_URL=redis://redis:6379/0
       # App Settings
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-false}
@@ -37,6 +39,27 @@ services:
       retries: 3
     networks:
       - vibe-network
+    depends_on:
+      - redis
+
+  # ─────────────────────────────────────────────────────────
+  # Redis Cache (for rhyme lookups and AI responses)
+  # ─────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: vibelyrics-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vibe-network
 
 # ═══════════════════════════════════════════════════════════
 # Named Volumes (for data persistence)
@@ -45,6 +68,8 @@ volumes:
   vibelyrics-data:
     driver: local
   vibelyrics-uploads:
+    driver: local
+  redis-data:
     driver: local
 
 # ═══════════════════════════════════════════════════════════

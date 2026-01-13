@@ -7,10 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from ..database import get_db
 from ..models import LyricSession, LyricLine, UserProfile, JournalEntry
-from ..schemas import SuggestRequest, ImproveRequest, AskRequest, ProviderSwitch
+from ..schemas import SuggestRequest, ImproveRequest, AskRequest, ProviderSwitch, RhymeCompleteRequest
 from ..services.ai_provider import get_ai_provider, set_provider
 
 router = APIRouter()
+
 
 
 @router.post("/ai/suggest", response_model=dict)
@@ -148,3 +149,67 @@ async def get_current_provider():
         "provider": provider.name,
         "available": provider.is_available()
     }
+
+
+@router.post("/ai/complete-rhyme", response_model=dict)
+async def complete_rhyme(data: RhymeCompleteRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Generate rhyming line completions for the partial input.
+    Returns 3 different options that rhyme with the input.
+    """
+    # Get session context for style matching
+    result = await db.execute(
+        select(LyricSession).where(LyricSession.id == data.session_id)
+    )
+    session = result.scalar_one_or_none()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get existing lines for context
+    lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == data.session_id)
+        .order_by(LyricLine.line_number.desc())
+        .limit(5)
+    )
+    recent_lines = lines_result.scalars().all()
+    
+    # Build prompt for rhyme completion
+    context = {
+        "session": session.to_dict(),
+        "recent_lines": [l.final_version or l.user_input for l in recent_lines],
+        "partial_line": data.partial_line,
+        "count": data.count
+    }
+    
+    provider = get_ai_provider()
+    
+    # Generate completions using AI
+    prompt = f"""Complete this line with {data.count} different rhyming options.
+    
+Current line: "{data.partial_line}"
+Recent context: {', '.join(context['recent_lines'][:3]) if context['recent_lines'] else 'None'}
+Session mood: {session.mood or 'not set'}
+Session theme: {session.theme or 'not set'}
+
+Return ONLY {data.count} complete lines (not just endings), one per line, no numbering or bullets.
+Each should rhyme with the last word of the input and fit the flow."""
+    
+    try:
+        response = await provider.generate(prompt)
+        # Parse response into list
+        completions = [line.strip() for line in response.strip().split('\n') if line.strip()][:data.count]
+        
+        return {
+            "success": True,
+            "completions": completions,
+            "partial": data.partial_line
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "completions": []
+        }
+

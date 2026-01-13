@@ -16,10 +16,16 @@ All notable changes to the **VibeLyrics** project will be documented in this fil
 
 ### ✨ New Features
 
+- **Audio Visualizer**: Real-time frequency bars and waveform visualization using Web Audio API (`AudioVisualizer.tsx`).
+- **Lyrics Scraper**: New backend service to scrape lyrics from web sources without API keys (DuckDuckGo + BeautifulSoup).
+- **Rhyme Completer**: AI-powered inline rhyme suggestions with specific line context (`RhymeCompleter.tsx`).
+- **Style Dashboard**: Comprehensive analysis view with Radar Charts comparing user style to famous artists (`StyleDashboard.tsx`).
+- **Redis Caching**: Optional Docker-based Redis service for caching heavy AI and rhyme operations.
 - **Keyboard Shortcuts**: Added support for power user actions (e.g., `Ctrl+N` for new session).
 - **Auto-Save**: Smart debounced auto-saving for sessions to prevent data loss.
-- **Loading Skeletons**: Replaced spinners with content-aware skeleton loaders for a perceived faster load time.
-- **Empty States**: added animated illustrations for empty dashboards.
+- **Loading Skeletons**: Replaced spinners with content-aware skeleton loaders.
+- **Empty States**: Added animated illustrations for empty dashboards.
+- **E2E Testing**: Full Playwright test suite for workspace and session flows.
 
 ### 🛠 Technical Improvements
 

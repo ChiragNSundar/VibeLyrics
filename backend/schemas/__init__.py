@@ -92,6 +92,13 @@ class ProviderSwitch(BaseModel):
     provider: str = Field(..., pattern="^(gemini|openai|lmstudio)$")
 
 
+class RhymeCompleteRequest(BaseModel):
+    """Request for AI rhyme completer - generates 3 rhyming line completions"""
+    session_id: int
+    partial_line: str = Field(..., min_length=3)
+    count: int = Field(default=3, ge=1, le=5)
+
+
 # ============ Rhyme Schemas ============
 
 class RhymeLookup(BaseModel):
