@@ -17,12 +17,15 @@
 - **Stress Pattern Detection**: Automatic analysis of rhythm and meter (e.g., `/x/x` for trochaic).
 - **Export Options**: Export to PDF (styled), TXT, or JSON backup.
 
-### 🎨 Modern Design System
+### 🎨 Modern "Dreamy" Design System
 
-- **React SPA**: Built with React 18, TypeScript, and Vite for blazing fast performance.
-- **Tailwind CSS**: Professional styling with a custom "Vibe" aesthetic.
-- **Glassmorphism**: Premium frosted-glass UI elements for improved depth and visual hierarchy.
-- **Micro-Interactions**: Smooth hover effects, transitions, and glow animations.
+- **Glassmorphism UI**: Premium frosted-glass cards, ethereal deep-space backgrounds, and aurora gradients.
+- **Micro-Interactions**: Satisfying ripple effects, smooth hover lifts, and glowing focus states.
+- **Fluid Animations**:
+  - **Page Transitions**: Smooth fade-and-slide navigation via Framer Motion.
+  - **Skeleton Loading**: Polished shimmer effects during data fetching.
+  - **Staggered Lists**: Cinematic entrance animations for content.
+- **Performance Optimized**: Lazy loading, code splitting, and memoized components for 60fps interaction.
 
 ## ✨ Key Features
 
@@ -122,13 +125,38 @@ graph TD
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Python 3.11+ with **FastAPI** (Async)
-- **Frontend**: **React 18** + TypeScript + Vite + Tailwind CSS
-- **Database**: SQLite + **SQLAlchemy (Async)**
-- **Real-time**: Native FastAPI StreamingResponse (SSE)
-- **AI**: Google Gemini / OpenAI / Local LLM integration
-- **Audio**: Librosa & Wavesurfer.js
-- **Containerization**: Docker & Docker Compose
+### 💻 Frontend (Modern Vibe)
+
+- **Core**: React 19 + TypeScript + Vite 7
+- **Styling**: Tailwind CSS 4 + clsx + tailwind-merge
+- **State Management**: Zustand 5 (Atomic state)
+- **Animations**: Framer Motion 12 (Page transitions, Micro-interactions)
+- **Routing**: React Router v7
+- **Audio Visualization**: Wavesurfer.js 7
+- **Notifications**: React Hot Toast
+
+### 🔌 Backend (Async Power)
+
+- **Framework**: FastAPI (Python 3.11+)
+- **Database**: SQLAlchemy 2.0 (Async) + AIOSQLite
+- **Real-time**: WebSocket / SSE (Server-Sent Events)
+- **Validation**: Pydantic v2
+- **Audio Analysis**: Librosa + NumPy
+
+### 🧠 AI & NLP Engine
+
+- **LLM Providers**:
+  - Google Gemini 2.0 (Primary)
+  - OpenAI GPT-4o (Fallback)
+  - Local LLM (future support)
+- **Rhyme Engine**: CMU Dict (`pronouncing`) + Phonetic Algorithms
+- **Concept Extraction**: Custom NLP pipeline using NLTK/Spacy (lightweight)
+
+### 🏗️ DevOps & Tools
+
+- **Containerization**: Docker + Docker Compose
+- **Linting**: ESLint + Prettier
+- **Package Managers**: npm + pip
 
 ---
 
@@ -148,12 +176,18 @@ vibelyrics/
 │       ├── rhyme_detector.py   # Phonetic Rhyme Engine
 │       ├── audio.py            # Audio Analysis (BPM)
 │       └── advanced_analysis.py # Concept Extraction
-├── frontend/               # React Frontend
+├── frontend/               # React Frontend (Vite)
 │   ├── src/
-│   │   ├── components/     # Reusable UI Components (Session, Analysis, UI)
-│   │   ├── pages/          # Application Pages (Home, Session, Journal, Settings)
+│   │   ├── components/     # UI Components
+│   │   │   ├── ui/             # Core Atoms (Button, Card, Skeleton)
+│   │   │   ├── layout/         # Layout (Navbar, Layout)
+│   │   │   └── session/        # Feature Components
+│   │   ├── hooks/          # Custom Hooks (useAutoSave, useKeyboardShortcuts)
+│   │   ├── pages/          # Application Pages
 │   │   ├── services/       # API Client & Types
-│   │   └── store/          # Zustand State Management
+│   │   ├── store/          # Zustand State Management
+│   │   ├── styles/         # Global Styles & Variables (Dreamy Theme)
+│   │   └── types/          # TypeScript Definitions
 │   └── vite.config.ts      # Vite Configuration
 ├── data/                   # Local Persistence
 │   └── vibelyrics.db       # SQLite Database
@@ -237,7 +271,7 @@ python run.py
 
 #### Option B: Manual Mode (Split Terminals)
 
-**Terminal 1: Backend**
+##### Terminal 1: Backend
 
 ```bash
 python -m uvicorn backend.main:app --reload --port 8003
@@ -245,7 +279,7 @@ python -m uvicorn backend.main:app --reload --port 8003
 
 *Note: The app may default to port 8003 or 5000 depending on config. Check console output.*
 
-**Terminal 2: Frontend**
+##### Terminal 2: Frontend
 
 ```bash
 cd frontend

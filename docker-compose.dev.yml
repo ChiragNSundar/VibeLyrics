@@ -1,0 +1,38 @@
+# ═══════════════════════════════════════════════════════════
+# VibeLyrics - Docker Compose (Development Override)
+# ═══════════════════════════════════════════════════════════
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  vibelyrics:
+    build:
+      target: python # Skip frontend build stage for faster rebuilds
+    volumes:
+      # Mount source for hot-reload
+      - ./backend:/app/backend:ro
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    command: [ "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload" ]
+
+  # ─────────────────────────────────────────────────────────
+  # Separate Frontend Dev Server (for HMR)
+  # ─────────────────────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: vibelyrics-frontend-dev
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Anonymous volume for node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    command: [ "npm", "run", "dev", "--", "--host" ]
+    networks:
+      - vibe-network
+    depends_on:
+      - vibelyrics

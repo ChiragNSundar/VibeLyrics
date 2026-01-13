@@ -1,36 +1,55 @@
+# ═══════════════════════════════════════════════════════════
+# VibeLyrics - Docker Ignore
+# ═══════════════════════════════════════════════════════════
+
 # Git & Docker
 .git
 .gitignore
+.gitattributes
 .dockerignore
-Dockerfile
-docker-compose.yml
+Dockerfile*
+docker-compose*.yml
 
 # Python
-__pycache__
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-env
-venv
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
-.coverage
-.coverage.*
-.cache
-htmlcov/
+.venv/
+venv/
+env/
 .pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
 # Node
-frontend/node_modules
-frontend/dist
+frontend/node_modules/
 frontend/.env
-frontend/coverage
+frontend/coverage/
+# Note: frontend/dist is NOT ignored - we need it in the build
 
-# Data & Logs
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Data & Logs (user data should not be in image)
 data/
 uploads/
 *.log
 *.sqlite3
+vibelyrics.db
+
+# Documentation (not needed in container)
+README.md
+CHANGELOG.md
+docs/
+
+# Tests (optional, can include if needed)
+tests/
+pytest.ini

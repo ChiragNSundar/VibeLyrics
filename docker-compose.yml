@@ -1,32 +1,55 @@
-# Docker Compose for VibeLyrics
-# Runs the full stack in a single container (for simplicity) or separate services if needed.
-# Since we have a single container build now, this is straightforward.
-
-version: '3.8'
+# ═══════════════════════════════════════════════════════════
+# VibeLyrics - Docker Compose Configuration
+# ═══════════════════════════════════════════════════════════
+# Production: docker-compose up -d
+# Development: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
+  # ─────────────────────────────────────────────────────────
+  # Main Application (Backend + Static Frontend)
+  # ─────────────────────────────────────────────────────────
   vibelyrics:
-    build: .
-    container_name: vibelyrics
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibelyrics-app
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
+      # API Keys (from .env file or directly)
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Database
       - DATABASE_URL=sqlite+aiosqlite:///./data/vibelyrics.db
+      # App Settings
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
     volumes:
-      # Persist data and uploads
-      - ./data:/app/data
-      - ./uploads:/app/uploads
+      # Persist database and uploads
+      - vibelyrics-data:/app/data
+      - vibelyrics-uploads:/app/uploads
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5000/docs" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
+      start_period: 15s
       retries: 3
     networks:
       - vibe-network
 
+# ═══════════════════════════════════════════════════════════
+# Named Volumes (for data persistence)
+# ═══════════════════════════════════════════════════════════
+volumes:
+  vibelyrics-data:
+    driver: local
+  vibelyrics-uploads:
+    driver: local
+
+# ═══════════════════════════════════════════════════════════
+# Networks
+# ═══════════════════════════════════════════════════════════
 networks:
   vibe-network:
     driver: bridge

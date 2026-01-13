@@ -2,6 +2,31 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.2.0] - 2026-01-13
+
+### 🎨 Design Restoration & Enhancement
+
+- **Dreamy Aesthetic**: Restored the original "dreamy" design system with deep space backgrounds, aurora gradients, and glassmorphism.
+- **Glassmorphism**: Enhanced UI depth with frosted glass effects on cards, navbar, and modals.
+- **Micro-Interactions**: Added smooth button ripple effects, hover lifts, and glowing focus states.
+- **Animations**: Implementation of `Framer Motion` for:
+  - smooth page transitions (fade + slide).
+  - staggered list entrances.
+  - skeleton loading shimmers.
+
+### ✨ New Features
+
+- **Keyboard Shortcuts**: Added support for power user actions (e.g., `Ctrl+N` for new session).
+- **Auto-Save**: Smart debounced auto-saving for sessions to prevent data loss.
+- **Loading Skeletons**: Replaced spinners with content-aware skeleton loaders for a perceived faster load time.
+- **Empty States**: added animated illustrations for empty dashboards.
+
+### 🛠 Technical Improvements
+
+- **Performance**: Implemented code splitting with `React.lazy()` and `Suspense` for faster initial load.
+- **Error Handling**: Added global `ErrorBoundary` to catch and gracefully display UI crashes.
+- **Hooks Library**: Created reusable hooks `useKeyboardShortcuts` and `useAutoSave`.
+
 ## [2.1.0] - 2026-01-12
 
 ### Added
