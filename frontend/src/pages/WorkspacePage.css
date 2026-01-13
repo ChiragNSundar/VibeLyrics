@@ -33,6 +33,18 @@
     font-size: 1rem;
 }
 
+.shortcut-hint {
+    display: inline-block;
+    margin-left: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
 /* ═══════════════════════════════════════════════════════════
    📝 NEW SESSION FORM
    ═══════════════════════════════════════════════════════════ */

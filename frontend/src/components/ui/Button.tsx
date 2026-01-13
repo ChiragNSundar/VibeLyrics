@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import '../../styles/components/Button.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,18 +15,57 @@ export const Button: React.FC<ButtonProps> = ({
     children,
     className = '',
     disabled,
+    onClick,
     ...props
 }) => {
-    const variantClass = variant === 'icon' ? 'btn-icon' : `btn-${variant}`;
-    const sizeClass = size !== 'md' ? `btn-${size}` : '';
+    const buttonRef = useRef<HTMLButtonElement>(null);
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        // Create ripple effect
+        const button = buttonRef.current;
+        if (button && variant !== 'icon') {
+            const rect = button.getBoundingClientRect();
+            const ripple = document.createElement('span');
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+
+            ripple.className = 'btn-ripple';
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+
+            button.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Call original onClick
+        if (onClick) {
+            onClick(e);
+        }
+    };
+
+    const classes = [
+        'btn',
+        `btn-${variant}`,
+        `btn-${size}`,
+        className,
+    ].filter(Boolean).join(' ');
 
     return (
         <button
-            className={`btn ${variantClass} ${sizeClass} ${className}`.trim()}
+            ref={buttonRef}
+            className={classes}
             disabled={disabled || isLoading}
+            onClick={handleClick}
             {...props}
         >
-            {isLoading ? <span className="spinner" /> : children}
+            {isLoading ? (
+                <span className="btn-spinner" />
+            ) : (
+                children
+            )}
         </button>
     );
 };

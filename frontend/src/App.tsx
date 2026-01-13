@@ -1,28 +1,62 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
-import { WorkspacePage } from './pages/WorkspacePage';
-import { SessionPage } from './pages/SessionPage';
-import { JournalPage } from './pages/JournalPage';
-import { StatsPage } from './pages/StatsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { LearningPage } from './pages/LearningPage';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { Skeleton } from './components/ui/Skeleton';
 import './styles/global.css';
+
+// Lazy load pages for code splitting
+const WorkspacePage = lazy(() => import('./pages/WorkspacePage').then(m => ({ default: m.WorkspacePage })));
+const SessionPage = lazy(() => import('./pages/SessionPage').then(m => ({ default: m.SessionPage })));
+const JournalPage = lazy(() => import('./pages/JournalPage').then(m => ({ default: m.JournalPage })));
+const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.StatsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const LearningPage = lazy(() => import('./pages/LearningPage').then(m => ({ default: m.LearningPage })));
+
+// Loading fallback component
+const PageLoader: React.FC = () => (
+  <div className="page-loader">
+    <div className="page-loader-content">
+      <Skeleton variant="text" width="200px" height="2rem" />
+      <Skeleton variant="text" width="300px" height="1rem" />
+      <div style={{ marginTop: '2rem' }}>
+        <Skeleton variant="card" width="100%" height="200px" />
+      </div>
+    </div>
+  </div>
+);
+
+// Animated routes component
+const AnimatedRoutes: React.FC = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<WorkspacePage />} />
+        <Route path="/learning" element={<LearningPage />} />
+        <Route path="/session/:id" element={<SessionPage />} />
+        <Route path="/journal" element={<JournalPage />} />
+        <Route path="/stats" element={<StatsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
 
 function App() {
   return (
-    <Router>
-      <Navbar />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<WorkspacePage />} />
-          <Route path="/learning" element={<LearningPage />} />
-          <Route path="/session/:id" element={<SessionPage />} />
-          <Route path="/journal" element={<JournalPage />} />
-          <Route path="/stats" element={<StatsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </main>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Navbar />
+        <main className="main-content">
+          <Suspense fallback={<PageLoader />}>
+            <AnimatedRoutes />
+          </Suspense>
+        </main>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
