@@ -119,6 +119,14 @@ export const aiApi = {
         }),
 };
 
+// Stats APIs
+export const statsApi = {
+    getOverview: () => request<{ success: boolean; stats: StatsOverview }>('/api/stats/'),
+    getHistory: () => request<{ success: boolean; daily_lines: DailyData[] }>('/api/stats/history'),
+    getAchievements: () => request<{ success: boolean; achievements: Achievement[] }>('/api/stats/achievements'),
+    getStyle: () => request<{ success: boolean; style: StyleAnalysis }>('/api/stats/style'),
+};
+
 // Types
 export interface Session {
     id: number;
@@ -130,6 +138,50 @@ export interface Session {
     audio_path?: string;
     created_at: string;
     updated_at: string;
+}
+
+export interface StatsOverview {
+    total_sessions: number;
+    total_lines: number;
+    total_words: number;
+    unique_vocabulary: number;
+    avg_bpm: number;
+    sessions_this_week: number;
+    lines_today: number;
+    avg_syllables: number;
+    top_rhymes: string[];
+}
+
+export interface DailyData {
+    date: string;
+    lines: number;
+}
+
+export interface Achievement {
+    name: string;
+    icon: string;
+    desc: string;
+}
+
+export interface StyleAnalysis {
+    dimensions: {
+        vocabulary: number;
+        rhyme_density: number;
+        flow: number;
+        complexity: number;
+        wordplay: number;
+    };
+    benchmarks: Array<{
+        name: string;
+        vocabulary: number;
+        rhyme_density: number;
+        flow: number;
+        complexity: number;
+        wordplay: number;
+    }>;
+    total_lines: number;
+    total_words: number;
+    unique_words: number;
 }
 
 export interface LyricLine {

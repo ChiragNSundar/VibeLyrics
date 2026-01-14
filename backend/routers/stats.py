@@ -43,23 +43,13 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
     words = [w.strip('.,!?;:\'"()-[]') for w in all_text.split() if len(w) > 2]
     unique_words = len(set(words))
     
-    # Average BPM
-    bpm_result = await db.execute(select(func.avg(LyricSession.bpm)))
-    avg_bpm = bpm_result.scalar() or 140
+    # Average Syllables
+    syllables_result = await db.execute(select(func.avg(LyricLine.syllable_count)))
+    avg_syllables = syllables_result.scalar() or 0
     
-    # Sessions this week
-    week_ago = datetime.utcnow() - timedelta(days=7)
-    week_result = await db.execute(
-        select(func.count(LyricSession.id)).where(LyricSession.created_at >= week_ago)
-    )
-    sessions_this_week = week_result.scalar() or 0
-    
-    # Lines today
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_result = await db.execute(
-        select(func.count(LyricLine.id)).where(LyricLine.created_at >= today_start)
-    )
-    lines_today = today_result.scalar() or 0
+    # Top Rhymes (simplified placeholder for now - would need rhyme scheme analysis)
+    # Just returning an empty list or some common filler if no lines exist
+    top_rhymes = []
     
     return {
         "success": True,
@@ -70,7 +60,9 @@ async def get_overview(db: AsyncSession = Depends(get_db)):
             "unique_vocabulary": unique_words,
             "avg_bpm": round(avg_bpm),
             "sessions_this_week": sessions_this_week,
-            "lines_today": lines_today
+            "lines_today": lines_today,
+            "avg_syllables": round(float(avg_syllables), 1),
+            "top_rhymes": top_rhymes
         }
     }
 
