@@ -2,6 +2,30 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.4.0] - 2026-02-25
+
+### ✨ New Features
+
+- **Advanced Rhyme Analysis Engine**: Upgraded the rhyme detector to a 7-layer phonemic analysis system:
+  - **Perfect Rhymes**: Solid highlight (e.g., *bars/scars/mars*)
+  - **Near/Slant Rhymes**: Dashed border for words with 1 phoneme difference (e.g., *time/mind*)
+  - **Assonance**: Colored bottom-border for shared stressed vowels
+  - **Consonance**: Dotted underline for shared consonant skeletons
+  - **Internal Rhymes**: Purple left-border for within-line rhymes (+ 🔗 badge on the line)
+  - **Multi-syllable Rhymes**: Gold glow and pulse effect for 2+ syllable matches
+  - **Alliteration**: Italic underline for shared starting consonants
+- **Sub-word Highlighting**: Only the rhyming *portion* of a word gets colored (e.g., sc**ars**) via phoneme-to-grapheme alignment.
+- **Rhyme Legend**: Added a collapsible, interactive visual legend beneath the lyrics editor.
+
+### 🛠 Technical Improvements
+
+- **Robust Unified Runner (`run.py`)**: Rewrote the launcher script to be production-ready for local dev. It now:
+  - Automatically installs Python dependencies (`pip install -r requirements.txt`)
+  - Automatically installs Node dependencies (`npm install`)
+  - Automatically detects and kills conflicting port processes on 5001
+  - Monitors for crashes and ensures graceful shutdown
+  - Supports `--skip-install` flag for faster restarts
+
 ## [2.3.0] - 2026-02-25
 
 ### ✨ New Features
@@ -53,7 +77,7 @@ All notable changes to the **VibeLyrics** project will be documented in this fil
 - **Lyrics Scraper**: New backend service to scrape lyrics from web sources without API keys (DuckDuckGo + BeautifulSoup).
 - **Rhyme Completer**: AI-powered inline rhyme suggestions with specific line context (`RhymeCompleter.tsx`).
 - **Style Dashboard**: Comprehensive analysis view with Radar Charts comparing user style to famous artists (`StyleDashboard.tsx`).
-- **Redis Caching**: Optional Docker-based Redis service for caching heavy AI and rhyme operations.
+- **In-Memory Caching**: Optional caching layer for heavy AI and rhyme operations.
 - **Keyboard Shortcuts**: Added support for power user actions (e.g., `Ctrl+N` for new session).
 - **Auto-Save**: Smart debounced auto-saving for sessions to prevent data loss.
 - **Loading Skeletons**: Replaced spinners with content-aware skeleton loaders.

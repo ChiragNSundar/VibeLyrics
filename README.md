@@ -1,4 +1,4 @@
-# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
@@ -91,7 +91,7 @@ graph TD
             Audio[Audio Analyzer]
             AI_Service[AI Provider]
             Scraper[Lyrics Scraper]
-            Cache[Redis Cache]
+            Cache[In-Memory Cache]
         end
     end
     
@@ -105,7 +105,6 @@ graph TD
     
     subgraph "Persistence"
         SQLite[(SQLite DB)]
-        Redis[(Redis)]
         Files[File System]
     end
 
@@ -128,7 +127,6 @@ graph TD
     
     Services -->|Read/Write| DB_Layer
     DB_Layer -->|Async SQL| SQLite
-    Cache -->|Cache| Redis
     Services -->|Manage| Files
 ```
 
@@ -151,7 +149,7 @@ graph TD
 - **Framework**: FastAPI (Python 3.11+)
 - **Testing**: Pytest + Pytest-Asyncio
 - **Database**: SQLAlchemy 2.0 (Async) + AIOSQLite
-- **Caching**: Redis (7-alpine) via Docker (falls back to no-op for local runs)
+- **Caching**: In-memory caching (falls back to no-op)
 - **Scraping**: BeautifulSoup4 + DuckDuckGo Search (No API Keys needed)
 - **Audio Analysis**: Librosa + NumPy
 
@@ -166,7 +164,6 @@ graph TD
 
 ### 🏗️ DevOps & Tools
 
-- **Containerization**: Docker + Docker Compose
 - **Linting**: ESLint + Prettier
 - **Package Managers**: npm + pip
 
@@ -206,8 +203,6 @@ vibelyrics/
 │   │   ├── styles/         # Global Styles (Dreamy Theme)
 │   └── vite.config.ts      # Vite Configuration
 ├── data/                   # Local Persistence
-├── docker-compose.yml      # Container Orchestration (App + Redis)
-├── Dockerfile              # Docker Build Instructions
 └── requirements.txt        # Python Dependencies
 ```
 
@@ -272,16 +267,25 @@ cd ..
 
 ### 3. Running the Application
 
-#### Option A: Unified Runner (Recommended for simple dev)
+#### Option A: Unified Runner (Recommended)
 
-The `run.py` script starts both the FastAPI backend and the React frontend in a single terminal.
+The robust `run.py` script is the easiest way to start both the FastAPI backend and the React frontend in a single terminal. It handles everything automatically:
+- Installs Python dependencies (`requirements.txt`)
+- Installs Node dependencies (`npm install`)
+- Frees port 5001 if it's currently occupied
+- Stays open and monitors both processes
 
 ```bash
-python run.py
+python3 run.py
+```
+
+*For faster restarts, skip dependency checks:*
+```bash
+python3 run.py --skip-install
 ```
 
 - **Frontend**: <http://localhost:5173>
-- **Backend**: <http://localhost:5000>
+- **Backend**: <http://localhost:5001>
 
 #### Option B: Manual Mode (Split Terminals)
 
@@ -300,13 +304,6 @@ cd frontend
 npm run dev
 ```
 
-#### Option C: Docker (Production-ready)
-
-Build and run the entire stack with Docker Compose:
-
-```bash
-docker-compose up --build
-```
 
 ---
 
@@ -314,8 +311,8 @@ docker-compose up --build
 
 Interactive Swagger documentation is auto-generated and available when the backend is running.
 
-- **Swagger UI**: `http://localhost:5000/docs` (or port 8003)
-- **ReDoc**: `http://localhost:5000/redoc`
+- **Swagger UI**: `http://localhost:5001/docs`
+- **ReDoc**: `http://localhost:5001/redoc`
 
 ### Core Endpoints
 
