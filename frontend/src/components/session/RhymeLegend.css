@@ -1,0 +1,93 @@
+.rhyme-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.2rem;
+    padding: 0.6rem 1rem;
+    background: var(--bg-hover);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+    align-items: center;
+}
+
+.rhyme-legend-toggle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.rhyme-legend-toggle:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.legend-swatch {
+    display: inline-block;
+    width: 1.4rem;
+    height: 0.9rem;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+/* Perfect rhyme swatch */
+.legend-swatch.perfect {
+    background: #FFE500;
+}
+
+/* Near rhyme swatch */
+.legend-swatch.near {
+    border: 2px dashed #00E5FF;
+    background: rgba(0, 229, 255, 0.15);
+}
+
+/* Assonance swatch */
+.legend-swatch.assonance {
+    border-bottom: 3px solid #FF69B4;
+    background: transparent;
+}
+
+/* Consonance swatch */
+.legend-swatch.consonance {
+    border-bottom: 2px dotted #B0BEC5;
+    background: transparent;
+}
+
+/* Internal rhyme swatch */
+.legend-swatch.internal {
+    border-left: 3px solid #E040FB;
+    background: transparent;
+}
+
+/* Multi-syllable swatch */
+.legend-swatch.multisyl {
+    background: #FFE500;
+    box-shadow: 0 0 6px 1px rgba(255, 215, 0, 0.6);
+}
+
+/* Alliteration swatch */
+.legend-swatch.alliteration {
+    font-style: italic;
+    text-decoration: underline;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    width: auto;
+}

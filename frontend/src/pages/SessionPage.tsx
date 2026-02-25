@@ -7,6 +7,7 @@ import { LyricsEditor } from '../components/session/LyricsEditor';
 import { RhymeWavePanel } from '../components/session/RhymeWavePanel.tsx';
 import { AIHelpPanel } from '../components/session/AIHelpPanel.tsx';
 import { PunchlinePanel } from '../components/session/PunchlinePanel';
+import { RhymeLegend } from '../components/session/RhymeLegend';
 import { Button } from '../components/ui/Button';
 import './SessionPage.css';
 
@@ -190,6 +191,7 @@ export const SessionPage: React.FC = () => {
                 {/* Main Editor */}
                 <div className="editor-container">
                     <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} />
+                    <RhymeLegend />
                 </div>
             </div>
         </div>

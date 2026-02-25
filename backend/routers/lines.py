@@ -54,6 +54,9 @@ async def add_line(data: LineCreate, db: AsyncSession = Depends(get_db)):
     if words:
         line.rhyme_end = rhyme_detector.get_rhyme_ending(words[-1])
     
+    # Detect internal rhymes
+    line.has_internal_rhyme = rhyme_detector.detect_internal_rhymes(data.content)
+    
     db.add(line)
     await db.flush()
     await db.refresh(line)
@@ -104,6 +107,9 @@ async def update_line(line_id: int, data: LineUpdate, db: AsyncSession = Depends
     words = data.content.split()
     if words:
         line.rhyme_end = rhyme_detector.get_rhyme_ending(words[-1])
+    
+    # Detect internal rhymes
+    line.has_internal_rhyme = rhyme_detector.detect_internal_rhymes(data.content)
         
     highlighted = rhyme_detector.highlight_lyrics([line.final_version or line.user_input])
     line.highlighted_html = highlighted[0] if highlighted else line.user_input

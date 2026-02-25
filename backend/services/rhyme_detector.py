@@ -179,79 +179,196 @@ class RhymeDetector:
     
     def highlight_lyrics(self, lines: List[str]) -> List[str]:
         """
-        Multi-color rhyme highlighting.
-        Groups words by their full rhyming part (from last stressed vowel onward)
-        so that each rhyme family gets a distinct color — like a professional
-        lyric breakdown. Only highlights groups that span 2+ lines.
+        Professional-grade multi-layer rhyme highlighting.
+
+        Detection layers (each gets a distinct visual treatment):
+        1. Perfect end-rhymes  → solid color background
+        2. Near/slant rhymes   → dashed-border variant
+        3. Assonance           → colored bottom-border (vowel match)
+        4. Consonance          → dotted underline (consonant match)
+        5. Internal rhymes     → within-line rhyme pairs
+        6. Multi-syllable      → glow effect for 2+ syllable rhymes
+        7. Alliteration        → italic underline
+
+        Sub-word highlighting: only the rhyming portion of each word is colored.
         """
         if not lines:
             return []
 
-        # 1. Tokenize all words, tracking (line_idx, word_idx)
-        all_words = []     # flat list of clean words
-        word_line = []     # which line each word belongs to
-        word_map = []      # per-line list of flat indices (or -1 for non-alpha tokens)
+        # ── 1. Tokenize ──────────────────────────────────────────────
+        all_words: List[str] = []          # clean words
+        all_phones: List[str] = []         # CMU phoneme strings ('' if unknown)
+        all_rhyme_parts: List[str] = []    # rhyming part (from last stressed vowel)
+        word_line: List[int] = []          # line index per word
+        word_original: List[str] = []      # original (un-cleaned) word
+        word_map: List[List[int]] = []     # per-line list of flat indices
 
         for i, line in enumerate(lines):
             words = line.split()
-            word_map_line = []
-            for j, word in enumerate(words):
+            wm: List[int] = []
+            for word in words:
                 clean = re.sub(r'[^a-z]', '', word.lower())
                 if clean:
+                    phones_list = pronouncing.phones_for_word(clean)
+                    phones = phones_list[0] if phones_list else ''
+                    rp = pronouncing.rhyming_part(phones) if phones else self._get_ending(clean)
+
                     all_words.append(clean)
+                    all_phones.append(phones)
+                    all_rhyme_parts.append(rp)
                     word_line.append(i)
-                    word_map_line.append(len(all_words) - 1)
+                    word_original.append(word)
+                    wm.append(len(all_words) - 1)
                 else:
-                    word_map_line.append(-1)
-            word_map.append(word_map_line)
+                    wm.append(-1)
+            word_map.append(wm)
 
-        # 2. Get the full rhyming part for each word
-        rhyme_parts = []
-        for word in all_words:
-            phones_list = pronouncing.phones_for_word(word)
-            if phones_list:
-                rp = pronouncing.rhyming_part(phones_list[0])
-                rhyme_parts.append(rp)
-            else:
-                # Fallback: use the orthographic ending from last vowel
-                rhyme_parts.append(self._get_ending(word))
+        n = len(all_words)
+        if n == 0:
+            return list(lines)
 
-        # 3. Group words that share the same rhyming part
+        # Per-word decoration accumulator: idx -> set of css classes
+        word_classes: Dict[int, set] = {i: set() for i in range(n)}
+        # Per-word data attributes (for tooltips etc.)
+        word_data: Dict[int, Dict[str, str]] = {i: {} for i in range(n)}
+
+        # ── 2. Perfect end-rhyme groups ──────────────────────────────
         sound_groups: Dict[str, List[int]] = {}
-        for idx, rp in enumerate(rhyme_parts):
-            if not rp:
-                continue
-            if rp not in sound_groups:
-                sound_groups[rp] = []
-            sound_groups[rp].append(idx)
+        for idx, rp in enumerate(all_rhyme_parts):
+            if rp:
+                sound_groups.setdefault(rp, []).append(idx)
 
-        # 4. Filter: keep only groups with 2+ words that appear across 2+ different lines
-        #    This prevents trivial highlights (single word or all on same line)
-        qualified_groups = {}
+        # Filter: 2+ words across 2+ lines
+        perfect_groups: Dict[str, List[int]] = {}
         for rp, indices in sound_groups.items():
-            if len(indices) < 2:
-                continue
-            lines_involved = set(word_line[idx] for idx in indices)
-            if len(lines_involved) >= 2:
-                qualified_groups[rp] = indices
+            if len(indices) >= 2:
+                lines_involved = set(word_line[idx] for idx in indices)
+                if len(lines_involved) >= 2:
+                    perfect_groups[rp] = indices
 
-        # 5. Assign colors — most frequent group first for visual prominence
+        # Assign colors — most frequent first
         group_colors: Dict[str, str] = {}
         color_idx = 0
-        sorted_groups = sorted(qualified_groups.items(), key=lambda x: len(x[1]), reverse=True)
-
-        for rp, indices in sorted_groups:
+        for rp, indices in sorted(perfect_groups.items(), key=lambda x: len(x[1]), reverse=True):
             group_colors[rp] = f"rhyme-group-{color_idx % 12 + 1}"
             color_idx += 1
 
-        # Build a per-word color lookup
-        word_color: Dict[int, str] = {}
-        for rp, indices in qualified_groups.items():
-            css_class = group_colors[rp]
+        for rp, indices in perfect_groups.items():
+            css = group_colors[rp]
             for idx in indices:
-                word_color[idx] = css_class
+                word_classes[idx].add(css)
+                word_classes[idx].add("rhyme-word")
 
-        # 6. Build HTML
+        # ── 3. Multi-syllable rhyme detection ────────────────────────
+        # Check if any perfect-rhyme pair shares 4+ trailing phonemes
+        for rp, indices in perfect_groups.items():
+            if len(indices) < 2:
+                continue
+            # Check first pair to determine multi-syllable
+            ref_phones = all_phones[indices[0]]
+            if not ref_phones:
+                continue
+            for idx in indices[1:]:
+                if all_phones[idx] and self._is_multi_syllable_rhyme(ref_phones, all_phones[idx]):
+                    for i2 in indices:
+                        word_classes[i2].add("multi-syl-rhyme")
+                    break
+
+        # ── 4. Near / Slant rhymes ───────────────────────────────────
+        # Find pairs where rhyming parts differ by exactly 1 phoneme
+        rp_keys = list(sound_groups.keys())
+        near_groups_merged: Dict[int, str] = {}  # word idx -> near-rhyme css class
+        near_color_idx = 0
+        already_near_paired = set()
+
+        for i_rp, rp1 in enumerate(rp_keys):
+            for j_rp in range(i_rp + 1, len(rp_keys)):
+                rp2 = rp_keys[j_rp]
+                pair_key = (rp1, rp2) if rp1 < rp2 else (rp2, rp1)
+                if pair_key in already_near_paired:
+                    continue
+                # Skip if either is already a perfect rhyme group
+                if rp1 in perfect_groups and rp2 in perfect_groups:
+                    continue
+                dist = self._phoneme_distance(rp1, rp2)
+                if dist == 1:
+                    already_near_paired.add(pair_key)
+                    combined = sound_groups[rp1] + sound_groups[rp2]
+                    # Require cross-line
+                    lines_involved = set(word_line[idx] for idx in combined)
+                    if len(lines_involved) >= 2 and len(combined) >= 2:
+                        css = f"near-group-{near_color_idx % 6 + 1}"
+                        near_color_idx += 1
+                        for idx in combined:
+                            if "rhyme-word" not in word_classes[idx]:
+                                word_classes[idx].add("near-rhyme")
+                                word_classes[idx].add(css)
+
+        # ── 5. Assonance (shared stressed vowel, different ending) ───
+        vowel_groups: Dict[str, List[int]] = {}
+        for idx in range(n):
+            vowel = self._get_stressed_vowel(all_phones[idx])
+            if vowel:
+                vowel_groups.setdefault(vowel, []).append(idx)
+
+        asso_color_idx = 0
+        for vowel, indices in sorted(vowel_groups.items(), key=lambda x: len(x[1]), reverse=True):
+            # Only words NOT already highlighted as perfect rhymes
+            candidates = [i for i in indices if "rhyme-word" not in word_classes[i]]
+            lines_involved = set(word_line[i] for i in candidates)
+            if len(candidates) >= 3 and len(lines_involved) >= 2:
+                css = f"assonance-{asso_color_idx % 6 + 1}"
+                asso_color_idx += 1
+                for idx in candidates:
+                    word_classes[idx].add("assonance")
+                    word_classes[idx].add(css)
+                    word_data[idx]["data-vowel"] = vowel
+
+        # ── 6. Consonance (shared consonant skeleton) ────────────────
+        cons_groups: Dict[str, List[int]] = {}
+        for idx in range(n):
+            frame = self._get_consonant_frame(all_phones[idx])
+            if frame and len(frame) >= 2:  # at least 2 consonants
+                cons_groups.setdefault(frame, []).append(idx)
+
+        for frame, indices in cons_groups.items():
+            candidates = [i for i in indices if "rhyme-word" not in word_classes[i] and "assonance" not in word_classes[i]]
+            lines_involved = set(word_line[i] for i in candidates)
+            if len(candidates) >= 2 and len(lines_involved) >= 2:
+                for idx in candidates:
+                    word_classes[idx].add("consonance")
+
+        # ── 7. Internal rhymes (within-line pairs) ───────────────────
+        for i, line in enumerate(lines):
+            line_indices = [fi for fi in word_map[i] if fi != -1]
+            if len(line_indices) < 2:
+                continue
+            for a_pos in range(len(line_indices)):
+                for b_pos in range(a_pos + 1, len(line_indices)):
+                    a_idx = line_indices[a_pos]
+                    b_idx = line_indices[b_pos]
+                    rp_a = all_rhyme_parts[a_idx]
+                    rp_b = all_rhyme_parts[b_idx]
+                    if rp_a and rp_b and rp_a == rp_b and all_words[a_idx] != all_words[b_idx]:
+                        word_classes[a_idx].add("internal-rhyme")
+                        word_classes[b_idx].add("internal-rhyme")
+
+        # ── 8. Alliteration ──────────────────────────────────────────
+        for i, line in enumerate(lines):
+            words = line.split()
+            cleans = [re.sub(r'[^a-z]', '', w.lower()) for w in words]
+            first_chars: Dict[str, List[int]] = {}
+            for j, c in enumerate(cleans):
+                if c:
+                    first_chars.setdefault(c[0], []).append(j)
+            for char, js in first_chars.items():
+                if len(js) >= 2:
+                    for j in js:
+                        fi = word_map[i][j]
+                        if fi != -1:
+                            word_classes[fi].add("alliteration")
+
+        # ── 9. Build HTML with sub-word phoneme highlighting ─────────
         highlighted_lines = []
         for i, line in enumerate(lines):
             words = line.split()
@@ -259,33 +376,203 @@ class RhymeDetector:
                 highlighted_lines.append(line)
                 continue
 
-            line_html_parts = []
+            parts = []
             for j, word in enumerate(words):
-                flat_idx = word_map[i][j]
-                classes = []
+                fi = word_map[i][j]
+                if fi == -1 or not word_classes[fi]:
+                    parts.append(word)
+                    continue
 
-                # Rhyme color
-                if flat_idx != -1 and flat_idx in word_color:
-                    classes.append(word_color[flat_idx])
-                    classes.append("rhyme-word")
+                classes = word_classes[fi]
+                cls_str = ' '.join(sorted(classes))
 
-                # Alliteration (same starting consonant with another word in the line)
-                clean_word = re.sub(r'[^a-z]', '', word.lower())
-                if clean_word:
-                    first_char = clean_word[0]
-                    siblings = [re.sub(r'[^a-z]', '', w.lower()) for k, w in enumerate(words) if k != j]
-                    siblings = [w for w in siblings if w]
-                    if any(s.startswith(first_char) for s in siblings):
-                        classes.append("alliteration")
+                # Data attributes
+                data_str = ''
+                for dk, dv in word_data.get(fi, {}).items():
+                    data_str += f" {dk}='{dv}'"
 
-                if classes:
-                    line_html_parts.append(f"<span class='{' '.join(classes)}'>{word}</span>")
+                # Sub-word highlighting: split at rhyme boundary
+                if "rhyme-word" in classes or "near-rhyme" in classes:
+                    prefix, rhyme_suffix = self._split_word_at_rhyme(
+                        word, all_words[fi], all_phones[fi]
+                    )
+                    if prefix and rhyme_suffix:
+                        parts.append(f"{prefix}<span class='{cls_str}'{data_str}>{rhyme_suffix}</span>")
+                    else:
+                        parts.append(f"<span class='{cls_str}'{data_str}>{word}</span>")
                 else:
-                    line_html_parts.append(word)
+                    parts.append(f"<span class='{cls_str}'{data_str}>{word}</span>")
 
-            highlighted_lines.append(" ".join(line_html_parts))
+            highlighted_lines.append(" ".join(parts))
 
         return highlighted_lines
+
+    # ── Detection helper methods ─────────────────────────────────────
+
+    def detect_internal_rhymes(self, line: str) -> bool:
+        """Check if a line contains internal rhymes (rhymes within the same line)."""
+        words = line.split()
+        if len(words) < 2:
+            return False
+
+        rhyme_parts = []
+        for word in words:
+            clean = re.sub(r'[^a-z]', '', word.lower())
+            if not clean:
+                rhyme_parts.append('')
+                continue
+            phones_list = pronouncing.phones_for_word(clean)
+            if phones_list:
+                rhyme_parts.append(pronouncing.rhyming_part(phones_list[0]))
+            else:
+                rhyme_parts.append(self._get_ending(clean))
+
+        # Check for any pair with matching rhyme part (different words)
+        cleans = [re.sub(r'[^a-z]', '', w.lower()) for w in words]
+        for i_w in range(len(rhyme_parts)):
+            for j_w in range(i_w + 1, len(rhyme_parts)):
+                if (rhyme_parts[i_w] and rhyme_parts[j_w]
+                        and rhyme_parts[i_w] == rhyme_parts[j_w]
+                        and cleans[i_w] != cleans[j_w]):
+                    return True
+        return False
+
+    def _split_word_at_rhyme(self, original: str, clean: str, phones: str) -> tuple:
+        """
+        Split a word into (prefix, rhyme_suffix) for sub-word highlighting.
+        Uses phoneme-to-grapheme alignment to find where the rhyme starts.
+
+        E.g., 'scars' with rhyming part 'AA1 R Z' → ('sc', 'ars')
+              'boat'  with rhyming part 'OW1 T'   → ('b', 'oat')
+        """
+        if not phones:
+            # Fallback: highlight from last vowel
+            for k in range(len(original)):
+                if original[k].lower() in 'aeiouy':
+                    return (original[:k], original[k:])
+            return ('', original)
+
+        rhyme_part = pronouncing.rhyming_part(phones)
+        if not rhyme_part:
+            return ('', original)
+
+        # Count phonemes before the rhyme part
+        all_phonemes = phones.split()
+        rhyme_phonemes = rhyme_part.split()
+        onset_count = len(all_phonemes) - len(rhyme_phonemes)
+
+        if onset_count <= 0:
+            return ('', original)
+
+        # Map onset phonemes to approximate character positions
+        # Use a heuristic: consonant phonemes ≈ 1-2 chars, vowel phonemes ≈ 1-2 chars
+        # We align by finding the vowel that starts the rhyme
+        # The first rhyme phoneme is always a vowel (stressed)
+        # Find the corresponding vowel in the original word
+        vowel_map = 'aeiouy'
+        vowels_seen = 0
+        target_vowel_idx = 0
+
+        # Count vowel phonemes in onset
+        for p in all_phonemes[:onset_count]:
+            stripped = re.sub(r'\d', '', p)
+            if stripped[0] in 'AEIOU':
+                target_vowel_idx += 1
+
+        # Find the target_vowel_idx-th vowel in the original word
+        vowel_count = 0
+        split_pos = 0
+        for k, ch in enumerate(original.lower()):
+            if ch in vowel_map:
+                if vowel_count == target_vowel_idx:
+                    split_pos = k
+                    break
+                vowel_count += 1
+        else:
+            # Didn't find; fall back to whole word
+            return ('', original)
+
+        if split_pos == 0:
+            return ('', original)
+
+        return (original[:split_pos], original[split_pos:])
+
+    def _phoneme_distance(self, rp1: str, rp2: str) -> int:
+        """
+        Edit distance between two rhyming parts (phoneme sequences).
+        Used to detect near/slant rhymes (distance = 1).
+        """
+        p1 = rp1.split()
+        p2 = rp2.split()
+        # Strip stress digits for comparison
+        p1 = [re.sub(r'\d', '', p) for p in p1]
+        p2 = [re.sub(r'\d', '', p) for p in p2]
+
+        m, n_p = len(p1), len(p2)
+        if abs(m - n_p) > 1:
+            return abs(m - n_p)
+
+        # Simple Levenshtein
+        dp = [[0] * (n_p + 1) for _ in range(m + 1)]
+        for i_d in range(m + 1):
+            dp[i_d][0] = i_d
+        for j_d in range(n_p + 1):
+            dp[0][j_d] = j_d
+        for i_d in range(1, m + 1):
+            for j_d in range(1, n_p + 1):
+                cost = 0 if p1[i_d - 1] == p2[j_d - 1] else 1
+                dp[i_d][j_d] = min(
+                    dp[i_d - 1][j_d] + 1,
+                    dp[i_d][j_d - 1] + 1,
+                    dp[i_d - 1][j_d - 1] + cost
+                )
+        return dp[m][n_p]
+
+    def _get_stressed_vowel(self, phones: str) -> str:
+        """Extract only the primary stressed vowel phoneme (e.g., 'EY', 'AA', 'IY')."""
+        if not phones:
+            return ''
+        for p in phones.split():
+            if '1' in p:
+                return re.sub(r'\d', '', p)
+        # Fallback: first vowel
+        for p in phones.split():
+            if p[0] in 'AEIOU':
+                return re.sub(r'\d', '', p)
+        return ''
+
+    def _get_consonant_frame(self, phones: str) -> str:
+        """
+        Extract the consonant skeleton from phonemes.
+        E.g., 'L AH1 K' → 'L_K', 'S T R AO1 NG' → 'S_T_R_NG'
+        """
+        if not phones:
+            return ''
+        consonants = []
+        for p in phones.split():
+            stripped = re.sub(r'\d', '', p)
+            if stripped and stripped[0] not in 'AEIOU':
+                consonants.append(stripped)
+        return '_'.join(consonants) if len(consonants) >= 2 else ''
+
+    def _is_multi_syllable_rhyme(self, phones1: str, phones2: str) -> bool:
+        """
+        Check if two words share a multi-syllable rhyme (4+ trailing phonemes match).
+        E.g., 'education' / 'motivation' share 'EY1 SH AH0 N'.
+        """
+        p1 = [re.sub(r'\d', '', p) for p in phones1.split()]
+        p2 = [re.sub(r'\d', '', p) for p in phones2.split()]
+
+        # Count matching trailing phonemes
+        match_count = 0
+        for a, b in zip(reversed(p1), reversed(p2)):
+            if a == b:
+                match_count += 1
+            else:
+                break
+
+        # 4+ matching trailing phonemes = multi-syllable rhyme
+        return match_count >= 4
 
     def _find_alliterations(self, lines: List[str]) -> List[List[str]]:
         """Find words that alliterate in each line"""

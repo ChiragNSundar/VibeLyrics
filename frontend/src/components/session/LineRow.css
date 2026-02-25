@@ -195,6 +195,116 @@
 
 /* Amber */
 
+/* ── Near / Slant Rhymes (dashed border, semi-transparent) ── */
+.near-rhyme {
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    font-weight: 600;
+    margin: 0 1px;
+    display: inline-block;
+    border: 2px dashed;
+    color: inherit;
+}
+
+.near-group-1 {
+    border-color: #FFE500;
+    background: rgba(255, 229, 0, 0.15);
+}
+
+.near-group-2 {
+    border-color: #00E5FF;
+    background: rgba(0, 229, 255, 0.15);
+}
+
+.near-group-3 {
+    border-color: #FF4444;
+    background: rgba(255, 68, 68, 0.15);
+}
+
+.near-group-4 {
+    border-color: #4D8EFF;
+    background: rgba(77, 142, 255, 0.15);
+}
+
+.near-group-5 {
+    border-color: #44FF44;
+    background: rgba(68, 255, 68, 0.15);
+}
+
+.near-group-6 {
+    border-color: #FF8C00;
+    background: rgba(255, 140, 0, 0.15);
+}
+
+/* ── Assonance (vowel sound match — colored bottom-border) ── */
+.assonance {
+    border-bottom: 3px solid;
+    padding-bottom: 1px;
+    display: inline-block;
+}
+
+.assonance-1 {
+    border-bottom-color: #FF69B4;
+}
+
+/* Hot Pink */
+.assonance-2 {
+    border-bottom-color: #00E5FF;
+}
+
+/* Cyan */
+.assonance-3 {
+    border-bottom-color: #FFAB40;
+}
+
+/* Amber */
+.assonance-4 {
+    border-bottom-color: #76FF03;
+}
+
+/* Lime */
+.assonance-5 {
+    border-bottom-color: #B388FF;
+}
+
+/* Lavender */
+.assonance-6 {
+    border-bottom-color: #FF7043;
+}
+
+/* Coral */
+
+/* ── Consonance (consonant pattern match — dotted underline) ── */
+.consonance {
+    text-decoration: underline dotted;
+    text-decoration-color: #B0BEC5;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+/* ── Internal Rhyme (within-line — left-border accent) ── */
+.internal-rhyme {
+    border-left: 3px solid #E040FB;
+    padding-left: 3px;
+    margin-left: 1px;
+}
+
+/* ── Multi-syllable Rhyme (glow effect) ── */
+.multi-syl-rhyme {
+    box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.6), 0 0 16px 4px rgba(255, 215, 0, 0.3);
+    animation: multi-syl-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes multi-syl-pulse {
+    from {
+        box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.6), 0 0 16px 4px rgba(255, 215, 0, 0.3);
+    }
+
+    to {
+        box-shadow: 0 0 12px 3px rgba(255, 215, 0, 0.8), 0 0 24px 6px rgba(255, 215, 0, 0.4);
+    }
+}
+
 .alliteration {
     text-decoration: underline;
     text-decoration-color: currentColor;
