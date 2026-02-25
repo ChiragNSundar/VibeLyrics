@@ -1,16 +1,18 @@
 """
 Advanced Features Router
-- Punchline scoring
-- Metaphor/simile generation
+- AI-powered punchline scoring & generation
+- AI-powered metaphor/simile generation
 - Complexity analysis
 - Imagery analysis
+- Contextual adlib generation
 - Learning endpoints
 - Reference management
+- Audio: key detection, beat sections
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from ..database import get_db
@@ -51,6 +53,13 @@ class ThemeRequest(BaseModel):
     theme: str = Field(..., min_length=1)
 
 
+class AIPunchlineRequest(BaseModel):
+    theme: str = Field(..., min_length=1)
+    session_id: Optional[int] = None
+    mood: Optional[str] = None
+    count: int = Field(default=5, ge=1, le=10)
+
+
 @router.post("/punchline/score", response_model=dict)
 async def score_punchline(data: PunchlineRequest):
     """Score a line's punchline potential"""
@@ -60,9 +69,38 @@ async def score_punchline(data: PunchlineRequest):
 
 @router.post("/punchline/generate", response_model=dict)
 async def generate_punchlines(data: ThemeRequest):
-    """Generate punchline starters for a theme"""
+    """Generate punchline starters for a theme (rule-based fallback)"""
     starters = punchline_engine.generate_punchline_starters(data.theme)
     return {"success": True, "starters": starters}
+
+
+@router.post("/punchline/ai-generate", response_model=dict)
+async def ai_generate_punchlines(data: AIPunchlineRequest, db: AsyncSession = Depends(get_db)):
+    """Generate punchlines using AI with full session context"""
+    lines = []
+    mood = data.mood
+    
+    if data.session_id:
+        result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.session_id == data.session_id)
+            .order_by(LyricLine.line_number)
+        )
+        db_lines = result.scalars().all()
+        lines = [l.final_version or l.user_input for l in db_lines]
+        
+        if not mood:
+            session_result = await db.execute(
+                select(LyricSession).where(LyricSession.id == data.session_id)
+            )
+            session = session_result.scalar_one_or_none()
+            if session:
+                mood = session.mood
+    
+    result = await punchline_engine.generate_ai_punchlines(
+        theme=data.theme, lines=lines, mood=mood, count=data.count
+    )
+    return {"success": True, **result}
 
 
 @router.post("/punchline/analyze-verse", response_model=dict)
@@ -87,11 +125,13 @@ async def analyze_verse_punchlines(lines: List[str]):
 class MetaphorRequest(BaseModel):
     concept: str = Field(..., min_length=1)
     count: int = Field(default=5, ge=1, le=20)
+    session_id: Optional[int] = None
 
 
 class SimileRequest(BaseModel):
     word: str = Field(..., min_length=1)
     count: int = Field(default=5, ge=1, le=20)
+    session_id: Optional[int] = None
 
 
 class SimileCompleteRequest(BaseModel):
@@ -99,17 +139,37 @@ class SimileCompleteRequest(BaseModel):
 
 
 @router.post("/metaphor/generate", response_model=dict)
-async def generate_metaphors(data: MetaphorRequest):
-    """Generate metaphors for a concept"""
-    metaphors = metaphor_gen.generate_metaphors(data.concept, data.count)
-    return {"success": True, "metaphors": metaphors}
+async def generate_metaphors(data: MetaphorRequest, db: AsyncSession = Depends(get_db)):
+    """Generate metaphors for a concept (AI-powered with rule-based fallback)"""
+    context = []
+    if data.session_id:
+        result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.session_id == data.session_id)
+            .order_by(LyricLine.line_number.desc())
+            .limit(5)
+        )
+        context = [l.final_version or l.user_input for l in result.scalars().all()]
+    
+    result = await metaphor_gen.generate_ai_metaphors(data.concept, context, data.count)
+    return {"success": True, **result}
 
 
 @router.post("/simile/generate", response_model=dict)
-async def generate_similes(data: SimileRequest):
-    """Generate similes for a word"""
-    similes = metaphor_gen.generate_similes(data.word, data.count)
-    return {"success": True, "similes": similes}
+async def generate_similes(data: SimileRequest, db: AsyncSession = Depends(get_db)):
+    """Generate similes for a word (AI-powered with rule-based fallback)"""
+    context = []
+    if data.session_id:
+        result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.session_id == data.session_id)
+            .order_by(LyricLine.line_number.desc())
+            .limit(5)
+        )
+        context = [l.final_version or l.user_input for l in result.scalars().all()]
+    
+    result = await metaphor_gen.generate_ai_similes(data.word, context, data.count)
+    return {"success": True, **result}
 
 
 @router.post("/simile/complete", response_model=dict)
@@ -128,7 +188,6 @@ class BrainstormRequest(BaseModel):
 async def brainstorm_themes(data: BrainstormRequest):
     """Brainstorm related themes"""
     provider = get_ai_provider()
-    # Simple prompt for themes
     prompt = f"List 5 creative song themes related to: {data.topic}. Return only the themes, one per line."
     response = await provider.answer_question(prompt, None)
     themes = [t.strip("- ") for t in response.split('\n') if t.strip()]
@@ -196,7 +255,6 @@ class CorrectionRequest(BaseModel):
 @router.post("/learning/rate-suggestion", response_model=dict)
 async def rate_suggestion(data: RateSuggestionRequest):
     """Rate an AI suggestion"""
-    # Store rating for future learning
     return {"success": True, "message": "Rating recorded"}
 
 
@@ -235,7 +293,6 @@ async def get_reference(filename: str):
     if content is None:
         raise HTTPException(status_code=404, detail="File not found")
     
-    # Parse content
     structured = StructuredParser()
     txt = TxtParser()
     
@@ -303,11 +360,9 @@ async def analyze_dna(session_id: int, db: AsyncSession = Depends(get_db)):
     
     text_lines = [l.final_version or l.user_input for l in lines]
     
-    # Analyze
     complexity = complexity_scorer.score_verse(text_lines)
     imagery = imagery_analyzer.analyze_imagery(text_lines)
     
-    # Compute DNA traits
     dna = {
         "complexity": complexity["breakdown"]["vocabulary_diversity"] * 100,
         "imagery_density": imagery["density"] * 100,
@@ -322,8 +377,7 @@ async def analyze_dna(session_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/audio/analyze/{filename:path}", response_model=dict)
 async def analyze_audio(filename: str):
-    """Analyze audio file"""
-    # Assuming filename is relative to uploads/audio
+    """Analyze audio file — BPM, key, energy, waveform"""
     import os
     file_path = os.path.join("uploads/audio", filename)
     
@@ -331,13 +385,59 @@ async def analyze_audio(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     bpm = audio_analyzer.detect_bpm(file_path)
+    key_info = audio_analyzer.detect_key(file_path)
     sections = audio_analyzer.get_energy_sections(file_path)
     waveform = audio_analyzer.get_waveform_data(file_path)
     
     return {
         "success": True,
         "bpm": bpm,
+        "key": key_info,
         "sections": sections,
+        "waveform": waveform
+    }
+
+
+@router.get("/audio/sections/{filename:path}", response_model=dict)
+async def get_audio_sections(filename: str):
+    """Detect beat structure sections (Intro, Verse, Chorus, Bridge, Outro)"""
+    import os
+    file_path = os.path.join("uploads/audio", filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    sections = audio_analyzer.detect_sections(file_path)
+    bpm = audio_analyzer.detect_bpm(file_path)
+    key_info = audio_analyzer.detect_key(file_path)
+    
+    return {
+        "success": True,
+        "bpm": bpm,
+        "key": key_info,
+        "sections": sections,
+        "total_sections": len(sections)
+    }
+
+
+@router.get("/audio/section-waveform/{filename:path}", response_model=dict)
+async def get_section_waveform(filename: str, start: float = 0, end: float = 0):
+    """Get waveform data for a specific section (for looping)"""
+    import os
+    file_path = os.path.join("uploads/audio", filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if end <= start:
+        raise HTTPException(status_code=400, detail="end must be greater than start")
+    
+    waveform = audio_analyzer.get_section_waveform(file_path, start, end)
+    
+    return {
+        "success": True,
+        "start_sec": start,
+        "end_sec": end,
         "waveform": waveform
     }
 
@@ -349,11 +449,39 @@ class AdlibRequest(BaseModel):
     style: str = Field(default="mixed")
 
 
+class ContextualAdlibRequest(BaseModel):
+    line: str = Field(..., min_length=1)
+    mood: Optional[str] = None
+    artist_style: Optional[str] = None
+    recent_lines: List[str] = []
+    use_ai: bool = False
+
+
 @router.post("/adlibs/generate", response_model=dict)
 async def generate_adlibs(data: AdlibRequest):
-    """Generate adlibs for a line"""
+    """Generate adlibs for a line (static)"""
     adlibs = adlib_gen.generate_adlibs(data.line, data.style)
     return {"success": True, "adlibs": adlibs}
+
+
+@router.post("/adlibs/contextual", response_model=dict)
+async def generate_contextual_adlibs(data: ContextualAdlibRequest):
+    """Generate context-aware adlibs based on mood, artist style, and content"""
+    if data.use_ai:
+        result = await adlib_gen.generate_ai_adlibs(
+            line=data.line,
+            mood=data.mood,
+            artist_style=data.artist_style,
+            recent_lines=data.recent_lines
+        )
+    else:
+        result = adlib_gen.generate_contextual_adlibs(
+            line=data.line,
+            mood=data.mood,
+            artist_style=data.artist_style,
+            recent_lines=data.recent_lines
+        )
+    return {"success": True, **result}
 
 
 @router.post("/adlibs/placement", response_model=dict)
@@ -368,3 +496,10 @@ async def get_adlib_categories():
     """Get adlib categories"""
     categories = adlib_gen.get_categories()
     return {"success": True, "categories": categories}
+
+
+@router.get("/adlibs/artist-styles", response_model=dict)
+async def get_artist_styles():
+    """Get available artist styles for adlibs"""
+    styles = adlib_gen.get_artist_styles()
+    return {"success": True, "styles": styles}

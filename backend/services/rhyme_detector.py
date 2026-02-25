@@ -179,15 +179,18 @@ class RhymeDetector:
     
     def highlight_lyrics(self, lines: List[str]) -> List[str]:
         """
-        Advanced dense highlighting for rhymes, assonance, and alliteration.
-        Assigns colors based on phonetic families.
+        Multi-color rhyme highlighting.
+        Groups words by their full rhyming part (from last stressed vowel onward)
+        so that each rhyme family gets a distinct color — like a professional
+        lyric breakdown. Only highlights groups that span 2+ lines.
         """
         if not lines:
             return []
 
-        # 1. Tokenize and analyze all words
-        all_words = []
-        word_map = []  # Map flat index to (line_idx, word_idx)
+        # 1. Tokenize all words, tracking (line_idx, word_idx)
+        all_words = []     # flat list of clean words
+        word_line = []     # which line each word belongs to
+        word_map = []      # per-line list of flat indices (or -1 for non-alpha tokens)
 
         for i, line in enumerate(lines):
             words = line.split()
@@ -196,72 +199,80 @@ class RhymeDetector:
                 clean = re.sub(r'[^a-z]', '', word.lower())
                 if clean:
                     all_words.append(clean)
+                    word_line.append(i)
                     word_map_line.append(len(all_words) - 1)
                 else:
                     word_map_line.append(-1)
             word_map.append(word_map_line)
 
-        # 2. Extract phonemes for each word
-        phonetic_data = []
+        # 2. Get the full rhyming part for each word
+        rhyme_parts = []
         for word in all_words:
             phones_list = pronouncing.phones_for_word(word)
             if phones_list:
-                phones = phones_list[0] # Use first pronunciation
-                # Extract stressed vowel for assonance/rhyme group
-                vowel_group = self._get_vowel_group(phones)
-                phonetic_data.append({"word": word, "phones": phones, "vowel": vowel_group})
+                rp = pronouncing.rhyming_part(phones_list[0])
+                rhyme_parts.append(rp)
             else:
-                # Fallback for unknown words
-                vowel_group = self._estimate_vowel_group(word)
-                phonetic_data.append({"word": word, "phones": "", "vowel": vowel_group})
+                # Fallback: use the orthographic ending from last vowel
+                rhyme_parts.append(self._get_ending(word))
 
-        # 3. Group by sounds (Assonance/Rhyme)
-        sound_groups = {}
-        for idx, data in enumerate(phonetic_data):
-            v = data["vowel"]
-            if v:
-                if v not in sound_groups:
-                    sound_groups[v] = []
-                sound_groups[v].append(idx)
+        # 3. Group words that share the same rhyming part
+        sound_groups: Dict[str, List[int]] = {}
+        for idx, rp in enumerate(rhyme_parts):
+            if not rp:
+                continue
+            if rp not in sound_groups:
+                sound_groups[rp] = []
+            sound_groups[rp].append(idx)
 
-        # 4. Assign colors to groups with > 1 occurrences
-        # Use a deterministic palette of 12 distinct colors (rotated)
-        group_colors = {}
+        # 4. Filter: keep only groups with 2+ words that appear across 2+ different lines
+        #    This prevents trivial highlights (single word or all on same line)
+        qualified_groups = {}
+        for rp, indices in sound_groups.items():
+            if len(indices) < 2:
+                continue
+            lines_involved = set(word_line[idx] for idx in indices)
+            if len(lines_involved) >= 2:
+                qualified_groups[rp] = indices
+
+        # 5. Assign colors — most frequent group first for visual prominence
+        group_colors: Dict[str, str] = {}
         color_idx = 0
-        sorted_groups = sorted(sound_groups.items(), key=lambda x: len(x[1]), reverse=True) # Color most frequent first
-        
-        for vowel, indices in sorted_groups:
-            if len(indices) > 1:
-                group_colors[vowel] = f"rhyme-group-{color_idx % 12 + 1}"
-                color_idx += 1
+        sorted_groups = sorted(qualified_groups.items(), key=lambda x: len(x[1]), reverse=True)
 
-        # 5. Build HTML
+        for rp, indices in sorted_groups:
+            group_colors[rp] = f"rhyme-group-{color_idx % 12 + 1}"
+            color_idx += 1
+
+        # Build a per-word color lookup
+        word_color: Dict[int, str] = {}
+        for rp, indices in qualified_groups.items():
+            css_class = group_colors[rp]
+            for idx in indices:
+                word_color[idx] = css_class
+
+        # 6. Build HTML
         highlighted_lines = []
         for i, line in enumerate(lines):
             words = line.split()
             if not words:
                 highlighted_lines.append(line)
                 continue
-            
+
             line_html_parts = []
             for j, word in enumerate(words):
-                # Retrieve analysis index
                 flat_idx = word_map[i][j]
-                
                 classes = []
-                
-                # Check Rhyme/Assonance Group
-                if flat_idx != -1:
-                    vowel = phonetic_data[flat_idx]["vowel"]
-                    if vowel in group_colors:
-                        classes.append(group_colors[vowel])
-                        classes.append("rhyme-word") # Base class for styling
-                
-                # Check Alliteration (Simplified: start letter match in same line)
+
+                # Rhyme color
+                if flat_idx != -1 and flat_idx in word_color:
+                    classes.append(word_color[flat_idx])
+                    classes.append("rhyme-word")
+
+                # Alliteration (same starting consonant with another word in the line)
                 clean_word = re.sub(r'[^a-z]', '', word.lower())
                 if clean_word:
                     first_char = clean_word[0]
-                    # Check if this char appears in other words in this line
                     siblings = [re.sub(r'[^a-z]', '', w.lower()) for k, w in enumerate(words) if k != j]
                     siblings = [w for w in siblings if w]
                     if any(s.startswith(first_char) for s in siblings):
@@ -271,32 +282,10 @@ class RhymeDetector:
                     line_html_parts.append(f"<span class='{' '.join(classes)}'>{word}</span>")
                 else:
                     line_html_parts.append(word)
-            
+
             highlighted_lines.append(" ".join(line_html_parts))
 
         return highlighted_lines
-
-    def _get_vowel_group(self, phones: str) -> str:
-        """Extract the primary stressed vowel sound from phonemes."""
-        parts = phones.split()
-        for p in parts:
-            if '1' in p or '2' in p:
-                return re.sub(r'\d', '', p)
-        # If no stress, return first vowel found
-        for p in parts:
-            if p[0] in 'AEIOU':
-                return re.sub(r'\d', '', p)     
-        return ""
-
-    def _estimate_vowel_group(self, word: str) -> str:
-        """Fallback vowel estimation for unknown words"""
-        word = word.lower()
-        if 'ee' in word or 'ea' in word: return "IY"
-        if 'oo' in word or 'u' in word: return "UW"
-        if 'a' in word: return "AE"
-        if 'i' in word: return "IH"
-        if 'o' in word: return "OW"
-        return "UNKNOWN"
 
     def _find_alliterations(self, lines: List[str]) -> List[List[str]]:
         """Find words that alliterate in each line"""

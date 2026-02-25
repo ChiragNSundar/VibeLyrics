@@ -1,6 +1,6 @@
 /**
  * VibeLyrics API Service
- * Centralized API calls to Flask backend
+ * Centralized API calls to FastAPI backend
  */
 
 const BASE_URL = '';
@@ -119,7 +119,91 @@ export const aiApi = {
         }),
 };
 
-// Types
+// ============ Advanced Feature APIs ============
+
+export const advancedApi = {
+    // Punchlines
+    scorePunchline: (line: string) =>
+        request<PunchlineScoreResponse>('/api/punchline/score', {
+            method: 'POST',
+            body: JSON.stringify({ line }),
+        }),
+
+    generateAiPunchlines: (theme: string, sessionId?: number, mood?: string, count: number = 5) =>
+        request<AiPunchlineResponse>('/api/punchline/ai-generate', {
+            method: 'POST',
+            body: JSON.stringify({ theme, session_id: sessionId, mood, count }),
+        }),
+
+    // Metaphors & Similes
+    generateMetaphors: (concept: string, count: number = 5, sessionId?: number) =>
+        request<MetaphorResponse>('/api/metaphor/generate', {
+            method: 'POST',
+            body: JSON.stringify({ concept, count, session_id: sessionId }),
+        }),
+
+    generateSimiles: (word: string, count: number = 5, sessionId?: number) =>
+        request<SimileResponse>('/api/simile/generate', {
+            method: 'POST',
+            body: JSON.stringify({ word, count, session_id: sessionId }),
+        }),
+
+    // Contextual Adlibs
+    generateContextualAdlibs: (line: string, mood?: string, artistStyle?: string, recentLines: string[] = [], useAi: boolean = false) =>
+        request<ContextualAdlibResponse>('/api/adlibs/contextual', {
+            method: 'POST',
+            body: JSON.stringify({
+                line,
+                mood,
+                artist_style: artistStyle,
+                recent_lines: recentLines,
+                use_ai: useAi
+            }),
+        }),
+
+    getArtistStyles: () =>
+        request<{ success: boolean; styles: string[] }>('/api/adlibs/artist-styles'),
+
+    // Audio Analysis
+    getAudioSections: (filename: string) =>
+        request<AudioSectionsResponse>(`/api/audio/sections/${encodeURIComponent(filename)}`),
+
+    analyzeAudio: (filename: string) =>
+        request<AudioAnalysisResponse>(`/api/audio/analyze/${encodeURIComponent(filename)}`),
+
+    getSectionWaveform: (filename: string, start: number, end: number) =>
+        request<{ success: boolean; waveform: number[] }>(`/api/audio/section-waveform/${encodeURIComponent(filename)}?start=${start}&end=${end}`),
+};
+
+// Journal APIs
+export const journalApi = {
+    create: (content: string, mood: string = 'Neutral', tags: string[] = []) =>
+        request<{ success: boolean; entry: JournalEntry }>('/api/journal', {
+            method: 'POST',
+            body: JSON.stringify({ content, mood, tags }),
+        }),
+
+    list: (limit: number = 10) =>
+        request<{ success: boolean; entries: JournalEntry[] }>(`/api/journal?limit=${limit}`),
+
+    search: (query: string, mode: string = 'auto', topK: number = 5) =>
+        request<JournalSearchResponse>(`/api/journal/search?q=${encodeURIComponent(query)}&mode=${mode}&top_k=${topK}`),
+
+    reindex: () =>
+        request<{ success: boolean; total: number }>('/api/journal/reindex', { method: 'POST' }),
+};
+
+// Vocabulary APIs
+export const vocabularyApi = {
+    getAge: () =>
+        request<VocabularyAgeResponse>('/api/vocabulary/age'),
+
+    getSession: (sessionId: number) =>
+        request<VocabularySessionResponse>(`/api/vocabulary/session/${sessionId}`),
+};
+
+// ============ Types ============
+
 export interface Session {
     id: number;
     title: string;
@@ -200,4 +284,137 @@ export interface ConceptRhymesResponse {
 export interface MultiRhymesResponse {
     success: boolean;
     results: string[];
+}
+
+// Advanced Feature Types
+export interface PunchlineScoreResponse {
+    success: boolean;
+    score: number;
+    techniques: string[];
+    word_count: number;
+    internal_rhymes: number;
+    alliteration: number;
+}
+
+export interface AiPunchlineResponse {
+    success: boolean;
+    punchlines: Array<{ line: string; score: number; techniques: string[] }> | string[];
+    source: string;
+    theme?: string;
+    mood?: string;
+}
+
+export interface MetaphorResponse {
+    success: boolean;
+    metaphors: string[];
+    source: string;
+    concept?: string;
+}
+
+export interface SimileResponse {
+    success: boolean;
+    similes: string[];
+    source: string;
+    word?: string;
+}
+
+export interface ContextualAdlibResponse {
+    success: boolean;
+    adlibs: string[];
+    detected_tone: string;
+    source: string;
+    placements: Array<{
+        position: number;
+        after_word: string;
+        suggested: string;
+        type: string;
+    }>;
+}
+
+export interface AudioSectionsResponse {
+    success: boolean;
+    bpm: number;
+    key: { key: string; mode: string; confidence: number; label: string };
+    sections: Array<{
+        label: string;
+        start_sec: number;
+        end_sec: number;
+        bars: number;
+        energy: string;
+    }>;
+    total_sections: number;
+}
+
+export interface AudioAnalysisResponse {
+    success: boolean;
+    bpm: number;
+    key: { key: string; mode: string; confidence: number; label: string };
+    sections: Array<{ section: number; energy: number; level: string }>;
+    waveform: number[];
+}
+
+export interface JournalEntry {
+    id: number;
+    content: string;
+    mood: string;
+    tags?: string[];
+    themes?: string[];
+    keywords?: string[];
+    created_at: string;
+}
+
+export interface JournalSearchResponse {
+    success: boolean;
+    query: string;
+    mode: string;
+    results: Array<{
+        entry_id: number;
+        content: string;
+        similarity: number;
+        match_type: string;
+        mood?: string;
+        created_at?: string;
+        matched_words?: string[];
+    }>;
+    total: number;
+}
+
+export interface VocabularyAgeResponse {
+    success: boolean;
+    evolution: Array<{
+        session_id: number;
+        date: string;
+        grade_level: number;
+        reading_level: string;
+        unique_words: number;
+        multisyllabic_pct: number;
+        vocabulary_density: number;
+        cumulative_unique_words: number;
+        new_words_introduced: number;
+        avg_syllables_per_word: number;
+    }>;
+    summary: {
+        current_grade: number;
+        current_level: string;
+        average_grade: number;
+        grade_trend: string;
+        grade_change: number;
+        total_unique_words: number;
+        sessions_analyzed: number;
+    };
+}
+
+export interface VocabularySessionResponse {
+    success: boolean;
+    session_id: number;
+    session_title: string;
+    total_words: number;
+    unique_words: number;
+    vocabulary_density: number;
+    avg_word_length: number;
+    avg_syllables_per_word: number;
+    multisyllabic_count: number;
+    multisyllabic_pct: number;
+    flesch_kincaid_grade: number;
+    reading_level: string;
 }

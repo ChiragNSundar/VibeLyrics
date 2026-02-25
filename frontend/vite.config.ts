@@ -10,19 +10,19 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8003',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/session': {
-        target: 'http://localhost:8003',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/export': {
-        target: 'http://localhost:8003',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:8003',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         ws: true,
       },

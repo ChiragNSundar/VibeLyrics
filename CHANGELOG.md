@@ -2,6 +2,31 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.3.0] - 2026-02-25
+
+### ✨ New Features
+
+- **AI-Powered Punchline Engine**: Generate context-aware punchline bars using Gemini AI, with scoring for wordplay, contrast, double entendres, and alliteration. Rule-based fallback when AI is unavailable.
+- **AI-Powered Metaphor & Simile Generator**: Create vivid, hip-hop-appropriate metaphors and similes powered by AI with session context awareness.
+- **Contextual Ad-lib Generator**: Tone-aware ad-lib suggestions with artist-style emulation (Travis Scott, Drake, Kendrick, Future, Migos, 21 Savage, J. Cole, Kanye). Includes syllable-based placement suggestions.
+- **Key Detection**: Musical key detection for uploaded audio using chromagram + Krumhansl-Schmuckler algorithm. Returns key, mode, and confidence score.
+- **Dynamic Beat Arranger**: Detect beat structure sections (Intro, Verse, Chorus, Bridge, Outro) using spectral features and energy analysis. Per-section waveform data for looping.
+- **Journal Semantic Search**: Search journal entries by meaning using sentence-transformers embeddings. Supports semantic, keyword, and auto modes. Graceful fallback to keyword search.
+- **Vocabulary Age Analytics**: Track vocabulary complexity evolution over time using Flesch-Kincaid grade levels. Per-session metrics and cumulative growth tracking with reading level labels.
+
+### 🎨 UI Enhancements
+
+- **PunchlinePanel**: New 3-tab sidebar panel (🔥 Bars / 💎 Metaphors / 🎤 Ad-libs) with glassmorphism styling, click-to-copy, and scoring display.
+- **Journal Search Bar**: Semantic/keyword search toggle on the Journal page with match-type badges and similarity scores.
+- **Vocabulary Age Dashboard**: Bar chart showing grade level evolution, reading level badge, trend indicators, and unique word tracking on the Stats page.
+
+### 🔧 Backend
+
+- New services: `vector_search.py`, `vocabulary_analyzer.py`
+- New router: `vocabulary.py` (`GET /api/vocabulary/age`, `GET /api/vocabulary/session/{id}`)
+- Updated routers: `advanced.py` (AI punchline/metaphor/adlib endpoints, audio sections), `journal.py` (semantic search endpoint)
+- New dependencies: `sentence-transformers>=2.2.0` (optional), `scikit-learn>=1.3.0`
+
 ## [2.2.1] - 2026-01-13
 
 ### Fixed

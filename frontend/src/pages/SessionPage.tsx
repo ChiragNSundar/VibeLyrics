@@ -6,6 +6,7 @@ import { useSessionStore } from '../store/sessionStore';
 import { LyricsEditor } from '../components/session/LyricsEditor';
 import { RhymeWavePanel } from '../components/session/RhymeWavePanel.tsx';
 import { AIHelpPanel } from '../components/session/AIHelpPanel.tsx';
+import { PunchlinePanel } from '../components/session/PunchlinePanel';
 import { Button } from '../components/ui/Button';
 import './SessionPage.css';
 
@@ -15,7 +16,7 @@ export const SessionPage: React.FC = () => {
 
     const { currentSession, setSession, lines, setLines, reset } = useSessionStore();
     const [isLoading, setIsLoading] = useState(true);
-    const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp'>('none');
+    const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp' | 'punchline'>('none');
     const [provider, setProvider] = useState('gemini');
 
     useEffect(() => {
@@ -53,7 +54,7 @@ export const SessionPage: React.FC = () => {
         }
     };
 
-    const togglePanel = (panel: 'rhymewave' | 'aihelp') => {
+    const togglePanel = (panel: 'rhymewave' | 'aihelp' | 'punchline') => {
         setActivePanel(activePanel === panel ? 'none' : panel);
     };
 
@@ -140,6 +141,13 @@ export const SessionPage: React.FC = () => {
                     >
                         🤖
                     </button>
+                    <button
+                        className={`panel-toggle ${activePanel === 'punchline' ? 'active' : ''}`}
+                        onClick={() => togglePanel('punchline')}
+                        title="Punchlines & Metaphors"
+                    >
+                        🔥
+                    </button>
                 </div>
 
                 {/* Left Panel */}
@@ -164,6 +172,17 @@ export const SessionPage: React.FC = () => {
                             transition={{ duration: 0.3 }}
                         >
                             <AIHelpPanel sessionId={sessionId} onClose={() => setActivePanel('none')} />
+                        </motion.div>
+                    )}
+                    {activePanel === 'punchline' && (
+                        <motion.div
+                            className="side-panel"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 400, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <PunchlinePanel sessionId={sessionId} mood={currentSession?.mood} />
                         </motion.div>
                     )}
                 </AnimatePresence>

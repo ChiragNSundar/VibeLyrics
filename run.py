@@ -14,7 +14,7 @@ from pathlib import Path
 def run_backend():
     """Run FastAPI backend with uvicorn"""
     return subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "backend.main:app", "--reload", "--port", "5000"],
+        [sys.executable, "-m", "uvicorn", "backend.main:app", "--reload", "--port", "5001"],
         cwd=Path(__file__).parent
     )
 
@@ -29,7 +29,7 @@ def run_frontend():
         subprocess.run(["npm", "install"], cwd=frontend_dir, shell=True)
     
     return subprocess.Popen(
-        ["npm", "run", "dev"],
+        "npm run dev",
         cwd=frontend_dir,
         shell=True
     )
@@ -41,9 +41,9 @@ def main():
     print("                   VibeLyrics 2.0")
     print("              AI-Powered Lyric Writing Assistant")
     print("="*60)
-    print("  Backend:  http://localhost:5000  (FastAPI)")
+    print("  Backend:  http://localhost:5001  (FastAPI)")
     print("  Frontend: http://localhost:5173  (React + Vite)")
-    print("  API Docs: http://localhost:5000/docs")
+    print("  API Docs: http://localhost:5001/docs")
     print("="*60 + "\n")
     
     processes = []

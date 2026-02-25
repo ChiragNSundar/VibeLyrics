@@ -1,7 +1,7 @@
 """
 Advanced Analysis Services
-- Punchline scoring
-- Metaphor/Simile generation
+- AI-Powered Punchline Engine
+- AI-Powered Metaphor/Simile Generator
 - Complexity scoring
 - Imagery analysis
 """
@@ -10,14 +10,16 @@ import re
 
 
 class PunchlineEngine:
-    """Score and generate punchlines"""
+    """Score and generate punchlines — rule-based scoring + AI generation"""
     
-    # Punchline techniques
+    # Punchline techniques for scoring
     TECHNIQUES = {
-        "contrast": ["but", "yet", "although", "however", "while"],
-        "wordplay": ["like", "as", "ain't", "get it", "you know"],
-        "callback": ["remember", "told you", "said"],
-        "reversal": ["flip", "switch", "turn", "reverse"],
+        "contrast": ["but", "yet", "although", "however", "while", "though", "still"],
+        "wordplay": ["like", "as", "ain't", "get it", "you know", "no pun", "literally"],
+        "callback": ["remember", "told you", "said", "back when", "used to"],
+        "reversal": ["flip", "switch", "turn", "reverse", "opposite", "plot twist"],
+        "double_entendre": ["two ways", "both", "either", "mean"],
+        "homophone": [],  # Detected dynamically
     }
     
     def score_punchline(self, line: str) -> Dict:
@@ -54,6 +56,13 @@ class PunchlineEngine:
                 techniques_used.append("reversal")
                 break
         
+        # Double entendre detection — words with multiple meanings
+        for word in self.TECHNIQUES["double_entendre"]:
+            if word in line_lower:
+                score += 20
+                techniques_used.append("double_entendre")
+                break
+        
         # Word count bonus (optimal 8-12 words)
         word_count = len(line.split())
         if 8 <= word_count <= 12:
@@ -65,12 +74,21 @@ class PunchlineEngine:
         words = line.split()
         rhyme_pairs = self._count_internal_rhymes(words)
         score += min(20, rhyme_pairs * 5)
+        if rhyme_pairs >= 2:
+            techniques_used.append("internal_rhyme")
+        
+        # Alliteration bonus
+        alliteration_count = self._count_alliteration(words)
+        if alliteration_count >= 2:
+            score += 10
+            techniques_used.append("alliteration")
         
         return {
             "score": min(100, score),
             "techniques": techniques_used,
             "word_count": word_count,
-            "internal_rhymes": rhyme_pairs
+            "internal_rhymes": rhyme_pairs,
+            "alliteration": alliteration_count
         }
     
     def _count_internal_rhymes(self, words: List[str]) -> int:
@@ -93,6 +111,15 @@ class PunchlineEngine:
                 return word[i:]
         return word[-2:] if len(word) >= 2 else word
     
+    def _count_alliteration(self, words: List[str]) -> int:
+        """Count alliterative pairs"""
+        clean = [w.lower().strip(".,!?;:'\"") for w in words if len(w) > 1]
+        count = 0
+        for i in range(len(clean) - 1):
+            if clean[i][0] == clean[i + 1][0] and clean[i][0].isalpha():
+                count += 1
+        return count
+    
     def detect_contrast(self, line: str) -> bool:
         """Check if line contains contrast"""
         line_lower = line.lower()
@@ -102,7 +129,7 @@ class PunchlineEngine:
         return False
     
     def generate_punchline_starters(self, theme: str) -> List[str]:
-        """Generate punchline starter phrases"""
+        """Generate punchline starter phrases (rule-based fallback)"""
         starters = [
             f"They say {theme}, but I...",
             f"You thought {theme}? Nah...",
@@ -111,22 +138,88 @@ class PunchlineEngine:
             f"Flip the {theme}, now watch me...",
         ]
         return starters
+    
+    async def generate_ai_punchlines(
+        self, theme: str, lines: List[str] = None,
+        mood: str = None, count: int = 5
+    ) -> Dict:
+        """Generate punchlines using AI provider"""
+        from .ai_provider import get_ai_provider
+        
+        provider = get_ai_provider()
+        if not provider.is_available():
+            return {
+                "punchlines": self.generate_punchline_starters(theme),
+                "source": "rule-based"
+            }
+        
+        context_lines = "\n".join(lines[-5:]) if lines else "None yet"
+        mood_str = mood or "confident"
+        
+        prompt = f"""You are a master hip-hop lyricist and punchline writer. Generate {count} hard-hitting punchlines about the theme: "{theme}".
+
+Mood/energy: {mood_str}
+Recent bars for context:
+{context_lines}
+
+Rules:
+- Each punchline should be a COMPLETE bar (one line)
+- Use wordplay, double entendres, metaphors, or contrasts
+- Make them clever — the kind that makes the crowd go "ohhh!"
+- Match the mood/energy
+- No generic filler — every word should hit
+
+Return ONLY the punchlines, one per line, no numbering or bullets."""
+
+        try:
+            response = await provider.answer_question(prompt, None)
+            punchlines = [
+                line.strip("- •").strip()
+                for line in response.strip().split('\n')
+                if line.strip() and len(line.strip()) > 5
+            ][:count]
+            
+            # Score each generated punchline
+            scored = []
+            for p in punchlines:
+                score_data = self.score_punchline(p)
+                scored.append({
+                    "line": p,
+                    "score": score_data["score"],
+                    "techniques": score_data["techniques"]
+                })
+            
+            return {
+                "punchlines": scored,
+                "source": "ai",
+                "theme": theme,
+                "mood": mood_str
+            }
+        except Exception as e:
+            return {
+                "punchlines": self.generate_punchline_starters(theme),
+                "source": "rule-based",
+                "error": str(e)
+            }
 
 
 class MetaphorGenerator:
-    """Generate metaphors and similes"""
+    """Generate metaphors and similes — static fallback + AI generation"""
     
-    # Common metaphor frames
+    # Common metaphor frames (fallback)
     FRAMES = {
-        "success": ["mountain", "throne", "crown", "diamond", "gold"],
-        "struggle": ["storm", "battle", "war", "fire", "darkness"],
-        "money": ["paper", "bread", "trees", "ocean", "rain"],
-        "time": ["river", "thief", "healer", "clock", "sand"],
-        "love": ["drug", "fire", "game", "maze", "ocean"],
+        "success": ["mountain", "throne", "crown", "diamond", "gold", "summit", "peak"],
+        "struggle": ["storm", "battle", "war", "fire", "darkness", "maze", "quicksand"],
+        "money": ["paper", "bread", "trees", "ocean", "rain", "river", "waterfall"],
+        "time": ["river", "thief", "healer", "clock", "sand", "ghost", "shadow"],
+        "love": ["drug", "fire", "game", "maze", "ocean", "rollercoaster", "gravity"],
+        "power": ["lion", "thunder", "earthquake", "volcano", "hurricane", "titan"],
+        "loyalty": ["anchor", "chain", "root", "pillar", "shield", "rock"],
+        "ambition": ["rocket", "arrow", "eagle", "flame", "engine", "bullet"],
     }
     
     def generate_metaphors(self, concept: str, count: int = 5) -> List[str]:
-        """Generate metaphors for a concept"""
+        """Generate metaphors for a concept (rule-based fallback)"""
         concept_lower = concept.lower()
         
         # Find matching frame
@@ -137,34 +230,131 @@ class MetaphorGenerator:
                 break
         
         if not frame:
-            frame = self.FRAMES["success"]  # Default
+            frame = self.FRAMES["success"]
         
         metaphors = []
         for item in frame[:count]:
             metaphors.append(f"{concept} is a {item}")
-            metaphors.append(f"My {concept}'s like a {item}")
         
         return metaphors[:count]
     
     def generate_similes(self, word: str, count: int = 5) -> List[str]:
-        """Generate similes for a word"""
+        """Generate similes for a word (rule-based fallback)"""
         comparisons = [
-            "lion", "king", "rocket", "diamond", "storm",
-            "fire", "ice", "blade", "wave", "legend"
+            "lion on the hunt", "king without a crown", "rocket breaking through",
+            "diamond in the rough", "storm rolling in", "fire nobody can tame",
+            "blade cutting deep", "wave crashing down", "legend in the making",
+            "shadow in the dark"
         ]
         
         similes = []
         for comp in comparisons[:count]:
             similes.append(f"{word} like a {comp}")
-            similes.append(f"Cold as {comp}")
         
         return similes[:count]
     
     def complete_simile(self, starter: str) -> str:
-        """Complete a simile starter"""
+        """Complete a simile starter (rule-based fallback)"""
         if "like a" in starter.lower():
-            return starter + " on a mission"
-        return starter + " like a boss"
+            return starter + " on a mission, no intermission"
+        return starter + " like a boss, never taking a loss"
+    
+    async def generate_ai_metaphors(
+        self, concept: str, context: List[str] = None, count: int = 5
+    ) -> Dict:
+        """Generate metaphors using AI"""
+        from .ai_provider import get_ai_provider
+        
+        provider = get_ai_provider()
+        if not provider.is_available():
+            return {
+                "metaphors": self.generate_metaphors(concept, count),
+                "source": "rule-based"
+            }
+        
+        context_str = "\n".join(context[-3:]) if context else "None"
+        
+        prompt = f"""You are a creative hip-hop lyricist. Generate {count} powerful, original METAPHORS for the concept: "{concept}".
+
+Recent bars for context:
+{context_str}
+
+Rules:
+- Each metaphor should be a vivid, original comparison (NOT cliché)
+- Format: "[concept] is [metaphor]" or weave it into a bar
+- Think abstract, cinematic, emotionally resonant
+- Avoid overused comparisons like "life is a journey"
+- Make them suitable for hip-hop — gritty, real, impactful
+
+Return ONLY the metaphors, one per line, no numbering."""
+
+        try:
+            response = await provider.answer_question(prompt, None)
+            metaphors = [
+                line.strip("- •").strip()
+                for line in response.strip().split('\n')
+                if line.strip() and len(line.strip()) > 5
+            ][:count]
+            
+            return {
+                "metaphors": metaphors,
+                "source": "ai",
+                "concept": concept
+            }
+        except Exception as e:
+            return {
+                "metaphors": self.generate_metaphors(concept, count),
+                "source": "rule-based",
+                "error": str(e)
+            }
+    
+    async def generate_ai_similes(
+        self, word: str, context: List[str] = None, count: int = 5
+    ) -> Dict:
+        """Generate similes using AI"""
+        from .ai_provider import get_ai_provider
+        
+        provider = get_ai_provider()
+        if not provider.is_available():
+            return {
+                "similes": self.generate_similes(word, count),
+                "source": "rule-based"
+            }
+        
+        context_str = "\n".join(context[-3:]) if context else "None"
+        
+        prompt = f"""You are a creative hip-hop lyricist. Generate {count} fire SIMILES using the word/concept: "{word}".
+
+Recent context:
+{context_str}
+
+Rules:
+- Format: "[word] like [comparison]" or "Cold as [comparison]"
+- Each simile should paint a vivid picture
+- Keep them hip-hop appropriate — street-smart, clever
+- Avoid generic comparisons
+
+Return ONLY the similes, one per line, no numbering."""
+
+        try:
+            response = await provider.answer_question(prompt, None)
+            similes = [
+                line.strip("- •").strip()
+                for line in response.strip().split('\n')
+                if line.strip() and len(line.strip()) > 5
+            ][:count]
+            
+            return {
+                "similes": similes,
+                "source": "ai",
+                "word": word
+            }
+        except Exception as e:
+            return {
+                "similes": self.generate_similes(word, count),
+                "source": "rule-based",
+                "error": str(e)
+            }
 
 
 class ComplexityScorer:
