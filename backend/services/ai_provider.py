@@ -118,6 +118,13 @@ class AIProvider(ABC):
     async def stream_suggestion(self, session_id: int, partial: str) -> AsyncGenerator[str, None]:
         pass
 
+    async def stream_suggestion_with_context(
+        self, session_id: int, partial: str, context: str = ""
+    ) -> AsyncGenerator[str, None]:
+        """Stream with full session context. Default falls back to stream_suggestion."""
+        async for chunk in self.stream_suggestion(session_id, partial):
+            yield chunk
+
 
 class GeminiProvider(AIProvider):
     """
@@ -313,17 +320,28 @@ Question: {question}"""
             return f"Error: {e}"
 
     async def stream_suggestion(self, session_id: int, partial: str) -> AsyncGenerator[str, None]:
+        """Basic fallback — no context."""
+        async for chunk in self.stream_suggestion_with_context(session_id, partial, ""):
+            yield chunk
+
+    async def stream_suggestion_with_context(
+        self, session_id: int, partial: str, context: str = ""
+    ) -> AsyncGenerator[str, None]:
         if not self.api_key:
             yield "[ERROR] No API key set"
             return
 
-        prompt = f"""Complete this lyric line. Your completion should:
+        prompt = f"""Complete this lyric line. Your completion must:
 - Rhyme or set up a rhyme with natural, creative word choices
 - Match the cadence and syllable feel of the input
 - Feel like a human wrote it — raw, not robotic
-- Use multi-syllabic or slant rhymes over basic perfect rhymes
+- Prefer multi-syllabic or slant rhymes over basic perfect rhymes
+- Stay consistent with the session's mood, theme, and existing lyrics
+"""
+        if context:
+            prompt += f"\n{context}\n"
 
-Partial line: "{partial}"
+        prompt += f"""\nPartial line: "{partial}"
 
 Output ONLY the completion (the words that come after the input). Do NOT repeat the input. Keep it to one line."""
 
@@ -412,13 +430,31 @@ Output ONLY the completion (the words that come after the input). Do NOT repeat 
         if correction_text:
             prompt += f"\n{correction_text}\n"
 
+        # ── Vocabulary context (from VocabularyManager) ──
+        vocab = context.get("vocabulary", {})
+        vocab_parts = []
+        if vocab.get("slangs"):
+            vocab_parts.append(f"User's favorite slang: {', '.join(vocab['slangs'][:8])}")
+        if vocab.get("most_used"):
+            vocab_parts.append(f"User's signature words: {', '.join(vocab['most_used'][:10])}")
+        if vocab.get("avoided"):
+            vocab_parts.append(f"Words to AVOID: {', '.join(vocab['avoided'][:8])}")
+        if vocab_parts:
+            prompt += "\nVOCABULARY CONTEXT:\n" + "\n".join(f"- {v}" for v in vocab_parts) + "\n"
+
+        # ── Rhyme target (last word of previous line) ──
+        rhyme_target = context.get("rhyme_target", "")
+
         prompt += FEW_SHOT_EXAMPLES
         prompt += "\n==================================================\nYOUR TASK:\n"
 
         if action == "continue":
+            rhyme_hint = ""
+            if rhyme_target:
+                rhyme_hint = f"\n- RHYME TARGET: Your line must rhyme with \"{rhyme_target}\" — use multi-syllabic or compound rhyme"
             prompt += f"""Write the next line of the song.
 REQUIREMENTS:
-- Rhyme with the previous line — prefer multi-syllabic or compound rhymes over simple perfect rhymes
+- Rhyme with the previous line — prefer multi-syllabic or compound rhymes over simple perfect rhymes{rhyme_hint}
 - Match the syllable count and rhythmic cadence of the preceding lines
 - Maintain the emotional tone and vocabulary density
 - Avoid clichés — surprise the listener with unexpected word choices

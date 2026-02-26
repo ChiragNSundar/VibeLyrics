@@ -236,17 +236,59 @@ async def reorder_lines(data: dict, db: AsyncSession = Depends(get_db)):
 async def stream_suggestion(
     session_id: int,
     partial: str = "",
-    request: Request = None
+    request: Request = None,
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Stream AI suggestions using Server-Sent Events (SSE)
-    FastAPI native streaming support
+    Now loads full session context for better suggestions.
     """
+    # ── Load context for the AI ──
+    session_result = await db.execute(
+        select(LyricSession).where(LyricSession.id == session_id)
+    )
+    session = session_result.scalar_one_or_none()
+
+    # Get recent lines for context + rhyme target
+    lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == session_id)
+        .order_by(LyricLine.line_number.desc())
+        .limit(8)
+    )
+    recent_lines = list(reversed(lines_result.scalars().all()))
+    line_texts = [l.final_version or l.user_input for l in recent_lines]
+
+    # Get last word for rhyme targeting
+    rhyme_target = ""
+    if line_texts:
+        last_words = line_texts[-1].split()
+        if last_words:
+            rhyme_target = last_words[-1].strip(".,!?;:'\"")
+
     async def generate():
         try:
             provider = get_ai_provider()
 
-            async for chunk in provider.stream_suggestion(session_id, partial):
+            # Build a context-aware prompt instead of the bare one
+            context_parts = []
+            if session:
+                context_parts.append(
+                    f"Session: {session.title or 'Untitled'} | "
+                    f"BPM: {session.bpm or 140} | "
+                    f"Mood: {session.mood or 'Passionate'} | "
+                    f"Theme: {session.theme or 'Life'}"
+                )
+            if line_texts:
+                context_parts.append("Recent lyrics:\n" + "\n".join(line_texts[-6:]))
+            if rhyme_target:
+                context_parts.append(f"Rhyme target (last word of prev line): \"{rhyme_target}\"")
+
+            context_str = "\n".join(context_parts)
+
+            async for chunk in provider.stream_suggestion_with_context(
+                session_id, partial, context_str
+            ):
                 if await request.is_disconnected():
                     break
                 yield f"data: {chunk}\n\n"

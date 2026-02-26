@@ -9,13 +9,14 @@ from ..database import get_db
 from ..models import LyricSession, LyricLine, UserProfile, JournalEntry
 from ..schemas import SuggestRequest, ImproveRequest, AskRequest, ProviderSwitch, RhymeCompleteRequest
 from ..services.ai_provider import get_ai_provider, set_provider
-from ..services.learning import StyleExtractor, CorrectionTracker
+from ..services.learning import StyleExtractor, CorrectionTracker, VocabularyManager
 
 router = APIRouter()
 
 # Singletons for learning services
 _style_extractor = StyleExtractor()
 _correction_tracker = CorrectionTracker()
+_vocab_manager = VocabularyManager()
 
 
 @router.post("/ai/suggest", response_model=dict)
@@ -53,10 +54,26 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
     # Learn from journal thoughts continuously
     if journal_dicts:
         _style_extractor.learn_from_journal(journal_dicts)
+
+    # Fetch User Preferences
     profile_result = await db.execute(select(UserProfile).limit(1))
     profile = profile_result.scalar_one_or_none()
 
-    # Build context with journal + learning data
+    # Track vocabulary usage from session lines
+    if line_texts:
+        all_words = []
+        for lt in line_texts:
+            all_words.extend(lt.lower().split())
+        _vocab_manager.track_usage(all_words)
+
+    # Extract rhyme target (last word of last line)
+    rhyme_target = ""
+    if line_texts:
+        last_words = line_texts[-1].split()
+        if last_words:
+            rhyme_target = last_words[-1].strip(".,!?;:'\"")
+
+    # Build context with journal + learning + vocabulary data
     context = {
         "session": session.to_dict(),
         "lines": line_texts,
@@ -66,6 +83,8 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         "preferences": profile.to_dict() if profile else {},
         "style_summary": _style_extractor.get_style_summary(),
         "correction_insights": _correction_tracker.get_correction_insights(),
+        "vocabulary": _vocab_manager.get_vocabulary_context(),
+        "rhyme_target": rhyme_target,
     }
 
     # Get suggestion
