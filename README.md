@@ -292,10 +292,8 @@ python3 run.py --skip-install
 ##### Terminal 1: Backend
 
 ```bash
-python -m uvicorn backend.main:app --reload --port 8003
+python -m uvicorn backend.main:app --reload --port 5001
 ```
-
-*Note: The app may default to port 8003 or 5000 depending on config. Check console output.*
 
 ##### Terminal 2: Frontend
 

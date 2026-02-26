@@ -1,7 +1,7 @@
 """
 SQLAlchemy Models
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import String, Integer, Float, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -19,8 +19,8 @@ class LyricSession(Base):
     mood: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     theme: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     audio_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
     lines: Mapped[List["LyricLine"]] = relationship(
@@ -63,7 +63,7 @@ class LyricLine(Base):
     has_internal_rhyme: Mapped[bool] = mapped_column(Boolean, default=False)
     complexity_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationships
     session: Mapped["LyricSession"] = relationship("LyricSession", back_populates="lines")
@@ -100,7 +100,7 @@ class JournalEntry(Base):
     tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string
     extracted_themes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string
     extracted_keywords: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     def to_dict(self):
         import json
@@ -135,8 +135,8 @@ class UserProfile(Base):
     total_lines_written: Mapped[int] = mapped_column(Integer, default=0)
     total_corrections: Mapped[int] = mapped_column(Integer, default=0)
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     def to_dict(self):
         import json

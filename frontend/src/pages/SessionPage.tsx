@@ -190,7 +190,7 @@ export const SessionPage: React.FC = () => {
 
                 {/* Main Editor */}
                 <div className="editor-container">
-                    <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} />
+                    <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} rhymeScheme={currentSession.rhyme_scheme} />
                     <RhymeLegend />
                 </div>
             </div>

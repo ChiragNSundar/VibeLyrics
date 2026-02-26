@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 import asyncio
 import json
+import re
 
 from ..database import get_db
 from ..models import LyricSession, LyricLine
@@ -16,107 +17,152 @@ from ..services.rhyme_detector import RhymeDetector, SyllableCounter
 from ..services.ai_provider import get_ai_provider
 
 router = APIRouter()
-syllable_counter = SyllableCounter()
+
+# ── Singletons (avoid re-instantiation per request) ────────────────
+_syllable_counter = SyllableCounter()
+_rhyme_detector = RhymeDetector()
+
+
+def _compute_complexity(content: str) -> float:
+    """
+    Compute a 0-100 complexity score for a single line.
+    Factors: vocabulary diversity, multi-syllable words, word length.
+    """
+    words = content.lower().split()
+    if not words:
+        return 0.0
+
+    clean_words = [re.sub(r'[^a-z]', '', w) for w in words]
+    clean_words = [w for w in clean_words if w]
+
+    if not clean_words:
+        return 0.0
+
+    unique = set(clean_words)
+    vocab_diversity = len(unique) / len(clean_words)
+
+    # Count multi-syllable words (3+ syllables)
+    multi_count = sum(1 for w in clean_words if _syllable_counter.count(w) >= 3)
+    multi_ratio = multi_count / len(clean_words)
+
+    # Average word length bonus
+    avg_len = sum(len(w) for w in clean_words) / len(clean_words)
+    length_score = min(1.0, avg_len / 8.0)  # normalize: 8+ chars = max
+
+    score = (vocab_diversity * 40) + (multi_ratio * 35) + (length_score * 25)
+    return round(min(100.0, score), 1)
 
 
 @router.post("/lines", response_model=dict)
 async def add_line(data: LineCreate, db: AsyncSession = Depends(get_db)):
     """Add a new line to a session"""
+    # Input validation
+    content = data.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Line content cannot be empty")
+
     # Get session
     result = await db.execute(
         select(LyricSession).where(LyricSession.id == data.session_id)
     )
     session = result.scalar_one_or_none()
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     # Get next line number
     count_result = await db.execute(
         select(func.count(LyricLine.id)).where(LyricLine.session_id == data.session_id)
     )
     line_count = count_result.scalar() or 0
-    
-    # Create line
+
+    # Create line with all analysis
     line = LyricLine(
         session_id=data.session_id,
         line_number=line_count + 1,
-        user_input=data.content,
-        final_version=data.content,
+        user_input=content,
+        final_version=content,
         section=data.section,
-        syllable_count=syllable_counter.count(data.content),
-        stress_pattern=syllable_counter.get_stress_pattern(data.content)
+        syllable_count=_syllable_counter.count(content),
+        stress_pattern=_syllable_counter.get_stress_pattern(content),
+        has_internal_rhyme=_rhyme_detector.detect_internal_rhymes(content),
+        complexity_score=_compute_complexity(content),
     )
-    
-    # Analyze rhyme
-    rhyme_detector = RhymeDetector()
-    words = data.content.split()
+
+    # End-rhyme analysis
+    words = content.split()
     if words:
-        line.rhyme_end = rhyme_detector.get_rhyme_ending(words[-1])
-    
-    # Detect internal rhymes
-    line.has_internal_rhyme = rhyme_detector.detect_internal_rhymes(data.content)
-    
+        line.rhyme_end = _rhyme_detector.get_rhyme_ending(words[-1])
+
     db.add(line)
     await db.flush()
     await db.refresh(line)
 
-    # Add highlighting for response
-    # We need the context of other lines to do proper highlighting (e.g. alliteration/rhyme finding)
-    # But for a single line response, we can at least return the self-contained properties 
-    # OR we really should re-fetch the whole session context to be perfect, but that's expensive.
-    # For now, let's at least populate the HTML property so frontend doesn't crash or show raw text.
-    # Actually, the RhymeDetector needs the list of lines to find matches.
-    # A simple localized highlight (e.g. just internal rhymes) is better than nothing, 
-    # but to get 'rhyme-word' relative to OTHERS, we need others.
-    # Let's do a quick fetch of recent lines? No, let's just use the `highlight_lyrics` on this single line
-    # knowing it won't find inter-line rhymes yet, but will format it correctly.
-    # Wait, the frontend might rely on this HTML.
-    
-    # Better approach: The frontend triggers a re-fetch of the session or the line update should include context.
-    # Given the user wants "interactivity", let's try to do it right.
-    
-    highlighted = rhyme_detector.highlight_lyrics([line.final_version or line.user_input])
-    # Note: this won't show rhymes with *other* lines, but ensures the field exists.
-    line.highlighted_html = highlighted[0] if highlighted else line.user_input
-    
+    # Highlight with context of ALL session lines for proper cross-line detection
+    all_lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == data.session_id)
+        .order_by(LyricLine.line_number)
+    )
+    all_lines = all_lines_result.scalars().all()
+    text_lines = [l.final_version or l.user_input for l in all_lines]
+
+    highlighted = _rhyme_detector.highlight_lyrics(text_lines)
+
+    # Return the full set of highlighted lines so the frontend can update all of them
+    for db_line, html in zip(all_lines, highlighted):
+        db_line.highlighted_html = html
+
     return {
         "success": True,
-        "line": line.to_dict(include_highlights=True)
+        "line": line.to_dict(include_highlights=True),
+        "all_lines": [l.to_dict(include_highlights=True) for l in all_lines]
     }
 
 
 @router.put("/lines/{line_id}", response_model=dict)
 async def update_line(line_id: int, data: LineUpdate, db: AsyncSession = Depends(get_db)):
     """Update an existing line"""
+    content = data.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Line content cannot be empty")
+
     result = await db.execute(
         select(LyricLine).where(LyricLine.id == line_id)
     )
     line = result.scalar_one_or_none()
-    
+
     if not line:
         raise HTTPException(status_code=404, detail="Line not found")
-    
-    line.user_input = data.content
-    line.final_version = data.content
-    line.syllable_count = syllable_counter.count(data.content)
-    line.stress_pattern = syllable_counter.get_stress_pattern(data.content)
-    
-    # Update rhyme
-    rhyme_detector = RhymeDetector()
-    words = data.content.split()
+
+    line.user_input = content
+    line.final_version = content
+    line.syllable_count = _syllable_counter.count(content)
+    line.stress_pattern = _syllable_counter.get_stress_pattern(content)
+    line.has_internal_rhyme = _rhyme_detector.detect_internal_rhymes(content)
+    line.complexity_score = _compute_complexity(content)
+
+    words = content.split()
     if words:
-        line.rhyme_end = rhyme_detector.get_rhyme_ending(words[-1])
-    
-    # Detect internal rhymes
-    line.has_internal_rhyme = rhyme_detector.detect_internal_rhymes(data.content)
-        
-    highlighted = rhyme_detector.highlight_lyrics([line.final_version or line.user_input])
-    line.highlighted_html = highlighted[0] if highlighted else line.user_input
-    
+        line.rhyme_end = _rhyme_detector.get_rhyme_ending(words[-1])
+
+    # Re-highlight all lines in the session for cross-line context
+    all_lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == line.session_id)
+        .order_by(LyricLine.line_number)
+    )
+    all_lines = all_lines_result.scalars().all()
+    text_lines = [l.final_version or l.user_input for l in all_lines]
+    highlighted = _rhyme_detector.highlight_lyrics(text_lines)
+
+    for db_line, html in zip(all_lines, highlighted):
+        db_line.highlighted_html = html
+
     return {
         "success": True,
-        "line": line.to_dict(include_highlights=True)
+        "line": line.to_dict(include_highlights=True),
+        "all_lines": [l.to_dict(include_highlights=True) for l in all_lines]
     }
 
 
@@ -127,12 +173,12 @@ async def delete_line(line_id: int, db: AsyncSession = Depends(get_db)):
         select(LyricLine).where(LyricLine.id == line_id)
     )
     line = result.scalar_one_or_none()
-    
+
     if not line:
         raise HTTPException(status_code=404, detail="Line not found")
-    
+
     await db.delete(line)
-    
+
     return {"success": True}
 
 
@@ -149,17 +195,17 @@ async def stream_suggestion(
     async def generate():
         try:
             provider = get_ai_provider()
-            
+
             async for chunk in provider.stream_suggestion(session_id, partial):
                 if await request.is_disconnected():
                     break
                 yield f"data: {chunk}\n\n"
-            
+
             yield "data: [DONE]\n\n"
-            
+
         except Exception as e:
             yield f"data: [ERROR] {str(e)}\n\n"
-    
+
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",

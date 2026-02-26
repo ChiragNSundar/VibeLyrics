@@ -2,6 +2,23 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.4.1] - 2026-02-26
+
+### 🐛 Bug Fixes & Logic Improvements
+
+- **Fixed version string** — API now correctly reports v2.4.0 at `/docs` and `/`
+- **Replaced dead Redis cache** — Rewrote `cache.py` with a thread-safe in-memory TTL cache (no external deps)
+- **Fixed rhyme highlights not appearing** — Frontend now uses `all_lines` response to re-render all highlights after adding a line
+- **Complexity scoring** — `complexity_score` is now computed on every line add/update (vocabulary diversity, multi-syllable ratio, word length)
+- **Singleton RhymeDetector** — Avoids re-loading the CMU dictionary on every API request
+- **Fixed `datetime.utcnow` deprecation** — All model timestamps now use `datetime.now(timezone.utc)`
+- **Fixed README port mismatch** — Manual mode docs now show correct port 5001
+- **Backfill `has_internal_rhyme`** — Pre-v2.4.0 lines are automatically detected on session load
+- **Input validation** — API now rejects empty/whitespace-only line content with 400 error
+- **Disabled SQL echo by default** — `debug` defaults to `False`, no more spammed SQL logs
+- **`rhymeScheme` prop connected** — Session's detected rhyme scheme now passed to `AnalysisStrip`
+- **Secured file upload** — `upload_audio` now has 50MB limit, audio-only type whitelist, and filename sanitization
+
 ## [2.4.0] - 2026-02-25
 
 ### ✨ New Features

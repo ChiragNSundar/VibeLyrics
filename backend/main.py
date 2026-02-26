@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="VibeLyrics API",
     description="AI-powered lyric writing assistant",
-    version="2.2.1",
+    version="2.4.0",
     lifespan=lifespan
 )
 
@@ -64,7 +64,7 @@ app.include_router(vocabulary.router, prefix="/api/vocabulary", tags=["Vocabular
 async def root():
     return {
         "name": "VibeLyrics API",
-        "version": "2.2.1",
+        "version": "2.4.0",
         "docs": "/docs",
         "status": "running"
     }

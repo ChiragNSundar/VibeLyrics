@@ -212,6 +212,7 @@ export interface Session {
     theme?: string;
     line_count: number;
     audio_path?: string;
+    rhyme_scheme?: string;
     created_at: string;
     updated_at: string;
 }
@@ -225,6 +226,7 @@ export interface LyricLine {
     syllable_count: number;
     stress_pattern?: string;
     has_internal_rhyme: boolean;
+    complexity_score?: number;
     highlighted_html?: string;
     heatmap_class?: string;
 }
@@ -239,6 +241,7 @@ export interface CreateSessionData {
 export interface AddLineResponse {
     success: boolean;
     line: LyricLine;
+    all_lines?: LyricLine[];
 }
 
 export interface SuggestionResponse {

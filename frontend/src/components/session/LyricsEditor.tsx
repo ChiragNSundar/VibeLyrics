@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { FixedSizeList as List } from 'react-window';
@@ -165,12 +165,17 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
         try {
             const response = await lineApi.add(sessionId, content, currentSection);
             if (response.success) {
-                // Update with real data
-                setLines(
-                    lines
-                        .filter((l) => l.id !== tempLine.id)
-                        .concat(response.line)
-                );
+                // Use all_lines (with full cross-line highlighting) if available
+                if (response.all_lines && response.all_lines.length > 0) {
+                    setLines(response.all_lines);
+                } else {
+                    // Fallback: replace temp line with real data
+                    setLines(
+                        lines
+                            .filter((l) => l.id !== tempLine.id)
+                            .concat(response.line)
+                    );
+                }
             }
         } catch (error) {
             toast.error('Failed to add line');

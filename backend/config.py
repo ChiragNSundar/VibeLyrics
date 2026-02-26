@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     genius_access_token: str = ""
     
     # App settings
-    debug: bool = True
+    debug: bool = False
     default_provider: str = "gemini"
     
     class Config:
