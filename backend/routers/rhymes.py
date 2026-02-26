@@ -7,13 +7,13 @@ from ..schemas import RhymeLookup, ThesaurusLookup
 from ..services.rhyme_detector import RhymeDetector
 
 router = APIRouter()
-rhyme_detector = RhymeDetector()
+_rhyme_detector = RhymeDetector()
 
 
 @router.post("/rhymes/lookup", response_model=dict)
 async def lookup_rhymes(data: RhymeLookup):
     """Look up rhymes for a word"""
-    rhymes = rhyme_detector.find_rhymes(data.word, max_results=data.max_results)
+    rhymes = _rhyme_detector.find_rhymes(data.word, max_results=data.max_results)
     
     return {
         "success": True,
@@ -25,7 +25,7 @@ async def lookup_rhymes(data: RhymeLookup):
 @router.get("/rhymes/{word}", response_model=dict)
 async def get_rhymes(word: str, limit: int = 20):
     """Get rhymes for a word (simple endpoint)"""
-    rhymes = rhyme_detector.find_rhymes(word, max_results=limit)
+    rhymes = _rhyme_detector.find_rhymes(word, max_results=limit)
     
     return {
         "success": True,
@@ -37,7 +37,7 @@ async def get_rhymes(word: str, limit: int = 20):
 @router.get("/rhymes/{word}/multi", response_model=dict)
 async def get_multi_rhymes(word: str):
     """Get multi-syllable rhymes"""
-    multi_rhymes = rhyme_detector.find_multi_syllable_rhymes(word)
+    multi_rhymes = _rhyme_detector.find_multi_syllable_rhymes(word)
     
     return {
         "success": True,
@@ -55,10 +55,10 @@ async def thesaurus_lookup(data: ThesaurusLookup):
     }
     
     if data.include_rhymes:
-        result["rhymes"] = rhyme_detector.find_rhymes(data.word)
+        result["rhymes"] = _rhyme_detector.find_rhymes(data.word)
     
     if data.include_synonyms:
-        result["synonyms"] = rhyme_detector.get_synonyms(data.word)
+        result["synonyms"] = _rhyme_detector.get_synonyms(data.word)
     
     return result
 
@@ -66,7 +66,7 @@ async def thesaurus_lookup(data: ThesaurusLookup):
 @router.get("/slang/{category}", response_model=dict)
 async def get_slang(category: str):
     """Get hip-hop slang for a category"""
-    slang = rhyme_detector.get_slang_by_category(category)
+    slang = _rhyme_detector.get_slang_by_category(category)
     
     return {
         "success": True,
@@ -78,7 +78,7 @@ async def get_slang(category: str):
 @router.get("/slang", response_model=dict)
 async def get_slang_categories():
     """Get all slang categories"""
-    categories = rhyme_detector.get_slang_categories()
+    categories = _rhyme_detector.get_slang_categories()
     
     return {
         "success": True,

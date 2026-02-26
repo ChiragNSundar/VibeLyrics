@@ -2,6 +2,25 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.4.3] - 2026-02-26
+
+### 🐛 Bug Fixes
+
+- **Provider switch endpoint fixed** — Frontend was calling `/api/provider/switch` instead of `/api/ai/switch-provider`
+- **Singleton `RhymeDetector` in rhymes router** — Consistent with lines/sessions routers
+- **LM Studio availability dynamic** — Settings page now detects if LM Studio is actually running
+- **Vocabulary CRUD wired to DB** — `add_vocabulary` / `remove_vocabulary` actually persist to UserProfile
+
+### ✨ New Features
+
+- **404 page** — Catch-all route with on-brand "This verse doesn't exist yet" page
+- **`useKeyboardShortcuts` hook** — Undo/redo now uses centralized hook instead of inline listeners
+
+### 🔧 Improvements
+
+- **`requirements.txt` cleaned** — Removed dead `redis` dep, replaced `duckduckgo-search` with `ddgs`, removed duplicate `requests`
+- **Backend tests updated** — Tests now verify `all_lines`, `complexity_score`, empty input rejection, and `has_internal_rhyme` backfill
+
 ## [2.4.2] - 2026-02-26
 
 ### 🐛 Bug Fixes

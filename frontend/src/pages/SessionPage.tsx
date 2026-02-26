@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
 import { useSessionStore } from '../store/sessionStore';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { LyricsEditor } from '../components/session/LyricsEditor';
 import { RhymeWavePanel } from '../components/session/RhymeWavePanel.tsx';
 import { AIHelpPanel } from '../components/session/AIHelpPanel.tsx';
@@ -25,21 +26,12 @@ export const SessionPage: React.FC = () => {
         return () => reset();
     }, [sessionId]);
 
-    // Keyboard shortcuts for undo/redo
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const isCtrl = e.ctrlKey || e.metaKey;
-            if (isCtrl && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                undo();
-            } else if (isCtrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-                e.preventDefault();
-                redo();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [undo, redo]);
+    // Keyboard shortcuts: Ctrl+Z undo, Ctrl+Y / Ctrl+Shift+Z redo
+    useKeyboardShortcuts([
+        { key: 'z', ctrlKey: true, action: () => undo(), description: 'Undo' },
+        { key: 'y', ctrlKey: true, action: () => redo(), description: 'Redo' },
+        { key: 'z', ctrlKey: true, shiftKey: true, action: () => redo(), description: 'Redo (Shift)' },
+    ]);
 
     const loadSession = async () => {
         try {
@@ -59,7 +51,7 @@ export const SessionPage: React.FC = () => {
 
     const handleProviderChange = async (newProvider: string) => {
         try {
-            await fetch('/api/provider/switch', {
+            await fetch('/api/ai/switch-provider', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ provider: newProvider }),

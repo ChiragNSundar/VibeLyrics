@@ -5,7 +5,10 @@ Uses DuckDuckGo for search to find the correct URL.
 """
 import requests
 from bs4 import BeautifulSoup
-from duckduckgo_search import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 from typing import Optional, Dict
 import re
 import random

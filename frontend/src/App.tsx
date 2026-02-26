@@ -13,6 +13,7 @@ const JournalPage = lazy(() => import('./pages/JournalPage').then(m => ({ defaul
 const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.StatsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const LearningPage = lazy(() => import('./pages/LearningPage').then(m => ({ default: m.LearningPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Loading fallback component
 const PageLoader: React.FC = () => (
@@ -40,6 +41,7 @@ const AnimatedRoutes: React.FC = () => {
         <Route path="/journal" element={<JournalPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AnimatePresence>
   );
