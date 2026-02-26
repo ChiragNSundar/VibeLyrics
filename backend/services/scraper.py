@@ -67,6 +67,49 @@ class LyricsScraper:
             print(f"Scraping error: {e}")
             return None
 
+    def scrape_artist_songs(self, artist: str, max_songs: int = 3) -> List[Dict[str, str]]:
+        """
+        Search and scrape multiple songs for a specific artist.
+        Used for feeding the AI learning models.
+        """
+        query = f"\"{artist}\" lyrics site:azlyrics.com/{artist.lower().replace(' ', '')}"
+        
+        results_out = []
+        try:
+            # Search using DuckDuckGo
+            results = list(self.ddgs.text(query, max_results=max_songs + 3))
+            
+            seen_urls = set()
+            for result in results:
+                if len(results_out) >= max_songs:
+                    break
+                    
+                url = result.get('link') or result.get('href', '')
+                if 'azlyrics.com/lyrics' in url and url not in seen_urls:
+                    seen_urls.add(url)
+                    print(f"Scraping learning data from {url}...")
+                    lyrics = self._scrape_azlyrics(url)
+                    if lyrics:
+                        # Try to extract title from URL or snippet
+                        # Example: azlyrics.com/lyrics/kendricklamar/humble.html -> humble
+                        title_match = re.search(r'/([^/]+)\.html$', url)
+                        title = title_match.group(1).replace('', ' ').title() if title_match else "Unknown Track"
+                        
+                        results_out.append({
+                            "title": title,
+                            "artist": artist,
+                            "lyrics": lyrics,
+                            "source": url
+                        })
+                    
+                    time.sleep(random.uniform(1.5, 3.5))
+            
+            return results_out
+
+        except Exception as e:
+            print(f"Artist scraping error: {e}")
+            return results_out
+
     def _scrape_azlyrics(self, url: str) -> Optional[str]:
         """Scrape lyrics specifically from AZLyrics HTML structure."""
         try:

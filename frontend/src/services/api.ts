@@ -214,6 +214,17 @@ export const vocabularyApi = {
         request<VocabularySessionResponse>(`/api/vocabulary/session/${sessionId}`),
 };
 
+export const learningApi = {
+    getStatus: () =>
+        request<LearningStatusResponse>('/api/learning/status'),
+
+    scrapeArtist: (artist: string, maxSongs: number = 3) =>
+        request<{ success: boolean; message: string }>('/api/learning/scrape', {
+            method: 'POST',
+            body: JSON.stringify({ artist, max_songs: maxSongs }),
+        }),
+};
+
 // ============ Types ============
 
 export interface Session {
@@ -432,4 +443,19 @@ export interface VocabularySessionResponse {
     multisyllabic_pct: number;
     flesch_kincaid_grade: number;
     reading_level: string;
+}
+
+export interface LearningStatusResponse {
+    success: boolean;
+    vocabulary: {
+        favorites: string[];
+        slangs: string[];
+        most_used: string[];
+        avoided: string[];
+    };
+    style: {
+        themes: string[];
+        rhyme_preference: string;
+        avg_line_length: number;
+    };
 }

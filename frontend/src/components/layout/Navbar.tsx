@@ -5,6 +5,7 @@ import './Navbar.css';
 const navLinks = [
     { to: '/', icon: '📝', label: 'Workspace' },
     { to: '/learning', icon: '🧠', label: 'Learning' },
+    { to: '/ai-brain', icon: '🤖', label: 'AI Brain' },
     { to: '/journal', icon: '📓', label: 'Journal' },
     { to: '/stats', icon: '📊', label: 'Stats' },
     { to: '/settings', icon: '⚙️', label: 'Settings' },
