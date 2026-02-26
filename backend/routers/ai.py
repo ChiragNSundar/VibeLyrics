@@ -87,6 +87,22 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         "rhyme_target": rhyme_target,
     }
 
+    # Fetch user's best lines across all sessions (dynamic few-shot)
+    try:
+        best_result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.complexity_score >= 40)
+            .order_by(LyricLine.complexity_score.desc())
+            .limit(6)
+        )
+        best_lines_objs = best_result.scalars().all()
+        context["best_lines"] = [
+            l.final_version or l.user_input for l in best_lines_objs
+            if (l.final_version or l.user_input) and l.session_id != data.session_id
+        ][:4]
+    except Exception:
+        context["best_lines"] = []
+
     # Get suggestion
     provider = get_ai_provider()
     suggestion = await provider.get_suggestion(context)

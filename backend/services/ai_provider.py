@@ -243,10 +243,23 @@ class GeminiProvider(AIProvider):
         return prefix
 
     def _build_context_prefix(self, lines: List[str], session: Dict) -> str:
-        """Build the reusable context portion of the prompt."""
+        """Build the reusable context portion of the prompt with BPM→syllable mapping."""
+        bpm = session.get('bpm', 140)
+        # BPM → syllable target mapping
+        if bpm >= 160:
+            syl_range, tempo_label = "4–8", "fast"
+        elif bpm >= 130:
+            syl_range, tempo_label = "6–10", "upbeat"
+        elif bpm >= 100:
+            syl_range, tempo_label = "8–14", "mid-tempo"
+        elif bpm >= 70:
+            syl_range, tempo_label = "10–18", "slow"
+        else:
+            syl_range, tempo_label = "12–20", "ballad"
+
         return f"""SESSION CONTEXT:
 - Title: {session.get('title', 'Untitled')}
-- BPM: {session.get('bpm', 140)}
+- BPM: {bpm} ({tempo_label}) → TARGET {syl_range} syllables per line
 - Mood: {session.get('mood', 'Passionate')}
 - Theme: {session.get('theme', 'Life')}
 
@@ -254,9 +267,42 @@ CURRENT LYRICS:
 {chr(10).join(lines[-16:]) if lines else '(Start of the song. Set the tone.)'}
 """
 
+    # ── Rhyme scheme detection ─────────────────────────────────────
+
+    @staticmethod
+    def _detect_rhyme_scheme(lines: List[str]) -> str:
+        """Detect AABB vs ABAB vs free from the last 4+ lines."""
+        if len(lines) < 2:
+            return ""
+        # Get end words
+        endings = []
+        for line in lines[-4:]:
+            words = line.strip().split()
+            if words:
+                endings.append(words[-1].lower().rstrip(".,!?;:'\""))
+        if len(endings) < 2:
+            return ""
+        # Simple suffix-based rhyme check
+        def rhymes(a: str, b: str) -> bool:
+            if len(a) < 2 or len(b) < 2:
+                return False
+            return a[-2:] == b[-2:] or a[-3:] == b[-3:] if len(a) >= 3 and len(b) >= 3 else a[-2:] == b[-2:]
+
+        if len(endings) >= 4:
+            # Check AABB: 0↔1, 2↔3
+            if rhymes(endings[0], endings[1]) and rhymes(endings[2], endings[3]):
+                return "AABB (couplet)"
+            # Check ABAB: 0↔2, 1↔3
+            if rhymes(endings[0], endings[2]) and rhymes(endings[1], endings[3]):
+                return "ABAB (alternate)"
+        if len(endings) >= 2 and rhymes(endings[-2], endings[-1]):
+            return "couplet"
+        return "free/mixed"
+
     # ── Public API ────────────────────────────────────────────────
 
     async def get_suggestion(self, context: Dict) -> str:
+        """Get suggestion with self-critique loop — retry if quality is low."""
         if not self.api_key:
             return ""
         prompt = self._build_prompt(context)
@@ -264,6 +310,33 @@ CURRENT LYRICS:
             response = await self._generate(prompt)
             text = response.text.strip() if response.text else ""
             text = text.strip("`").strip('"').strip("'")
+
+            if not text:
+                return ""
+
+            # ── Self-critique: score with PunchlineEngine ──
+            try:
+                from ..services.advanced_analysis import PunchlineEngine
+                scorer = PunchlineEngine()
+                score_result = scorer.score_punchline(text)
+                quality = score_result.get("score", 50)
+
+                # If quality is too low, retry with feedback
+                if quality < 25 and len(text.split()) > 2:
+                    retry_prompt = prompt + f"""\n\n[SELF-CRITIQUE: Your previous output "{text}" scored only {quality}/100.
+Weaknesses: lacks {'internal rhyme, ' if score_result.get('internal_rhymes', 0) == 0 else ''}{'alliteration, ' if score_result.get('alliteration', 0) == 0 else ''}{'wordplay' if 'wordplay' not in score_result.get('techniques', []) else 'impact'}.
+Try again with more craft — add internal rhyme, stronger imagery, or wordplay.]"""
+                    retry_response = await self._generate(retry_prompt)
+                    retry_text = retry_response.text.strip() if retry_response.text else ""
+                    retry_text = retry_text.strip("`").strip('"').strip("'")
+                    if retry_text:
+                        # Take the retry if it scores better
+                        retry_score = scorer.score_punchline(retry_text).get("score", 0)
+                        if retry_score > quality:
+                            return retry_text
+            except Exception:
+                pass  # Self-critique is optional — never block on it
+
             return text
         except Exception as e:
             print(f"[Gemini] get_suggestion error: {e}")
@@ -445,8 +518,21 @@ Output ONLY the completion (the words that come after the input). Do NOT repeat 
         # ── Rhyme target (last word of previous line) ──
         rhyme_target = context.get("rhyme_target", "")
 
+        # ── Dynamic few-shot: user's own best lines ──
+        best_lines = context.get("best_lines", [])
+        if best_lines:
+            prompt += "\nYOUR USER'S BEST LINES (match this quality and style):\n"
+            for bl in best_lines[:4]:
+                prompt += f"→ {bl}\n"
+            prompt += "\n"
+
         prompt += FEW_SHOT_EXAMPLES
-        prompt += "\n==================================================\nYOUR TASK:\n"
+
+        # ── Rhyme scheme detection ──
+        scheme = self._detect_rhyme_scheme(lines)
+        scheme_hint = f"\nDetected rhyme scheme: {scheme}. Continue this pattern." if scheme else ""
+
+        prompt += f"\n=================================================={scheme_hint}\nYOUR TASK:\n"
 
         if action == "continue":
             rhyme_hint = ""
