@@ -90,17 +90,75 @@ class StyleExtractor:
         self.style_data["structure"]["avg_line_length"] = round(
             (current_avg + new_avg) / 2, 1
         )
+
+        # Track common words as potential favorites
+        common = analysis.get("common_words", [])
+        stop_words = {"i", "the", "a", "an", "is", "was", "are", "in", "on", "to", "and", "of", "my", "me", "it", "you", "your", "we", "they", "that", "this"}
+        for word in common:
+            if word not in stop_words and len(word) > 3:
+                fav = self.style_data["vocabulary"]["favorite_words"]
+                if word not in fav:
+                    fav.append(word)
+                    self.style_data["vocabulary"]["favorite_words"] = fav[-50:]
         
+        self.save_style()
+
+    def learn_from_journal(self, journal_entries: List[Dict]):
+        """
+        Continuously learn from journal entries.
+        Extracts mood patterns and recurring keywords to inform AI suggestions.
+        """
+        if not journal_entries:
+            return
+
+        moods = []
+        keywords = []
+        for entry in journal_entries:
+            content = entry.get("content", "") if isinstance(entry, dict) else str(entry)
+            mood = entry.get("mood", "") if isinstance(entry, dict) else ""
+            if mood:
+                moods.append(mood.lower())
+            # Extract meaningful keywords
+            words = content.lower().split()
+            stop_words = {"i", "the", "a", "an", "is", "was", "are", "in", "on", "to",
+                         "and", "of", "my", "me", "it", "you", "your", "we", "they",
+                         "that", "this", "but", "for", "with", "have", "had", "been",
+                         "just", "about", "like", "not", "so", "at", "from", "do"}
+            meaningful = [w.strip(".,!?;:'\"") for w in words
+                         if w.strip(".,!?;:'\"") not in stop_words and len(w) > 3]
+            keywords.extend(meaningful)
+
+        # Store mood tendency
+        if moods:
+            mood_freq = Counter(moods)
+            dominant_mood = mood_freq.most_common(1)[0][0]
+            self.style_data.setdefault("journal", {})
+            self.style_data["journal"]["dominant_mood"] = dominant_mood
+            self.style_data["journal"]["mood_history"] = moods[:20]
+
+        # Store recurring keywords
+        if keywords:
+            keyword_freq = Counter(keywords)
+            top_keywords = [w for w, _ in keyword_freq.most_common(15)]
+            self.style_data.setdefault("journal", {})
+            self.style_data["journal"]["recurring_keywords"] = top_keywords
+
         self.save_style()
     
     def get_style_summary(self) -> Dict:
-        """Get summary of learned style"""
-        return {
+        """Get summary of learned style including journal insights"""
+        summary = {
             "vocabulary_size": len(self.style_data["vocabulary"]["favorite_words"]),
             "avg_line_length": self.style_data["structure"]["avg_line_length"],
             "preferred_themes": self.style_data["themes"]["preferred"][:5],
-            "rhyme_preference": self.style_data["rhyme"]["scheme_preference"]
+            "rhyme_preference": self.style_data["rhyme"]["scheme_preference"],
         }
+        journal = self.style_data.get("journal", {})
+        if journal.get("dominant_mood"):
+            summary["mood_tendency"] = journal["dominant_mood"]
+        if journal.get("recurring_keywords"):
+            summary["journal_keywords"] = journal["recurring_keywords"][:10]
+        return summary
     
     def update_preference(self, key: str, value):
         """Update a specific preference"""

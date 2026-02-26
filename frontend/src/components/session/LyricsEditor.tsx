@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { FixedSizeList as List } from 'react-window';
 import type { LyricLine } from '../../services/api';
@@ -23,16 +23,41 @@ interface LyricsEditorProps {
     rhymeScheme?: string;
 }
 
-export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rhymeScheme }) => {
+// ── Syllable target based on BPM ────────────────────────────
+function getSyllableTarget(bpm: number): { min: number; max: number; label: string } {
+    // Rough mapping: faster BPM = fewer syllables per line
+    if (bpm >= 160) return { min: 4, max: 8, label: 'Fast' };
+    if (bpm >= 130) return { min: 6, max: 10, label: 'Upbeat' };
+    if (bpm >= 100) return { min: 8, max: 14, label: 'Mid' };
+    if (bpm >= 70) return { min: 10, max: 18, label: 'Slow' };
+    return { min: 12, max: 20, label: 'Ballad' };
+}
+
+export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bpm, rhymeScheme }) => {
     const { setLines, setGhostText, ghostText, currentSection, setCurrentSection } =
         useSessionStore();
 
     const [inputValue, setInputValue] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
     const [syllableCount, setSyllableCount] = useState(0);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const eventSourceRef = useRef<EventSource | null>(null);
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const syllableTarget = useMemo(() => getSyllableTarget(bpm), [bpm]);
+
+    // ── Stats ────────────────────────────────────────────────
+    const stats = useMemo(() => {
+        const totalLines = lines.length;
+        const totalWords = lines.reduce((acc, l) => {
+            const text = l.final_version || l.user_input;
+            return acc + (text ? text.split(/\s+/).filter(w => w).length : 0);
+        }, 0);
+        const totalSyllables = lines.reduce((acc, l) => acc + (l.syllable_count || 0), 0);
+        return { totalLines, totalWords, totalSyllables };
+    }, [lines]);
 
     // Count syllables (simple client-side approximation)
     const countSyllables = (text: string): number => {
@@ -133,10 +158,19 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
         }
     };
 
+    // ── Auto-save indicator ──────────────────────────────────
+    const showSaved = () => {
+        setSaveStatus('saved');
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
+    };
+
     // Add new line
     const handleAddLine = async () => {
         const content = inputValue.trim();
         if (!content) return;
+
+        setSaveStatus('saving');
 
         // Optimistic update
         const tempLine: LyricLine = {
@@ -165,22 +199,89 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
         try {
             const response = await lineApi.add(sessionId, content, currentSection);
             if (response.success) {
-                // Use all_lines (with full cross-line highlighting) if available
                 if (response.all_lines && response.all_lines.length > 0) {
                     setLines(response.all_lines);
                 } else {
-                    // Fallback: replace temp line with real data
                     setLines(
                         lines
                             .filter((l) => l.id !== tempLine.id)
                             .concat(response.line)
                     );
                 }
+                showSaved();
             }
         } catch (error) {
             toast.error('Failed to add line');
-            // Rollback
             setLines(lines.filter((l) => l.id !== tempLine.id));
+            setSaveStatus('idle');
+        }
+    };
+
+    // ── Export lyrics ─────────────────────────────────────────
+    const exportAsText = () => {
+        const text = lines
+            .map((l) => {
+                const content = l.final_version || l.user_input;
+                return content;
+            })
+            .join('\n');
+
+        if (!text.trim()) {
+            toast.error('No lyrics to export');
+            return;
+        }
+
+        // Download as .txt file
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lyrics-${sessionId}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Lyrics exported!');
+    };
+
+    const copyToClipboard = async () => {
+        const text = lines
+            .map((l) => l.final_version || l.user_input)
+            .join('\n');
+
+        if (!text.trim()) {
+            toast.error('No lyrics to copy');
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success('Copied to clipboard!');
+        } catch {
+            toast.error('Failed to copy');
+        }
+    };
+
+    // ── Drag-to-reorder ──────────────────────────────────────
+    const handleReorder = async (newOrder: LyricLine[]) => {
+        // Optimistically update local state
+        const reordered = newOrder.map((line, idx) => ({
+            ...line,
+            line_number: idx + 1,
+        }));
+        setLines(reordered);
+
+        // Persist to backend
+        try {
+            const order = reordered.map((l) => ({
+                id: l.id,
+                line_number: l.line_number,
+            }));
+            const response = await lineApi.reorder(sessionId, order);
+            if (response.all_lines && response.all_lines.length > 0) {
+                setLines(response.all_lines);
+            }
+            showSaved();
+        } catch {
+            toast.error('Reorder failed');
         }
     };
 
@@ -190,12 +291,56 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
             }
+            if (saveTimerRef.current) {
+                clearTimeout(saveTimerRef.current);
+            }
         };
     }, []);
 
+    // ── Syllable target indicator ────────────────────────────
+    const syllableStatus = useMemo(() => {
+        if (!inputValue.trim()) return 'empty';
+        if (syllableCount < syllableTarget.min) return 'under';
+        if (syllableCount > syllableTarget.max) return 'over';
+        return 'good';
+    }, [syllableCount, syllableTarget, inputValue]);
+
+    const useReorder = lines.length < VIRTUALIZATION_THRESHOLD && lines.length > 1;
+
     return (
         <div className="lyrics-editor">
-            {/* Lines Container - Virtualized for 50+ lines */}
+            {/* ── Stats Bar ──────────────────────────────────── */}
+            <div className="editor-stats-bar">
+                <div className="stats-left">
+                    <span className="stat-item">📝 {stats.totalLines} lines</span>
+                    <span className="stat-item">💬 {stats.totalWords} words</span>
+                    <span className="stat-item">🎵 {stats.totalSyllables} syllables</span>
+                </div>
+                <div className="stats-right">
+                    {saveStatus === 'saving' && (
+                        <span className="save-status saving">⏳ Saving...</span>
+                    )}
+                    {saveStatus === 'saved' && (
+                        <span className="save-status saved">✅ Saved</span>
+                    )}
+                    <button
+                        className="export-btn"
+                        onClick={copyToClipboard}
+                        title="Copy lyrics to clipboard"
+                    >
+                        📋 Copy
+                    </button>
+                    <button
+                        className="export-btn"
+                        onClick={exportAsText}
+                        title="Download as .txt"
+                    >
+                        ⬇️ Export
+                    </button>
+                </div>
+            </div>
+
+            {/* ── Lines Container ────────────────────────────── */}
             {lines.length >= VIRTUALIZATION_THRESHOLD ? (
                 <div className="lines-container virtualized" ref={containerRef}>
                     <List
@@ -208,6 +353,32 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
                         {VirtualLineRow}
                     </List>
                 </div>
+            ) : useReorder ? (
+                <Reorder.Group
+                    axis="y"
+                    values={lines}
+                    onReorder={handleReorder}
+                    className="lines-container"
+                >
+                    {lines.map((line, index) => (
+                        <Reorder.Item
+                            key={line.id}
+                            value={line}
+                            className="reorder-item"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.2 }}
+                            whileDrag={{
+                                scale: 1.02,
+                                boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                zIndex: 50,
+                            }}
+                        >
+                            <LineRow line={line} index={index} sessionId={sessionId} />
+                        </Reorder.Item>
+                    ))}
+                </Reorder.Group>
             ) : (
                 <div className="lines-container" ref={containerRef}>
                     <AnimatePresence>
@@ -226,7 +397,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
                 </div>
             )}
 
-            {/* Input Area */}
+            {/* ── Input Area ─────────────────────────────────── */}
             <div className="input-area glass">
                 <div className="section-select">
                     <select
@@ -262,6 +433,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
                     </Button>
                 </div>
 
+                {/* ── Syllable target guide ───────────────────── */}
                 <div className="input-hints">
                     <div className="hints-left">
                         {ghostText && (
@@ -269,6 +441,17 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, rh
                                 Press <kbd>Tab</kbd> to accept
                             </span>
                         )}
+                        {inputValue.trim() && (
+                            <span className={`syllable-guide ${syllableStatus}`}>
+                                {syllableCount} / {syllableTarget.min}–{syllableTarget.max} syl
+                                {syllableStatus === 'good' && ' ✓'}
+                                {syllableStatus === 'under' && ' (short)'}
+                                {syllableStatus === 'over' && ' (long)'}
+                            </span>
+                        )}
+                    </div>
+                    <div className="hints-right">
+                        <span className="bpm-hint">{bpm} BPM · {syllableTarget.label}</span>
                     </div>
                 </div>
 

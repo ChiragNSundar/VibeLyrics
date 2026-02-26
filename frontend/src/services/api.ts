@@ -89,6 +89,12 @@ export const lineApi = {
             method: 'POST',
             body: JSON.stringify({ line_id: lineId, improvement_type: improvementType }),
         }),
+
+    reorder: (sessionId: number, order: { id: number; line_number: number }[]) =>
+        request<AddLineResponse>('/api/lines/reorder', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: sessionId, order }),
+        }),
 };
 
 // Tool APIs

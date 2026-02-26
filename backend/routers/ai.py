@@ -9,9 +9,13 @@ from ..database import get_db
 from ..models import LyricSession, LyricLine, UserProfile, JournalEntry
 from ..schemas import SuggestRequest, ImproveRequest, AskRequest, ProviderSwitch, RhymeCompleteRequest
 from ..services.ai_provider import get_ai_provider, set_provider
+from ..services.learning import StyleExtractor, CorrectionTracker
 
 router = APIRouter()
 
+# Singletons for learning services
+_style_extractor = StyleExtractor()
+_correction_tracker = CorrectionTracker()
 
 
 @router.post("/ai/suggest", response_model=dict)
@@ -22,10 +26,10 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         select(LyricSession).where(LyricSession.id == data.session_id)
     )
     session = result.scalar_one_or_none()
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     # Get existing lines
     lines_result = await db.execute(
         select(LyricLine)
@@ -33,31 +37,41 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         .order_by(LyricLine.line_number)
     )
     lines = lines_result.scalars().all()
-    
+    line_texts = [l.final_version or l.user_input for l in lines]
+
+    # Learn from current session lines (updates style model)
+    if line_texts:
+        _style_extractor.learn_from_session(line_texts)
+
     # Fetch recent journal entries for inspiration
     journal_result = await db.execute(
         select(JournalEntry).order_by(desc(JournalEntry.created_at)).limit(5)
     )
     journal_entries = journal_result.scalars().all()
+    journal_dicts = [e.to_dict() for e in journal_entries]
 
-    # Fetch User Preferences
+    # Learn from journal thoughts continuously
+    if journal_dicts:
+        _style_extractor.learn_from_journal(journal_dicts)
     profile_result = await db.execute(select(UserProfile).limit(1))
     profile = profile_result.scalar_one_or_none()
-    
-    # Build context
+
+    # Build context with journal + learning data
     context = {
         "session": session.to_dict(),
-        "lines": [l.final_version or l.user_input for l in lines],
+        "lines": line_texts,
         "partial": data.partial_text,
         "action": data.action,
-        "journal_entries": [e.to_dict() for e in journal_entries],
-        "preferences": profile.to_dict() if profile else {}
+        "journal_entries": journal_dicts,
+        "preferences": profile.to_dict() if profile else {},
+        "style_summary": _style_extractor.get_style_summary(),
+        "correction_insights": _correction_tracker.get_correction_insights(),
     }
-    
+
     # Get suggestion
     provider = get_ai_provider()
     suggestion = await provider.get_suggestion(context)
-    
+
     return {
         "success": True,
         "suggestion": suggestion
@@ -71,19 +85,22 @@ async def improve_line(data: ImproveRequest, db: AsyncSession = Depends(get_db))
         select(LyricLine).where(LyricLine.id == data.line_id)
     )
     line = result.scalar_one_or_none()
-    
+
     if not line:
         raise HTTPException(status_code=404, detail="Line not found")
-    
+
+    original_text = line.final_version or line.user_input
+
     provider = get_ai_provider()
-    improved = await provider.improve_line(
-        line.final_version or line.user_input,
-        data.improvement_type
-    )
-    
+    improved = await provider.improve_line(original_text, data.improvement_type)
+
+    # Track the correction so the AI learns the user's editing tendencies
+    if improved and improved != original_text:
+        _correction_tracker.track_correction(original_text, improved)
+
     return {
         "success": True,
-        "original": line.final_version or line.user_input,
+        "original": original_text,
         "improved": improved
     }
 

@@ -2,6 +2,38 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.5.0] - 2026-02-26
+
+### 🧠 AI Quality
+
+- **System instruction** — Ghostwriter persona set at model level via `system_instruction`, not repeated per prompt
+- **Temperature 0.9** — Creative output with `top_p=0.95`, `top_k=40` for better variety
+- **Few-shot examples** — 3 style-matching examples included in every prompt for better adherence
+- **Prompt caching** — Session context cached per `session_id`, avoids rebuilding on every keystroke
+
+### ✨ New Features
+
+- **Export lyrics** — Copy to clipboard (📋) and download as `.txt` (⬇️) buttons in stats bar
+- **Syllable target guide** — BPM-based target range with color-coded indicator (under/good/over)
+- **Auto-save indicator** — ⏳ Saving → ✅ Saved badge in stats bar
+- **Word/line/syllable stats** — Real-time running totals at top of editor
+- **Drag-to-reorder lines** — Grab and drag lines to rearrange verse structure
+
+### 🔧 Backend
+
+- **`POST /lines/reorder`** — New endpoint for persisting line order with re-highlighting
+
+## [2.4.4] - 2026-02-26
+
+### 🔴 Critical Fix: AI Provider
+
+- **Updated Gemini models** — `gemini-2.0-flash` (discontinued) → `gemini-2.5-flash-lite` with fallback to `gemini-2.5-flash`
+- **Fixed async blocking** — All Gemini calls now use `generate_content_async()` instead of sync `generate_content()` which was freezing the event loop and causing timeouts
+- **Fixed SSE streaming** — Streaming now uses `async for chunk` instead of sync `for chunk`, so autocomplete suggestions actually stream to the frontend
+- **Model fallback chain** — If `gemini-2.5-flash-lite` fails (404/deprecated), automatically tries `gemini-2.5-flash`
+- **Preferred model cached** — After first successful call, the working model is remembered for speed
+- **Better error handling** — Rate limit (429), quota, and transient errors trigger model fallback instead of silent failure
+
 ## [2.4.3] - 2026-02-26
 
 ### 🐛 Bug Fixes

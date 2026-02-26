@@ -182,6 +182,56 @@ async def delete_line(line_id: int, db: AsyncSession = Depends(get_db)):
     return {"success": True}
 
 
+@router.post("/lines/reorder", response_model=dict)
+async def reorder_lines(data: dict, db: AsyncSession = Depends(get_db)):
+    """
+    Reorder lines within a session.
+    Expects: { "session_id": int, "order": [{ "id": int, "line_number": int }, ...] }
+    """
+    session_id = data.get("session_id")
+    order = data.get("order", [])
+
+    if not session_id or not order:
+        raise HTTPException(status_code=400, detail="session_id and order are required")
+
+    # Verify session exists
+    session_result = await db.execute(
+        select(LyricSession).where(LyricSession.id == session_id)
+    )
+    if not session_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Update line numbers
+    for item in order:
+        line_result = await db.execute(
+            select(LyricLine).where(
+                LyricLine.id == item["id"],
+                LyricLine.session_id == session_id
+            )
+        )
+        line = line_result.scalar_one_or_none()
+        if line:
+            line.line_number = item["line_number"]
+
+    # Re-highlight after reorder
+    all_lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == session_id)
+        .order_by(LyricLine.line_number)
+    )
+    all_lines = all_lines_result.scalars().all()
+    text_lines = [l.final_version or l.user_input for l in all_lines]
+    highlighted = _rhyme_detector.highlight_lyrics(text_lines)
+
+    for db_line, html in zip(all_lines, highlighted):
+        db_line.highlighted_html = html
+
+    return {
+        "success": True,
+        "all_lines": [l.to_dict(include_highlights=True) for l in all_lines]
+    }
+
+
 @router.get("/lines/stream")
 async def stream_suggestion(
     session_id: int,
