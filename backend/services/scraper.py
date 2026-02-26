@@ -43,7 +43,7 @@ class LyricsScraper:
                 
             # Try to scrape the first valid AZLyrics result
             for result in results:
-                url = result.get('href')
+                url = result.get('link') or result.get('href', '')
                 if 'azlyrics.com/lyrics' in url:
                     print(f"Scraping {url}...")
                     lyrics = self._scrape_azlyrics(url)

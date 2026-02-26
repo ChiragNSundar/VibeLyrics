@@ -64,7 +64,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     currentSection: 'Verse',
     history: [],
     future: [],
-    maxHistorySize: 10,
+    maxHistorySize: 50,
 
     setSession: (session) => set({ currentSession: session }),
 
@@ -78,7 +78,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         try {
             const response = await lineApi.add(currentSession.id, content, section);
             if (response.success) {
-                set({ lines: [...lines, response.line] });
+                // Use all_lines for full cross-line highlighting
+                if (response.all_lines && response.all_lines.length > 0) {
+                    set({ lines: response.all_lines });
+                } else {
+                    set({ lines: [...lines, response.line] });
+                }
                 pushHistory({
                     type: 'add',
                     lineId: response.line.id,
@@ -99,12 +104,16 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
         set({ isLoading: true });
         try {
-            await lineApi.update(lineId, content);
-            set({
-                lines: lines.map((l) =>
-                    l.id === lineId ? { ...l, user_input: content, final_version: content } : l
-                ),
-            });
+            const response = await lineApi.update(lineId, content);
+            if (response.all_lines && response.all_lines.length > 0) {
+                set({ lines: response.all_lines });
+            } else {
+                set({
+                    lines: lines.map((l) =>
+                        l.id === lineId ? { ...l, user_input: content, final_version: content } : l
+                    ),
+                });
+            }
             pushHistory({
                 type: 'update',
                 lineId,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import type { LyricLine } from '../../services/api';
+import type { LyricLine, AddLineResponse } from '../../services/api';
 import { lineApi } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
 import { Button } from '../ui/Button';
@@ -16,6 +16,8 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
     const { lines, setLines } = useSessionStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(line.final_version || line.user_input);
+    const [isImproving, setIsImproving] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleEdit = () => {
         setIsEditing(true);
@@ -25,17 +27,25 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
     const handleSave = async () => {
         if (!editValue.trim()) return;
 
+        setIsSaving(true);
         try {
-            await lineApi.update(line.id, editValue);
-            setLines(
-                lines.map((l) =>
-                    l.id === line.id ? { ...l, user_input: editValue, final_version: editValue } : l
-                )
-            );
+            const response = await lineApi.update(line.id, editValue) as AddLineResponse;
+            // Use all_lines if available for proper cross-line highlighting
+            if (response.all_lines && response.all_lines.length > 0) {
+                setLines(response.all_lines);
+            } else {
+                setLines(
+                    lines.map((l) =>
+                        l.id === line.id ? { ...l, user_input: editValue, final_version: editValue } : l
+                    )
+                );
+            }
             setIsEditing(false);
             toast.success('Line updated');
         } catch (error) {
             toast.error('Failed to update line');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -53,6 +63,25 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
             toast.success('Line deleted');
         } catch (error) {
             toast.error('Failed to delete line');
+        }
+    };
+
+    const handleImprove = async () => {
+        setIsImproving(true);
+        try {
+            const response = await lineApi.improve(line.id, 'enhance');
+            if (response.success && response.improved) {
+                // Show the improvement as editable
+                setEditValue(response.improved);
+                setIsEditing(true);
+                toast.success('AI improvement ready — review and save');
+            } else {
+                toast.error(response.error || 'No improvement available');
+            }
+        } catch (error) {
+            toast.error('AI improvement failed');
+        } finally {
+            setIsImproving(false);
         }
     };
 
@@ -80,6 +109,7 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
                         onChange={(e) => setEditValue(e.target.value)}
                         onKeyDown={handleKeyDown}
                         autoFocus
+                        disabled={isSaving}
                     />
                 ) : (
                     <span
@@ -97,6 +127,14 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
                             🔗
                         </span>
                     )}
+                    {line.complexity_score != null && line.complexity_score > 0 && (
+                        <span
+                            className={`complexity-badge ${line.complexity_score >= 60 ? 'high' : line.complexity_score >= 30 ? 'mid' : 'low'}`}
+                            title={`Complexity: ${line.complexity_score}/100`}
+                        >
+                            {line.complexity_score >= 60 ? '🔥' : line.complexity_score >= 30 ? '📝' : '💡'}
+                        </span>
+                    )}
                     {line.stress_pattern && (
                         <div className="stress-viz" title="Stress pattern">
                             {line.stress_pattern.split('').map((char, i) => (
@@ -112,8 +150,8 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
             <div className="line-actions">
                 {isEditing ? (
                     <>
-                        <Button variant="icon" onClick={handleSave} title="Save">
-                            ✓
+                        <Button variant="icon" onClick={handleSave} title="Save" disabled={isSaving}>
+                            {isSaving ? '⏳' : '✓'}
                         </Button>
                         <Button variant="icon" onClick={handleCancel} title="Cancel">
                             ✕
@@ -124,8 +162,8 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
                         <Button variant="icon" onClick={handleEdit} title="Edit">
                             ✏️
                         </Button>
-                        <Button variant="icon" onClick={() => { }} title="Improve">
-                            ✨
+                        <Button variant="icon" onClick={handleImprove} title="AI Improve" disabled={isImproving}>
+                            {isImproving ? '⏳' : '✨'}
                         </Button>
                         <Button variant="icon" className="delete-btn" onClick={handleDelete} title="Delete">
                             🗑️

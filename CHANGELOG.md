@@ -2,6 +2,29 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.4.2] - 2026-02-26
+
+### 🐛 Bug Fixes
+
+- **LineRow save now refreshes all highlights** — Editing a line re-renders cross-line rhyme highlighting via `all_lines` response
+- **Session delete endpoint fixed** — Was using wrong path and method (`POST /session/{id}/delete` → `DELETE /sessions/{id}`)
+- **✨ Improve button wired up** — Now calls `/api/ai/improve` and presents the AI-improved line for review
+- **Lyrics scraper fixed** — DuckDuckGo result key corrected from `href` to `link`
+- **`complete_rhyme` fixed** — Was calling non-existent `provider.generate()`, now uses `answer_question()`
+- **Store undo/redo uses `all_lines`** — Both `addLine` and `updateLine` in Zustand store update all highlights
+
+### ✨ New Features
+
+- **LM Studio provider** — Full local AI support via OpenAI-compatible API at `localhost:1234`
+- **Keyboard shortcuts** — `Ctrl+Z` / `Cmd+Z` for undo, `Ctrl+Y` / `Cmd+Shift+Z` for redo
+- **Complexity badge** — Each line shows 🔥 (high), 📝 (mid), or 💡 (low) complexity indicator
+- **Loading states** — Save and improve buttons show ⏳ while processing
+
+### 🔧 Improvements
+
+- **Undo history increased** — From 10 to 50 actions
+- **`rhymeScheme` prop connected** — Session's rhyme scheme flows through to `AnalysisStrip`
+
 ## [2.4.1] - 2026-02-26
 
 ### 🐛 Bug Fixes & Logic Improvements

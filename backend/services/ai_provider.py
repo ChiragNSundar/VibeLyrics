@@ -302,22 +302,123 @@ class OpenAIProvider(AIProvider):
         return f"Write a lyric line: {context.get('partial', '')}"
 
 
+class LMStudioProvider(AIProvider):
+    """Local LM Studio provider (OpenAI-compatible API at localhost)"""
+
+    def __init__(self):
+        self.base_url = os.getenv("LMSTUDIO_URL", "http://localhost:1234/v1")
+        self._client = None
+
+    @property
+    def name(self) -> str:
+        return "lmstudio"
+
+    def is_available(self) -> bool:
+        """Check if LM Studio is running locally"""
+        try:
+            import httpx
+            r = httpx.get(f"{self.base_url}/models", timeout=2)
+            return r.status_code == 200
+        except Exception:
+            return False
+
+    def _get_client(self):
+        if self._client is None:
+            from openai import AsyncOpenAI
+            self._client = AsyncOpenAI(
+                base_url=self.base_url,
+                api_key="lm-studio"  # LM Studio doesn't need a real key
+            )
+        return self._client
+
+    async def get_suggestion(self, context: Dict) -> str:
+        client = self._get_client()
+        try:
+            response = await client.chat.completions.create(
+                model="local-model",
+                messages=[{"role": "user", "content": self._build_prompt(context)}],
+                max_tokens=100,
+                temperature=0.8
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"LM Studio error: {e}")
+            return ""
+
+    async def improve_line(self, line: str, improvement_type: str) -> str:
+        client = self._get_client()
+        try:
+            response = await client.chat.completions.create(
+                model="local-model",
+                messages=[{"role": "user", "content": f"Improve this lyric for {improvement_type}: {line}"}],
+                max_tokens=100
+            )
+            return response.choices[0].message.content.strip()
+        except Exception:
+            return line
+
+    async def answer_question(self, question: str, context: Optional[Dict]) -> str:
+        client = self._get_client()
+        try:
+            prompt = f"Lyric writing question: {question}"
+            if context and context.get("lines"):
+                prompt += "\n\nContext:\n" + "\n".join(context["lines"][-10:])
+            response = await client.chat.completions.create(
+                model="local-model",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500
+            )
+            return response.choices[0].message.content.strip()
+        except Exception:
+            return "Error getting response"
+
+    async def stream_suggestion(self, session_id: int, partial: str) -> AsyncGenerator[str, None]:
+        client = self._get_client()
+        try:
+            stream = await client.chat.completions.create(
+                model="local-model",
+                messages=[{"role": "user", "content": f"Complete this lyric line: {partial}"}],
+                max_tokens=50,
+                stream=True
+            )
+            async for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as e:
+            yield f"[ERROR] {e}"
+
+    def _build_prompt(self, context: Dict) -> str:
+        lines = context.get("lines", [])
+        partial = context.get("partial", "")
+        session = context.get("session", {})
+
+        prompt = f"You are a lyric writing assistant.\n"
+        prompt += f"Mood: {session.get('mood', 'Passionate')}, Theme: {session.get('theme', 'Life')}\n"
+        if lines:
+            prompt += "Recent lyrics:\n" + "\n".join(lines[-8:]) + "\n"
+        prompt += f"\nWrite the next line. Partial: \"{partial}\"\nOutput ONLY the line."
+        return prompt
+
+
 def get_ai_provider() -> AIProvider:
     """Get the current AI provider"""
     global _current_provider, _provider_name
-    
+
     if _current_provider is None:
         if _provider_name == "openai":
             _current_provider = OpenAIProvider()
+        elif _provider_name == "lmstudio":
+            _current_provider = LMStudioProvider()
         else:
             _current_provider = GeminiProvider()
-    
+
     return _current_provider
 
 
 def set_provider(name: str):
     """Set the AI provider"""
     global _current_provider, _provider_name
-    
+
     _provider_name = name
     _current_provider = None  # Reset to create new instance
+

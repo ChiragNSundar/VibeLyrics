@@ -43,7 +43,7 @@ export const sessionApi = {
         }),
 
     delete: (id: number) =>
-        request<ApiResponse>(`/api/session/${id}/delete`, { method: 'POST' }),
+        request<ApiResponse>(`/api/sessions/${id}`, { method: 'DELETE' }),
 
     analyze: (id: number) =>
         request<AnalysisResult>(`/api/session/${id}/analyze`),
@@ -58,7 +58,7 @@ export const lineApi = {
         }),
 
     update: (lineId: number, content: string) =>
-        request<ApiResponse>(`/api/lines/${lineId}`, {
+        request<AddLineResponse>(`/api/lines/${lineId}`, {
             method: 'PUT',
             body: JSON.stringify({ content }),
         }),
@@ -83,6 +83,12 @@ export const lineApi = {
         const url = `/api/lines/stream?session_id=${sessionId}&partial=${encodeURIComponent(currentLine)}`;
         return new EventSource(url);
     },
+
+    improve: (lineId: number, improvementType: string = 'enhance') =>
+        request<{ success: boolean; improved?: string; original?: string; error?: string }>('/api/ai/improve', {
+            method: 'POST',
+            body: JSON.stringify({ line_id: lineId, improvement_type: improvementType }),
+        }),
 };
 
 // Tool APIs

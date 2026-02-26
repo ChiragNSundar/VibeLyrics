@@ -88,6 +88,25 @@
     font-size: 0.8rem;
 }
 
+.complexity-badge {
+    font-size: 0.75rem;
+    padding: 0 0.25rem;
+    border-radius: 4px;
+    cursor: default;
+}
+
+.complexity-badge.high {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.complexity-badge.mid {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.complexity-badge.low {
+    background: rgba(16, 185, 129, 0.2);
+}
+
 .stress-viz {
     display: flex;
     gap: 2px;

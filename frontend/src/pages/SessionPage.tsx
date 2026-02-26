@@ -15,7 +15,7 @@ export const SessionPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const sessionId = parseInt(id || '0');
 
-    const { currentSession, setSession, lines, setLines, reset } = useSessionStore();
+    const { currentSession, setSession, lines, setLines, reset, undo, redo } = useSessionStore();
     const [isLoading, setIsLoading] = useState(true);
     const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp' | 'punchline'>('none');
     const [provider, setProvider] = useState('gemini');
@@ -24,6 +24,22 @@ export const SessionPage: React.FC = () => {
         loadSession();
         return () => reset();
     }, [sessionId]);
+
+    // Keyboard shortcuts for undo/redo
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isCtrl = e.ctrlKey || e.metaKey;
+            if (isCtrl && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if (isCtrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo]);
 
     const loadSession = async () => {
         try {

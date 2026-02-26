@@ -197,7 +197,7 @@ Return ONLY {data.count} complete lines (not just endings), one per line, no num
 Each should rhyme with the last word of the input and fit the flow."""
     
     try:
-        response = await provider.generate(prompt)
+        response = await provider.answer_question(prompt, context)
         # Parse response into list
         completions = [line.strip() for line in response.strip().split('\n') if line.strip()][:data.count]
         
