@@ -56,6 +56,11 @@ class StyleExtractor:
         os.makedirs(os.path.dirname(self.DATA_FILE), exist_ok=True)
         with open(self.DATA_FILE, 'w') as f:
             json.dump(self.style_data, f, indent=2)
+
+    def reset(self):
+        """Wipe all learned style data and reset to default."""
+        self.style_data = self._get_default_style()
+        self.save_style()
     
     def analyze_lines(self, lines: List[str]) -> Dict:
         """Analyze lines to extract style patterns"""
@@ -258,6 +263,16 @@ class VocabularyManager:
             "avoided": list(self.avoided_words)[:10],
             "most_used": [w for w, c in self.word_frequency.most_common(20)]
         }
+
+    def reset(self):
+        """Wipe all tracked vocabulary completely."""
+        self.favorite_words.clear()
+        self.favorite_slangs.clear()
+        self.avoided_words.clear()
+        self.word_frequency.clear()
+        if os.path.exists(self.DATA_FILE):
+            os.remove(self.DATA_FILE)
+        self._save_vocabulary()
 
 
 class CorrectionTracker:

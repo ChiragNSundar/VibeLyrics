@@ -11,6 +11,14 @@ All notable changes to the **VibeLyrics** project will be documented in this fil
 - **Few-shot examples** — 3 style-matching examples included in every prompt for better adherence
 - **Prompt caching** — Session context cached per `session_id`, avoids rebuilding on every keystroke
 
+### 🎓 AI Learning Center (New Dashboard)
+
+- **Live Web Scraper** — Enter an artist and era (e.g., "Kendrick Lamar DAMN") to automatically search DDG and scrape their latest lyrics directly into the AI's brain.
+- **Terminal Feed** — Watch the scraper work in real-time via a Server-Sent Events (SSE) terminal UI.
+- **Manual Document Uploads** — Paste raw lyrics or upload `.txt`, `.pdf`, and `.docx` files to teach the AI specific songs or poetry.
+- **Visual Knowledge Base** — See exactly what the AI has learned: Dominant Themes, Rhyme Preferences, Signature Words, Slangs, and Avoided Words.
+- **Brain Wiper** — Safely delete specific words from the AI's vocabulary, or wipe the brain completely to start fresh.
+
 ### ✨ New Features
 
 - **Export lyrics** — Copy to clipboard (📋) and download as `.txt` (⬇️) buttons in stats bar
@@ -21,6 +29,8 @@ All notable changes to the **VibeLyrics** project will be documented in this fil
 
 ### 🔧 Backend
 
+- **`GET /learning/scrape/stream`** — New SSE endpoint for live scraping progress
+- **`POST /learning/upload`** — New endpoint handling file uploads (`python-docx`, `PyPDF2`)
 - **`POST /lines/reorder`** — New endpoint for persisting line order with re-highlighting
 
 ## [2.4.4] - 2026-02-26

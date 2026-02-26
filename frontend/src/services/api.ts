@@ -218,10 +218,34 @@ export const learningApi = {
     getStatus: () =>
         request<LearningStatusResponse>('/api/learning/status'),
 
-    scrapeArtist: (artist: string, maxSongs: number = 3) =>
+    // We no longer use POST for scrape because we stream it via SSE GET request.
+    // However, if we needed a fallback:
+    scrapeArtist: (artist: string, maxSongs: number = 3, era?: string) =>
         request<{ success: boolean; message: string }>('/api/learning/scrape', {
             method: 'POST',
-            body: JSON.stringify({ artist, max_songs: maxSongs }),
+            body: JSON.stringify({ artist, max_songs: maxSongs, era }),
+        }),
+
+    uploadDocument: (file?: File, text?: string) => {
+        const formData = new FormData();
+        if (file) formData.append('file', file);
+        if (text) formData.append('text', text);
+
+        return request<{ success: boolean; message: string; lines_parsed: number; words_parsed: number }>('/api/learning/upload', {
+            method: 'POST',
+            body: formData,
+            // Don't set Content-Type header so browser sets it with appropriate boundary for FormData
+        });
+    },
+
+    deleteVocabulary: (word: string, listType: 'favorites' | 'slangs' | 'avoided' | 'most_used') =>
+        request<{ success: boolean; message: string }>(`/api/learning/vocabulary?word=${encodeURIComponent(word)}&list_type=${listType}`, {
+            method: 'DELETE',
+        }),
+
+    resetBrain: () =>
+        request<{ success: boolean; message: string }>('/api/learning/reset', {
+            method: 'POST',
         }),
 };
 

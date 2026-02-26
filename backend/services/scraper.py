@@ -67,17 +67,26 @@ class LyricsScraper:
             print(f"Scraping error: {e}")
             return None
 
-    def scrape_artist_songs(self, artist: str, max_songs: int = 3) -> List[Dict[str, str]]:
+    async def scrape_artist_songs_stream(self, artist: str, max_songs: int = 3, era: str = None):
         """
-        Search and scrape multiple songs for a specific artist.
-        Used for feeding the AI learning models.
+        Search and scrape multiple songs for a specific artist, optionally filtered by era.
+        Yields progress messages and final results for Server-Sent Events (SSE).
         """
-        query = f"\"{artist}\" lyrics site:azlyrics.com/{artist.lower().replace(' ', '')}"
+        era_term = f" {era}" if era else ""
+        query = f"\"{artist}\"{era_term} lyrics site:azlyrics.com/{artist.lower().replace(' ', '')}"
         
         results_out = []
+        yield {"type": "progress", "msg": f"Searching DuckDuckGo for: {query}"}
+        
         try:
             # Search using DuckDuckGo
             results = list(self.ddgs.text(query, max_results=max_songs + 3))
+            
+            if not results:
+                yield {"type": "error", "msg": "No search results found on AZLyrics."}
+                return
+                
+            yield {"type": "progress", "msg": f"Found potential matches. Beginning extraction..."}
             
             seen_urls = set()
             for result in results:
@@ -87,28 +96,30 @@ class LyricsScraper:
                 url = result.get('link') or result.get('href', '')
                 if 'azlyrics.com/lyrics' in url and url not in seen_urls:
                     seen_urls.add(url)
-                    print(f"Scraping learning data from {url}...")
+                    
+                    title_match = re.search(r'/([^/]+)\.html$', url)
+                    title = title_match.group(1).replace('', ' ').title() if title_match else "Unknown Track"
+                    
+                    yield {"type": "progress", "msg": f"Scraping lyrics for: {title}..."}
+                    
                     lyrics = self._scrape_azlyrics(url)
                     if lyrics:
-                        # Try to extract title from URL or snippet
-                        # Example: azlyrics.com/lyrics/kendricklamar/humble.html -> humble
-                        title_match = re.search(r'/([^/]+)\.html$', url)
-                        title = title_match.group(1).replace('', ' ').title() if title_match else "Unknown Track"
-                        
                         results_out.append({
                             "title": title,
                             "artist": artist,
                             "lyrics": lyrics,
                             "source": url
                         })
+                        yield {"type": "success", "msg": f"Successfully extracted: {title}"}
+                    else:
+                        yield {"type": "warning", "msg": f"Failed to extract lyrics from {url}"}
                     
-                    time.sleep(random.uniform(1.5, 3.5))
+                    time.sleep(random.uniform(1.0, 2.5))
             
-            return results_out
+            yield {"type": "done", "results": results_out}
 
         except Exception as e:
-            print(f"Artist scraping error: {e}")
-            return results_out
+            yield {"type": "error", "msg": f"Artist scraping error: {str(e)}"}
 
     def _scrape_azlyrics(self, url: str) -> Optional[str]:
         """Scrape lyrics specifically from AZLyrics HTML structure."""

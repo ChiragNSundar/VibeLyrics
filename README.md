@@ -35,7 +35,7 @@
   - **Multi-Color Highlights**: Visualizes assonance, consonance, and internal rhymes in real-time.
   - **Scheme Detection**: Automatically identifies patterns like **ABAB**, **AABB**, and **XAXA** as you write.
 - **🎛️ Deep Customization**: Set your **Favorite Words**, **Banned Words**, and **Slang Preferences** to tailor the AI's vocabulary.
-- **📚 Learning Center**: Interactive modules on Song Structure, Storytelling, and Performance.
+- **📚 AI Learning Center**: Teach your AI ghostwriter in real-time. Use the built-in web scraper to pull artist lyrics from the web, or upload your own `.pdf`/`.docx` files. Monitor the AI's learned vocabulary and wipe its brain anytime.
 - **⚡ Real-time Analysis**: Instant feedback on syllable counts, stress patterns, and figures of speech.
 
 ### 🧠 Robust AI Engine
