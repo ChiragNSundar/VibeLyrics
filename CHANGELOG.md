@@ -2,6 +2,26 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.6.0] - 2026-02-27
+
+### 🚀 Phase 5: The Intelligence Suite 
+
+#### ✍️ Writing Tools
+- **Git for Lyrics (Version History)** — Click the clock icon on any line to view its previous versions, see diffs, and restore old bars.
+- **Beat Timer Overlay** — Visual metronome bar with play/pause that pulses to your session's BPM.
+- **Syllable Target Guide** — Real-time indicator under the BPM that calculates whether your line is 'Free Flow' or matching a specific beat pattern constraint.
+
+#### 🤖 AI Generators
+- **Flow Pattern Templates** — A dropdown to strictly apply predefined flow constraints (e.g., Triplet, Double-Time, Boom-Bap) to your syllable targets.
+- **Context-Aware Adlibs** — Click the floating 'Adlibs' chip to get instant, context-aware hype words based on your recent 4 lines and mood.
+- **Auto-Hook Generator** — Generate catchy, thematic choruses based on your verse context straight from the AI Help Panel.
+- **Song Structure Builder** — Scaffold entire song blueprints (Intro, Verse, Hook, Bridge, Outro) with AI suggestions mapped to your BPM and theme.
+
+#### 📈 Analytics & Gamification (Group C)
+- **Writing Streak Tracker** — Dashboard widget tracking daily check-ins and your longest streak with 🔥 badges.
+- **Vocabulary Growth Chart** — A `recharts` AreaChart visualizing how your unique vocabulary count expands over time.
+- **Rhyme Scheme Heatmap** — A GitHub-style contribution calendar color-coded by the dominant rhyme scheme used each day.
+
 ## [2.5.0] - 2026-02-26
 
 ### 🧠 AI Quality

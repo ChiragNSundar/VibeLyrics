@@ -11,7 +11,7 @@ import json
 import re
 
 from ..database import get_db
-from ..models import LyricSession, LyricLine
+from ..models import LyricSession, LyricLine, LineVersion
 from ..schemas import LineCreate, LineUpdate
 from ..services.rhyme_detector import RhymeDetector, SyllableCounter
 from ..services.ai_provider import get_ai_provider
@@ -134,6 +134,22 @@ async def update_line(line_id: int, data: LineUpdate, db: AsyncSession = Depends
 
     if not line:
         raise HTTPException(status_code=404, detail="Line not found")
+
+    # ── Git for Lyrics: snapshot current version before overwriting ──
+    old_content = line.final_version or line.user_input
+    if old_content and old_content.strip() and old_content.strip() != content:
+        from sqlalchemy import func as sqlfunc
+        max_ver = await db.execute(
+            select(sqlfunc.coalesce(sqlfunc.max(LineVersion.version_number), 0))
+            .where(LineVersion.line_id == line.id)
+        )
+        next_ver = max_ver.scalar() + 1
+        snapshot = LineVersion(
+            line_id=line.id,
+            content=old_content,
+            version_number=next_ver
+        )
+        db.add(snapshot)
 
     line.user_input = content
     line.final_version = content
@@ -307,3 +323,55 @@ async def stream_suggestion(
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/lines/{line_id}/history", response_model=dict)
+async def get_line_history(line_id: int, db: AsyncSession = Depends(get_db)):
+    """Get all version snapshots for a line (Git for Lyrics)."""
+    result = await db.execute(
+        select(LineVersion)
+        .where(LineVersion.line_id == line_id)
+        .order_by(LineVersion.version_number.desc())
+    )
+    versions = result.scalars().all()
+    return {
+        "success": True,
+        "versions": [v.to_dict() for v in versions]
+    }
+
+
+@router.post("/lines/{line_id}/restore/{version_id}", response_model=dict)
+async def restore_line_version(line_id: int, version_id: int, db: AsyncSession = Depends(get_db)):
+    """Restore a line to a specific version."""
+    # Get the version
+    ver_result = await db.execute(
+        select(LineVersion).where(LineVersion.id == version_id, LineVersion.line_id == line_id)
+    )
+    version = ver_result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    # Get the line
+    line_result = await db.execute(
+        select(LyricLine).where(LyricLine.id == line_id)
+    )
+    line = line_result.scalar_one_or_none()
+    if not line:
+        raise HTTPException(status_code=404, detail="Line not found")
+
+    # Snapshot current before restoring
+    from sqlalchemy import func as sqlfunc
+    max_ver = await db.execute(
+        select(sqlfunc.coalesce(sqlfunc.max(LineVersion.version_number), 0))
+        .where(LineVersion.line_id == line.id)
+    )
+    next_ver = max_ver.scalar() + 1
+    db.add(LineVersion(line_id=line.id, content=line.final_version or line.user_input, version_number=next_ver))
+
+    # Restore
+    line.user_input = version.content
+    line.final_version = version.content
+    line.syllable_count = _syllable_counter.count(version.content)
+
+    return {"success": True, "line": line.to_dict()}
+

@@ -11,23 +11,77 @@ interface ApiResponse<T = unknown> {
     [key: string]: T | boolean | string | undefined;
 }
 
+import { offlineStore } from './offlineStore';
+
 export async function request<T>(
     endpoint: string,
     options: RequestInit = {}
 ): Promise<T> {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        },
-        ...options,
-    });
+    try {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            },
+            ...options,
+        });
 
-    if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Cache successful reads (GET) or intercept local writes (POST/PUT/DELETE)
+        const method = options.method || 'GET';
+        if (method === 'GET' && endpoint.startsWith('/api/sessions')) {
+            // Very naive caching for demonstration: 
+            // Save to IDB if it's a single session
+            const match = endpoint.match(/^\/api\/sessions\/(\d+)$/);
+            if (match && data.id) {
+                offlineStore.saveSession(data);
+                if (data.lines) {
+                    data.lines.forEach((l: any) => offlineStore.saveLine(l));
+                }
+            }
+        }
+
+        return data as T;
+    } catch (error) {
+        console.warn('Network request failed, attempting offline fallback:', error);
+
+        const method = options.method || 'GET';
+
+        // If it's a local write, queue it in IndexedDB
+        if (method === 'POST' && endpoint === '/api/lines') {
+            const body = JSON.parse(options.body as string);
+            offlineStore.enqueueSync('ADD_LINE', body);
+            // Return fake success for optimistic UI
+            return { success: true, line: { id: Date.now(), user_input: body.content, final_version: body.content, section: body.section, line_number: 999, session_id: body.session_id, syllable_count: 0, has_internal_rhyme: false } } as unknown as T;
+        }
+        if (method === 'PUT' && endpoint.startsWith('/api/lines/')) {
+            const match = endpoint.match(/^\/api\/lines\/(\d+)$/);
+            if (match) {
+                const body = JSON.parse(options.body as string);
+                offlineStore.enqueueSync('UPDATE_LINE', { id: Number(match[1]), ...body });
+                return { success: true, line: { id: Number(match[1]), final_version: body.content, user_input: body.content } } as unknown as T;
+            }
+        }
+
+        // If it's a GET, try reading from standard cache or IDB
+        // The service worker handles standard GET caching gracefully, but we can intercept specific IDB reads:
+        if (method === 'GET' && endpoint.startsWith('/api/sessions/')) {
+            const match = endpoint.match(/^\/api\/sessions\/(\d+)$/);
+            if (match) {
+                const session = await offlineStore.getSession(Number(match[1]));
+                if (session) {
+                    return session as unknown as T;
+                }
+            }
+        }
+
+        throw error;
     }
-
-    return response.json();
 }
 
 // Session APIs
@@ -47,6 +101,9 @@ export const sessionApi = {
 
     analyze: (id: number) =>
         request<AnalysisResult>(`/api/session/${id}/analyze`),
+
+    heartbeat: (id: number) =>
+        request<{ success: boolean; total_writing_seconds: number }>(`/api/sessions/${id}/heartbeat`, { method: 'POST' }),
 };
 
 // Line APIs
@@ -95,6 +152,12 @@ export const lineApi = {
             method: 'POST',
             body: JSON.stringify({ session_id: sessionId, order }),
         }),
+
+    getHistory: (lineId: number) =>
+        request<{ success: boolean; versions: LineVersion[] }>(`/api/lines/${lineId}/history`),
+
+    restoreVersion: (lineId: number, versionId: number) =>
+        request<{ success: boolean; line: LyricLine }>(`/api/lines/${lineId}/restore/${versionId}`, { method: 'POST' }),
 };
 
 // Tool APIs
@@ -128,6 +191,24 @@ export const aiApi = {
         request<ApiResponse>('/api/provider/switch', {
             method: 'POST',
             body: JSON.stringify({ provider }),
+        }),
+
+    generateAdlibs: (lines: string[], mood?: string) =>
+        request<{ success: boolean; adlibs: string[]; energy_score: number; energy_level: string }>('/api/ai/adlibs', {
+            method: 'POST',
+            body: JSON.stringify({ lines, mood }),
+        }),
+
+    generateHook: (theme: string, mood?: string, verse_lines?: string[]) =>
+        request<{ success: boolean; hooks: string[] }>('/api/ai/hook', {
+            method: 'POST',
+            body: JSON.stringify({ theme, mood, verse_lines: verse_lines || [] }),
+        }),
+
+    generateStructure: (theme: string, mood?: string, bpm?: number) =>
+        request<{ success: boolean; sections: Array<{ section: string; bars: number; description: string; energy: string }>; fallback?: boolean }>('/api/ai/structure', {
+            method: 'POST',
+            body: JSON.stringify({ theme, mood, bpm: bpm || 140 }),
         }),
 };
 
@@ -267,6 +348,26 @@ export const learningApi = {
     },
 };
 
+// Analytics & Flow APIs
+export const statsApi = {
+    getStreak: () =>
+        request<{ success: boolean; current_streak: number; longest_streak: number; last_write_date: string; history: string[] }>('/api/stats/streak'),
+
+    checkInStreak: () =>
+        request<{ success: boolean; current_streak: number; longest_streak: number; last_write_date: string; history: string[] }>('/api/stats/streak/check-in', { method: 'POST' }),
+
+    getVocabularyGrowth: () =>
+        request<{ success: boolean; growth: Array<{ date: string; unique_words: number }> }>('/api/stats/vocabulary-growth'),
+
+    getRhymeCalendar: () =>
+        request<{ success: boolean; calendar: Array<{ date: string; scheme: string; session_id: number; session_title: string }> }>('/api/stats/rhyme-calendar'),
+};
+
+export const flowApi = {
+    getTemplates: () =>
+        request<{ success: boolean; templates: Array<{ id: string; name: string; description: string; syllable_target: number; stress_pattern: string; example: string; bpm_range: number[] }> }>('/api/flow-templates'),
+};
+
 // ============ Types ============
 
 export interface Session {
@@ -277,9 +378,18 @@ export interface Session {
     theme?: string;
     line_count: number;
     audio_path?: string;
+    total_writing_seconds?: number;
     rhyme_scheme?: string;
     created_at: string;
     updated_at: string;
+}
+
+export interface LineVersion {
+    id: number;
+    line_id: number;
+    content: string;
+    version_number: number;
+    created_at: string;
 }
 
 export interface LyricLine {

@@ -19,6 +19,8 @@ class LyricSession(Base):
     mood: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     theme: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     audio_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    total_writing_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
@@ -38,6 +40,7 @@ class LyricSession(Base):
             "mood": self.mood,
             "theme": self.theme,
             "audio_path": self.audio_path,
+            "total_writing_seconds": self.total_writing_seconds,
             "line_count": len(self.lines) if "lines" in self.__dict__ else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
@@ -67,6 +70,12 @@ class LyricLine(Base):
     
     # Relationships
     session: Mapped["LyricSession"] = relationship("LyricSession", back_populates="lines")
+    versions: Mapped[List["LineVersion"]] = relationship(
+        "LineVersion",
+        back_populates="line",
+        cascade="all, delete-orphan",
+        order_by="LineVersion.version_number"
+    )
     
     def to_dict(self, include_highlights=False):
         result = {
@@ -88,6 +97,29 @@ class LyricLine(Base):
             result["highlighted_html"] = getattr(self, "highlighted_html", None)
             result["heatmap_class"] = getattr(self, "heatmap_class", None)
         return result
+
+
+class LineVersion(Base):
+    """A snapshot of a lyric line for version history (Git for Lyrics)"""
+    __tablename__ = "line_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    line_id: Mapped[int] = mapped_column(ForeignKey("lyric_lines.id", ondelete="CASCADE"))
+    content: Mapped[str] = mapped_column(Text, default="")
+    version_number: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    line: Mapped["LyricLine"] = relationship("LyricLine", back_populates="versions")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "line_id": self.line_id,
+            "content": self.content,
+            "version_number": self.version_number,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
 
 
 class JournalEntry(Base):
