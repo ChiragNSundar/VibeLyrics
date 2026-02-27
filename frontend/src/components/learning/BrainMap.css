@@ -1,0 +1,89 @@
+.brain-map-container {
+    position: relative;
+    background: #0f172a;
+    border-radius: var(--radius-lg);
+    border: 1px solid #334155;
+    overflow: hidden;
+    min-height: 420px;
+}
+
+.brain-map-loading,
+.brain-map-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.brain-tooltip {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid #475569;
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    z-index: 10;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+}
+
+.cat-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: fit-content;
+}
+
+.cat-badge.signature {
+    background: rgba(96, 165, 250, 0.2);
+    color: #60a5fa;
+}
+
+.cat-badge.slang {
+    background: rgba(52, 211, 153, 0.2);
+    color: #34d399;
+}
+
+.cat-badge.avoided {
+    background: rgba(248, 113, 113, 0.2);
+    color: #f87171;
+}
+
+.cat-badge.favorite {
+    background: rgba(167, 139, 250, 0.2);
+    color: #a78bfa;
+}
+
+.brain-legend {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    display: flex;
+    gap: 1rem;
+    z-index: 10;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: capitalize;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}

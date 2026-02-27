@@ -254,6 +254,83 @@ class VocabularyManager:
             if len(word) > 2:
                 self.word_frequency[word] += 1
         self._save_vocabulary()
+
+    def track_co_occurrences(self, lines: List[str]):
+        """Track which words appear together in the same line for the brain map."""
+        co_file = "data/co_occurrences.json"
+        # Load existing
+        co_data: Dict[str, Dict[str, int]] = {}
+        if os.path.exists(co_file):
+            try:
+                with open(co_file, 'r') as f:
+                    co_data = json.load(f)
+            except Exception:
+                pass
+
+        stopwords = {"the", "a", "an", "is", "are", "was", "were", "in", "on", "at", "to",
+                      "for", "of", "and", "or", "but", "not", "it", "its", "my", "your",
+                      "i", "me", "you", "he", "she", "we", "they", "this", "that", "with"}
+
+        for line in lines:
+            words = [w.lower().strip() for w in line.split() if len(w.strip()) > 2]
+            words = [w for w in words if w not in stopwords and w.isalpha()]
+            # Only care about unique words per line
+            unique = list(set(words))
+            for i in range(len(unique)):
+                for j in range(i + 1, len(unique)):
+                    w1, w2 = sorted([unique[i], unique[j]])
+                    if w1 not in co_data:
+                        co_data[w1] = {}
+                    co_data[w1][w2] = co_data[w1].get(w2, 0) + 1
+
+        os.makedirs(os.path.dirname(co_file), exist_ok=True)
+        with open(co_file, 'w') as f:
+            json.dump(co_data, f)
+
+    def get_brain_map_data(self) -> Dict:
+        """Generate nodes and links for the interactive brain map force graph."""
+        nodes = []
+        links = []
+        node_ids = set()
+
+        # Build nodes from top vocabulary
+        top_words = self.word_frequency.most_common(60)
+        for word, freq in top_words:
+            category = "signature"
+            if word in self.favorite_slangs:
+                category = "slang"
+            elif word in self.avoided_words:
+                category = "avoided"
+            elif word in self.favorite_words:
+                category = "favorite"
+
+            nodes.append({
+                "id": word,
+                "val": max(2, min(20, freq // 2)),
+                "category": category,
+                "frequency": freq
+            })
+            node_ids.add(word)
+
+        # Build links from co-occurrences
+        co_file = "data/co_occurrences.json"
+        if os.path.exists(co_file):
+            try:
+                with open(co_file, 'r') as f:
+                    co_data = json.load(f)
+                for w1, connections in co_data.items():
+                    if w1 in node_ids:
+                        for w2, strength in connections.items():
+                            if w2 in node_ids and strength >= 2:
+                                links.append({
+                                    "source": w1,
+                                    "target": w2,
+                                    "value": min(5, strength)
+                                })
+            except Exception:
+                pass
+
+        return {"nodes": nodes, "links": links}
     
     def get_vocabulary_context(self) -> Dict:
         """Get vocabulary context for AI prompts"""

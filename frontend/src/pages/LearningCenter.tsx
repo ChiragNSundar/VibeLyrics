@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { learningApi } from '../services/api';
 import type { LearningStatusResponse } from '../services/api';
+import BrainMap from '../components/learning/BrainMap';
+import DnaMatcher from '../components/learning/DnaMatcher';
 import './LearningCenter.css';
 
 const LearningCenter: React.FC = () => {
@@ -20,6 +22,12 @@ const LearningCenter: React.FC = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState('');
+
+    // Phase 4 State
+    const [dashboardTab, setDashboardTab] = useState<'stats' | 'brainmap' | 'dna'>('stats');
+    const [annotations, setAnnotations] = useState<Array<{ line: string; score: number; techniques: string[]; notes: string[] }>>([]);
+    const [audioResult, setAudioResult] = useState<{ bpm: number; key: string; energy: string } | null>(null);
+    const [audioUploading, setAudioUploading] = useState(false);
 
     const endOfLogsRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +140,30 @@ const LearningCenter: React.FC = () => {
             fetchStatus();
         } catch (error) {
             console.error("Failed to reset brain", error);
+        }
+    };
+
+    const handleFetchAnnotations = async () => {
+        try {
+            const res = await learningApi.getAnnotations();
+            setAnnotations(res.annotations || []);
+        } catch (error) {
+            console.error('Failed to fetch annotations:', error);
+        }
+    };
+
+    const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setAudioUploading(true);
+            const res = await learningApi.uploadAudio(file);
+            setAudioResult({ bpm: res.bpm, key: res.key, energy: res.energy });
+            setTimeout(fetchStatus, 500);
+        } catch (error) {
+            console.error('Audio analysis failed:', error);
+        } finally {
+            setAudioUploading(false);
         }
     };
 
@@ -262,90 +294,171 @@ const LearningCenter: React.FC = () => {
                     )}
                 </section>
 
+                {/* ── Audio Upload Zone ── */}
+                <section className="learning-card audio-section">
+                    <h3>🎧 Audio Rhythm Analysis</h3>
+                    <p className="instructions">Upload an .mp3 or .wav beat to extract BPM, key, and energy.</p>
+                    <div className="upload-row">
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                accept=".mp3,.wav"
+                                onChange={handleAudioUpload}
+                                disabled={audioUploading}
+                                id="audio-upload"
+                            />
+                            <label htmlFor="audio-upload" className="file-label">
+                                {audioUploading ? '⏳ Analyzing...' : '🎵 Drop a Beat File'}
+                            </label>
+                        </div>
+                    </div>
+                    {audioResult && (
+                        <div className="audio-results">
+                            <div className="stat-box"><div className="stat-label">BPM</div><div className="stat-value">{audioResult.bpm}</div></div>
+                            <div className="stat-box"><div className="stat-label">Key</div><div className="stat-value">{audioResult.key}</div></div>
+                            <div className="stat-box"><div className="stat-label">Energy</div><div className="stat-value">{audioResult.energy}</div></div>
+                        </div>
+                    )}
+                </section>
+
                 {/* ── Knowledge Base Dashboard ── */}
                 {status && (
                     <div className="knowledge-dashboard">
-                        <section className="learning-card">
-                            <h3>Learned Style Profile</h3>
-                            <div className="stats-grid">
-                                <div className="stat-box">
-                                    <div className="stat-label">Rhyme Preference</div>
-                                    <div className="stat-value">{status.style.rhyme_preference || 'Not enough data'}</div>
-                                </div>
-                                <div className="stat-box">
-                                    <div className="stat-label">Avg Line Length</div>
-                                    <div className="stat-value">{status.style.avg_line_length ? `${status.style.avg_line_length} words` : 'N/A'}</div>
-                                </div>
-                            </div>
+                        {/* Dashboard Tabs */}
+                        <div className="dash-tab-bar">
+                            <button className={`dash-tab ${dashboardTab === 'stats' ? 'active' : ''}`} onClick={() => setDashboardTab('stats')}>📊 Stats</button>
+                            <button className={`dash-tab ${dashboardTab === 'brainmap' ? 'active' : ''}`} onClick={() => setDashboardTab('brainmap')}>🕸️ Brain Map</button>
+                            <button className={`dash-tab ${dashboardTab === 'dna' ? 'active' : ''}`} onClick={() => setDashboardTab('dna')}>🧬 Lyrical DNA</button>
+                        </div>
 
-                            <div className="tag-section">
-                                <h4>Dominant Themes</h4>
-                                <div className="tag-list">
-                                    {status.style.themes.length > 0 ? (
-                                        status.style.themes.map((theme, i) => (
-                                            <span key={i} className="tag theme-tag">{theme}</span>
-                                        ))
-                                    ) : (
-                                        <span className="no-data">Need more lyrics to detect themes.</span>
-                                    )}
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="learning-card">
-                            <h3>Vocabulary Matrix</h3>
-                            <p className="hint">Click the × to make the AI forget a specific word.</p>
-
-                            <div className="tag-section mt-1">
-                                <h4>Signature Words (Most Used)</h4>
-                                <div className="tag-list">
-                                    {status.vocabulary.most_used.length > 0 ? (
-                                        status.vocabulary.most_used.map((word, i) => (
-                                            <span key={i} className="tag word-tag">
-                                                {word}
-                                                <button onClick={() => handleDeleteVocab(word, 'most_used')} className="delete-tag">×</button>
-                                            </span>
-                                        ))
-                                    ) : (
-                                        <span className="no-data">No words tracking yet.</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="vocab-split mt-2">
-                                <div className="tag-section">
-                                    <h4>Favorite Slangs</h4>
-                                    <div className="tag-list">
-                                        {status.vocabulary.slangs.length > 0 ? (
-                                            status.vocabulary.slangs.map((word, i) => (
-                                                <span key={i} className="tag slang-tag">
-                                                    {word}
-                                                    <button onClick={() => handleDeleteVocab(word, 'slangs')} className="delete-tag">×</button>
-                                                </span>
-                                            ))
-                                        ) : (
-                                            <span className="no-data">None detected</span>
-                                        )}
+                        {dashboardTab === 'stats' && (
+                            <>
+                                <section className="learning-card">
+                                    <h3>Learned Style Profile</h3>
+                                    <div className="stats-grid">
+                                        <div className="stat-box">
+                                            <div className="stat-label">Rhyme Preference</div>
+                                            <div className="stat-value">{status.style.rhyme_preference || 'Not enough data'}</div>
+                                        </div>
+                                        <div className="stat-box">
+                                            <div className="stat-label">Avg Line Length</div>
+                                            <div className="stat-value">{status.style.avg_line_length ? `${status.style.avg_line_length} words` : 'N/A'}</div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="tag-section">
-                                    <h4>Avoided Words</h4>
-                                    <div className="tag-list">
-                                        {status.vocabulary.avoided.length > 0 ? (
-                                            status.vocabulary.avoided.map((word, i) => (
-                                                <span key={i} className="tag avoid-tag">
-                                                    {word}
-                                                    <button onClick={() => handleDeleteVocab(word, 'avoided')} className="delete-tag">×</button>
-                                                </span>
-                                            ))
-                                        ) : (
-                                            <span className="no-data">None specified</span>
-                                        )}
+                                    <div className="tag-section">
+                                        <h4>Dominant Themes</h4>
+                                        <div className="tag-list">
+                                            {status.style.themes.length > 0 ? (
+                                                status.style.themes.map((theme, i) => (
+                                                    <span key={i} className="tag theme-tag">{theme}</span>
+                                                ))
+                                            ) : (
+                                                <span className="no-data">Need more lyrics to detect themes.</span>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </section>
+                                </section>
+
+                                <section className="learning-card">
+                                    <h3>Vocabulary Matrix</h3>
+                                    <p className="hint">Click the × to make the AI forget a specific word.</p>
+
+                                    <div className="tag-section mt-1">
+                                        <h4>Signature Words (Most Used)</h4>
+                                        <div className="tag-list">
+                                            {status.vocabulary.most_used.length > 0 ? (
+                                                status.vocabulary.most_used.map((word, i) => (
+                                                    <span key={i} className="tag word-tag">
+                                                        {word}
+                                                        <button onClick={() => handleDeleteVocab(word, 'most_used')} className="delete-tag">×</button>
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="no-data">No words tracking yet.</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="vocab-split mt-2">
+                                        <div className="tag-section">
+                                            <h4>Favorite Slangs</h4>
+                                            <div className="tag-list">
+                                                {status.vocabulary.slangs.length > 0 ? (
+                                                    status.vocabulary.slangs.map((word, i) => (
+                                                        <span key={i} className="tag slang-tag">
+                                                            {word}
+                                                            <button onClick={() => handleDeleteVocab(word, 'slangs')} className="delete-tag">×</button>
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="no-data">None detected</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="tag-section">
+                                            <h4>Avoided Words</h4>
+                                            <div className="tag-list">
+                                                {status.vocabulary.avoided.length > 0 ? (
+                                                    status.vocabulary.avoided.map((word, i) => (
+                                                        <span key={i} className="tag avoid-tag">
+                                                            {word}
+                                                            <button onClick={() => handleDeleteVocab(word, 'avoided')} className="delete-tag">×</button>
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="no-data">None specified</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* ── Annotations Panel ── */}
+                                <section className="learning-card">
+                                    <div className="annotations-header">
+                                        <h3>📝 Auto-Annotations</h3>
+                                        <button onClick={handleFetchAnnotations} className="btn primary btn-sm">Analyze Last Scrape</button>
+                                    </div>
+                                    {annotations.length > 0 ? (
+                                        <div className="annotations-list">
+                                            {annotations.map((a, i) => (
+                                                <div key={i} className="annotation-row">
+                                                    <div className="annotation-line">"{a.line}"</div>
+                                                    <div className="annotation-meta">
+                                                        <span className="punch-score" data-score={a.score > 50 ? 'high' : a.score > 25 ? 'mid' : 'low'}>
+                                                            🎯 {a.score}/100
+                                                        </span>
+                                                        {a.notes.map((note, j) => (
+                                                            <span key={j} className="annotation-note">{note}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="no-data mt-1">Scrape an artist first, then click "Analyze" to auto-annotate their lyrics.</p>
+                                    )}
+                                </section>
+                            </>
+                        )}
+
+                        {dashboardTab === 'brainmap' && (
+                            <section className="learning-card brain-map-card">
+                                <h3>🕸️ Neural Vocabulary Map</h3>
+                                <p className="hint">Explore how the AI connects words. Node size = frequency. Lines = co-occurrence.</p>
+                                <BrainMap />
+                            </section>
+                        )}
+
+                        {dashboardTab === 'dna' && (
+                            <section className="learning-card">
+                                <h3>🧬 Your Lyrical DNA</h3>
+                                <p className="hint">See how your writing measures across 6 key dimensions.</p>
+                                <DnaMatcher />
+                            </section>
+                        )}
                     </div>
                 )}
             </main>

@@ -19,6 +19,13 @@ All notable changes to the **VibeLyrics** project will be documented in this fil
 - **Visual Knowledge Base** — See exactly what the AI has learned: Dominant Themes, Rhyme Preferences, Signature Words, Slangs, and Avoided Words.
 - **Brain Wiper** — Safely delete specific words from the AI's vocabulary, or wipe the brain completely to start fresh.
 
+### 🧠 Intelligence Layer (Phase 4)
+
+- **Interactive Brain Map** — Force-graph neural network that visualizes the AI's vocabulary as glowing, interconnected nodes. Drag, hover, and explore how words connect.
+- **Lyrical DNA Matcher** — 6-axis Radar Chart comparing your writing across Vocabulary Richness, Rhyme Complexity, Punchline Power, Imagery Density, Line Length Variety, and Internal Rhyme %.
+- **Auto-Annotations** — Automatic per-line lyric breakdown detecting double entendres, metaphors, similes, alliteration, and punchline quality—no Genius API needed.
+- **Audio Rhythm Learning** — Upload `.mp3`/`.wav` beats for automatic BPM, key, and energy extraction via `librosa`.
+
 ### ✨ New Features
 
 - **Export lyrics** — Copy to clipboard (📋) and download as `.txt` (⬇️) buttons in stats bar

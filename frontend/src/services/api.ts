@@ -247,6 +247,24 @@ export const learningApi = {
         request<{ success: boolean; message: string }>('/api/learning/reset', {
             method: 'POST',
         }),
+
+    getBrainMap: () =>
+        request<{ success: boolean; nodes: Array<{ id: string; val: number; category: string; frequency: number }>; links: Array<{ source: string; target: string; value: number }> }>('/api/learning/brain-map'),
+
+    getDna: () =>
+        request<{ success: boolean; axes: Array<{ axis: string; value: number }> }>('/api/learning/dna'),
+
+    getAnnotations: () =>
+        request<{ success: boolean; annotations: Array<{ line: string; score: number; techniques: string[]; notes: string[] }>; message?: string }>('/api/learning/annotations'),
+
+    uploadAudio: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return request<{ success: boolean; bpm: number; key: string; energy: string; avg_rms: number }>('/api/learning/audio', {
+            method: 'POST',
+            body: formData,
+        });
+    },
 };
 
 // ============ Types ============
