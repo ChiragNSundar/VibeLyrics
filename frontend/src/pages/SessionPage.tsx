@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
 import { useSessionStore } from '../store/sessionStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { LyricsEditor } from '../components/session/LyricsEditor';
 import { RhymeWavePanel } from '../components/session/RhymeWavePanel.tsx';
@@ -11,7 +12,7 @@ import { PunchlinePanel } from '../components/session/PunchlinePanel';
 import { RhymeLegend } from '../components/session/RhymeLegend';
 import { BeatTimer } from '../components/session/BeatTimer';
 import { Button } from '../components/ui/Button';
-import { sessionApi } from '../services/api';
+import { sessionApi, aiApi } from '../services/api';
 import './SessionPage.css';
 
 export const SessionPage: React.FC = () => {
@@ -19,14 +20,19 @@ export const SessionPage: React.FC = () => {
     const sessionId = parseInt(id || '0');
 
     const { currentSession, setSession, lines, setLines, reset, undo, redo } = useSessionStore();
+    const { aiProvider } = useSettingsStore(); // global provider from Settings
     const [isLoading, setIsLoading] = useState(true);
     const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp' | 'punchline'>('none');
-    const [provider, setProvider] = useState('gemini');
 
     useEffect(() => {
         loadSession();
         return () => reset();
     }, [sessionId]);
+
+    // Sync the global provider setting to the backend whenever it changes
+    useEffect(() => {
+        aiApi.switchProvider(aiProvider).catch(() => { });
+    }, [aiProvider]);
 
     // ── Session Time Tracker (Heartbeat) ─────────────────────
     useEffect(() => {
@@ -62,19 +68,7 @@ export const SessionPage: React.FC = () => {
         }
     };
 
-    const handleProviderChange = async (newProvider: string) => {
-        try {
-            await fetch('/api/ai/switch-provider', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ provider: newProvider }),
-            });
-            setProvider(newProvider);
-            toast.success(`Switched to ${newProvider}`);
-        } catch (error) {
-            toast.error('Failed to switch provider');
-        }
-    };
+
 
     const togglePanel = (panel: 'rhymewave' | 'aihelp' | 'punchline') => {
         setActivePanel(activePanel === panel ? 'none' : panel);
@@ -127,15 +121,9 @@ export const SessionPage: React.FC = () => {
                 </div>
 
                 <div className="session-actions">
-                    <select
-                        className="provider-select"
-                        value={provider}
-                        onChange={(e) => handleProviderChange(e.target.value)}
-                    >
-                        <option value="gemini">Gemini</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="lmstudio">LM Studio</option>
-                    </select>
+                    <Link to="/settings" className="provider-badge" title="Change AI provider in Settings">
+                        🤖 {aiProvider}
+                    </Link>
                     <Button variant="secondary" size="sm">
                         📊 Analyze
                     </Button>
