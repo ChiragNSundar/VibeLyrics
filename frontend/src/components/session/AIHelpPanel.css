@@ -83,3 +83,37 @@
     line-height: 1.6;
     white-space: pre-wrap;
 }
+
+.polish-result {
+    margin-top: var(--spacing-md);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border-bottom: 1px solid var(--accent-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.result-text {
+    padding: var(--spacing-md);
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    background: var(--bg-card);
+    white-space: pre-wrap;
+}
+
+.btn-full {
+    width: 100%;
+}

@@ -203,6 +203,111 @@ async def get_current_provider():
     }
 
 
+@router.get("/ai/test-connection", response_model=dict)
+async def test_ai_connection():
+    """Detailed connectivity test for the current provider"""
+    provider = get_ai_provider()
+    if hasattr(provider, "test_connectivity"):
+        results = await provider.test_connectivity()
+        return {
+            "success": results.get("response_generated", False),
+            "results": results
+        }
+    
+    return {
+        "success": provider.is_available(),
+        "provider": provider.name,
+        "message": "Basic availability check performed (detailed test not implemented for this provider)"
+    }
+
+
+@router.post("/ai/improve-session", response_model=dict)
+async def improve_session(data: dict, db: AsyncSession = Depends(get_db)):
+    """Improve all lyrics in a session at once"""
+    session_id = data.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+
+    # Get existing lines
+    lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == session_id)
+        .order_by(LyricLine.line_number)
+    )
+    lines = lines_result.scalars().all()
+    if not lines:
+        return {"success": False, "error": "No lyrics to improve"}
+
+    full_text = "\n".join([l.final_version or l.user_input for l in lines])
+
+    provider = get_ai_provider()
+    improved_lyrics = await provider.improve_lyrics_bulk(full_text)
+
+    return {
+        "success": True,
+        "original": full_text,
+        "improved": improved_lyrics
+    }
+
+
+@router.post("/ai/apply-polish", response_model=dict)
+async def apply_polished_lyrics(data: dict, db: AsyncSession = Depends(get_db)):
+    """Apply the polished block of text back to the session lines"""
+    session_id = data.get("session_id")
+    polished_text = data.get("polished_text")
+    
+    if not session_id or not polished_text:
+        raise HTTPException(status_code=400, detail="session_id and polished_text are required")
+
+    # 1. Clear existing lines
+    await db.execute(
+        LyricLine.__table__.delete().where(LyricLine.session_id == session_id)
+    )
+
+    # 2. Parse text into lines
+    raw_lines = polished_text.split("\n")
+    current_section = "Verse"
+    lines_to_add = []
+    
+    line_num = 1
+    for raw in raw_lines:
+        clean = raw.strip()
+        if not clean:
+            continue
+            
+        # Check for section markers
+        if any(marker in clean.lower() for marker in ["verse", "chorus", "hook", "bridge", "outro"]):
+            current_section = clean.strip("[](): ").title()
+            continue
+            
+        new_line = LyricLine(
+            session_id=session_id,
+            line_number=line_num,
+            user_input=clean,
+            final_version=clean,
+            section=current_section
+        )
+        lines_to_add.append(new_line)
+        line_num += 1
+
+    if lines_to_add:
+        db.add_all(lines_to_add)
+        await db.commit()
+    
+    # 3. Fetch all lines back
+    result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == session_id)
+        .order_by(LyricLine.line_number)
+    )
+    final_lines = result.scalars().all()
+
+    return {
+        "success": True,
+        "lines": [l.to_dict() for l in final_lines]
+    }
+
+
 @router.post("/ai/complete-rhyme", response_model=dict)
 async def complete_rhyme(data: RhymeCompleteRequest, db: AsyncSession = Depends(get_db)):
     """

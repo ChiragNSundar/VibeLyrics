@@ -118,6 +118,11 @@ class AIProvider(ABC):
     async def stream_suggestion(self, session_id: int, partial: str) -> AsyncGenerator[str, None]:
         pass
 
+    @abstractmethod
+    async def improve_lyrics_bulk(self, lyrics: str) -> str:
+        """Improve a full set of lyrics into verses and chorus."""
+        pass
+
     async def stream_suggestion_with_context(
         self, session_id: int, partial: str, context: str = ""
     ) -> AsyncGenerator[str, None]:
@@ -427,6 +432,29 @@ Output ONLY the completion (the words that come after the input). Do NOT repeat 
             print(f"[Gemini] stream error: {e}")
             yield f"[ERROR] {e}"
 
+    async def improve_lyrics_bulk(self, lyrics: str) -> str:
+        """Improve all lyrics at once using Gemini."""
+        prompt = f"""You are a professional songwriter.
+Rewrite and improve the following lyrics.
+Keep meaning but:
+- add rhyme
+- improve flow
+- make it emotional
+- make it catchy
+Structure:
+Verse 1
+Verse 2
+Chorus (repeatable hook)
+Return ONLY the lyrics.
+
+Lyrics:
+{lyrics}"""
+        try:
+            response = await self._generate(prompt)
+            return response.text.strip() if response.text else lyrics
+        except Exception:
+            return lyrics
+
     # ── Prompt builder (uses cache + few-shot + journal + learning) ──
 
     def _build_prompt(self, context: Dict) -> str:
@@ -587,7 +615,10 @@ class OpenAIProvider(AIProvider):
         try:
             response = await client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": self._build_prompt(context)}],
+                messages=[
+                    {"role": "system", "content": GHOSTWRITER_SYSTEM_INSTRUCTION},
+                    {"role": "user", "content": self._build_prompt(context)}
+                ],
                 max_tokens=100
             )
             return response.choices[0].message.content.strip()
@@ -600,12 +631,13 @@ class OpenAIProvider(AIProvider):
         if not client:
             return line
         try:
+            prompt = f"{GHOSTWRITER_SYSTEM_INSTRUCTION}\n\nTask: Improve this lyric specifically for {improvement_type}: \"{line}\"\nOutput ONLY the improved line. Do not echo the original if you cannot improve it—make it more poetic or rhythmic."
             response = await client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": f"Improve this lyric for {improvement_type}: {line}"}],
+                messages=[{"role": "user", "content": prompt}],
                 max_tokens=100
             )
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip().strip('"')
         except Exception:
             return line
 
@@ -616,7 +648,10 @@ class OpenAIProvider(AIProvider):
         try:
             response = await client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": f"Lyric writing question: {question}"}],
+                messages=[
+                    {"role": "system", "content": "You are Vibe, a lyric writing expert. Answer with practical, actionable advice."},
+                    {"role": "user", "content": f"Lyric writing question: {question}"}
+                ],
                 max_tokens=500
             )
             return response.choices[0].message.content.strip()
@@ -641,6 +676,20 @@ class OpenAIProvider(AIProvider):
         except Exception as e:
             yield f"[ERROR] {e}"
 
+    async def improve_lyrics_bulk(self, lyrics: str) -> str:
+        """Improve all lyrics at once using GPT."""
+        client = self._get_client()
+        if not client: return lyrics
+        try:
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": f"You are a professional songwriter. Rewrite and improve the following lyrics. Structure into Verse 1, Verse 2, Chorus. Return ONLY the lyrics.\n\n{lyrics}"}],
+                max_tokens=600
+            )
+            return response.choices[0].message.content.strip()
+        except Exception:
+            return lyrics
+
     def _build_prompt(self, context: Dict) -> str:
         return f"Write a lyric line: {context.get('partial', '')}"
 
@@ -649,7 +698,11 @@ class LMStudioProvider(AIProvider):
     """Local LM Studio provider (OpenAI-compatible API at localhost)"""
 
     def __init__(self):
-        self.base_url = os.getenv("LMSTUDIO_URL", "http://localhost:1234/v1")
+        # Default to the user's provided values if not set in .env
+        self.base_url = os.getenv("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234")
+        if not self.base_url.endswith("/v1"):
+            self.base_url = f"{self.base_url.rstrip('/')}/v1"
+        self.model_name = os.getenv("LM_STUDIO_MODEL", "mistralai/mistral-7b-instruct-v0.3")
         self._client = None
 
     @property
@@ -657,12 +710,69 @@ class LMStudioProvider(AIProvider):
         return "lmstudio"
 
     def is_available(self) -> bool:
+        """Check if the LM Studio server is reachable and has models loaded."""
         try:
             import httpx
-            r = httpx.get(f"{self.base_url}/models", timeout=2)
-            return r.status_code == 200
+            # Clean base_url for model check (remove /v1 if present)
+            check_url = self.base_url.rstrip("/").replace("/v1", "")
+            r = httpx.get(f"{check_url}/v1/models", timeout=2)
+            if r.status_code != 200:
+                return False
+            
+            # Verify the specific model is available (optional but better)
+            models = r.json().get("data", [])
+            return any(m.get("id") == self.model_name for m in models) or len(models) > 0
         except Exception:
             return False
+
+    async def test_connectivity(self) -> Dict:
+        """Detailed connectivity diagnostic."""
+        results = {
+            "provider": self.name,
+            "url": self.base_url,
+            "model": self.model_name,
+            "server_reachable": False,
+            "model_loaded": False,
+            "response_generated": False,
+            "latency_ms": 0,
+            "error": None
+        }
+        
+        import httpx
+        import time
+        start_time = time.time()
+        
+        try:
+            # 1. Test server reachability
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                check_url = self.base_url.rstrip("/").replace("/v1", "")
+                r = await client.get(f"{check_url}/v1/models")
+                if r.status_code == 200:
+                    results["server_reachable"] = True
+                    models = r.json().get("data", [])
+                    results["model_loaded"] = any(m.get("id") == self.model_name for m in models)
+                    results["available_models"] = [m.get("id") for m in models]
+                else:
+                    results["error"] = f"Server returned {r.status_code}"
+                    return results
+
+            # 2. Test generation
+            client = self._get_client()
+            response = await client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": "Return the word 'Ready'."}],
+                max_tokens=10,
+                temperature=0.0
+            )
+            
+            if response.choices[0].message.content:
+                results["response_generated"] = True
+                results["latency_ms"] = int((time.time() - start_time) * 1000)
+                
+        except Exception as e:
+            results["error"] = str(e)
+            
+        return results
 
     def _get_client(self):
         if self._client is None:
@@ -677,8 +787,11 @@ class LMStudioProvider(AIProvider):
         client = self._get_client()
         try:
             response = await client.chat.completions.create(
-                model="local-model",
-                messages=[{"role": "user", "content": self._build_prompt(context)}],
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": GHOSTWRITER_SYSTEM_INSTRUCTION},
+                    {"role": "user", "content": self._build_prompt(context)}
+                ],
                 max_tokens=100,
                 temperature=0.8
             )
@@ -690,12 +803,14 @@ class LMStudioProvider(AIProvider):
     async def improve_line(self, line: str, improvement_type: str) -> str:
         client = self._get_client()
         try:
+            # Combine system instruction into user prompt for better local LLM compatibility
+            prompt = f"{GHOSTWRITER_SYSTEM_INSTRUCTION}\n\nTask: Improve this lyric for {improvement_type}: \"{line}\"\nOutput ONLY the improved line. Do not repeat the original line—rewrite it to be better."
             response = await client.chat.completions.create(
-                model="local-model",
-                messages=[{"role": "user", "content": f"Improve this lyric for {improvement_type}: {line}"}],
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
                 max_tokens=100
             )
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip().strip('"')
         except Exception:
             return line
 
@@ -706,7 +821,7 @@ class LMStudioProvider(AIProvider):
             if context and context.get("lines"):
                 prompt += "\n\nContext:\n" + "\n".join(context["lines"][-10:])
             response = await client.chat.completions.create(
-                model="local-model",
+                model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=500
             )
@@ -718,7 +833,7 @@ class LMStudioProvider(AIProvider):
         client = self._get_client()
         try:
             stream = await client.chat.completions.create(
-                model="local-model",
+                model=self.model_name,
                 messages=[{"role": "user", "content": f"Complete this lyric line: {partial}"}],
                 max_tokens=50,
                 stream=True
@@ -728,6 +843,39 @@ class LMStudioProvider(AIProvider):
                     yield chunk.choices[0].delta.content
         except Exception as e:
             yield f"[ERROR] {e}"
+
+    async def improve_lyrics_bulk(self, lyrics: str) -> str:
+        """Improve all lyrics at once using LM Studio."""
+        client = self._get_client()
+        prompt = f"""You are a professional songwriter.
+Rewrite and improve the following lyrics.
+Keep meaning but:
+- add rhyme
+- improve flow
+- make it emotional
+- make it catchy
+Structure:
+Verse 1
+Verse 2
+Chorus (repeatable hook)
+Return ONLY the lyrics.
+
+Lyrics:
+{lyrics}"""
+        try:
+            response = await client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "You are a professional songwriter and lyric improver. Use Verse 1, Verse 2, Chorus structure. Return ONLY final lyrics."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=600,
+                temperature=0.9
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"LM Studio bulk improvement error: {e}")
+            return lyrics
 
     def _build_prompt(self, context: Dict) -> str:
         lines = context.get("lines", [])
@@ -746,6 +894,11 @@ def get_ai_provider() -> AIProvider:
     global _current_provider, _provider_name
 
     if _current_provider is None:
+        # Honor DEFAULT_AI_PROVIDER from .env if first time
+        env_default = os.getenv("DEFAULT_AI_PROVIDER")
+        if env_default and _provider_name == "gemini":
+            _provider_name = env_default
+
         if _provider_name == "openai":
             _current_provider = OpenAIProvider()
         elif _provider_name == "lmstudio":

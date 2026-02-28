@@ -1,0 +1,43 @@
+AI Provider Service Overview (ai_provider.py)
+==============================================
+
+This file handles the integration with various AI backends used for lyric generation, improvement, and diagnostics in VibeLyrics.
+
+1. Constants & Configurations
+-----------------------------
+- GHOSTWRITER_SYSTEM_INSTRUCTION: The "core persona" of the AI (Vibe), defining its identity as a musical genius and setting craft principles (rhyme hierarchy, flow, imagery).
+- FEW_SHOT_EXAMPLES: Examples provided to the AI to help it match different lyric styles (Hip-Hop, Pop, R&B, etc.).
+- GEMINI_MODELS: A fallback chain for Google Gemini (tries lite models first for cost/speed).
+
+2. Base Class: AIProvider (ABC)
+-------------------------------
+An Abstract Base Class that defines the mandatory interface for any AI backend. Every provider must implement:
+- name: Returns provider identifier (e.g., "gemini").
+- is_available(): Checks if the provider is reachable.
+- get_suggestion(): Main logic for generating the next lyric line.
+- improve_line(): Logic for rewriting and polishing existing lines.
+- answer_question(): Q&A logic for lyric writing advice.
+- stream_suggestion(): Async generator for real-time typing effect.
+
+3. Implementation: GeminiProvider
+---------------------------------
+The most complex provider, optimized for Google's Gemini models.
+- Model Fallback: Tries multiple model versions if one is unavailable or hits a quota.
+- Prompt Caching: Remembers the lyric context prefix to speed up repeated suggestions.
+- Rhyme Detection: Analyzes existing lines to identify AABB or ABAB patterns.
+- Self-Critique Loop: Uses a manual scoring mechanism to evaluate output quality and retries with feedback if the first attempt is weak.
+
+4. Implementation: OpenAIProvider
+---------------------------------
+A standard implementation for OpenAI's GPT models (uses gpt-4o-mini by default).
+
+5. Implementation: LMStudioProvider
+-----------------------------------
+Used for local LLMs (like Mistral 7B) running via LM Studio.
+- Configurable: Reads LMSTUDIO_URL and LMSTUDIO_MODEL from environment variables.
+- test_connectivity(): A deep-dive diagnostic method that checks server reachability, ensures the specific model is loaded, and validates that it can generate text.
+
+6. Utility Functions
+--------------------
+- get_ai_provider(): A factory function that returns the currently active provider instance (Gemini, OpenAI, or LM Studio).
+- set_provider(name): Switches the active backend globally for the application.

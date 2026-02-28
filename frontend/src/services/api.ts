@@ -119,15 +119,27 @@ export const toolApi = {
 // AI APIs
 export const aiApi = {
     ask: (question: string, sessionId: number) =>
-        request<{ success: boolean; answer: string }>('/api/ask', {
+        request<{ success: boolean; answer: string }>('/api/ai/ask', {
             method: 'POST',
             body: JSON.stringify({ question, session_id: sessionId }),
         }),
 
     switchProvider: (provider: string) =>
-        request<ApiResponse>('/api/provider/switch', {
+        request<ApiResponse>('/api/ai/switch-provider', {
             method: 'POST',
             body: JSON.stringify({ provider }),
+        }),
+
+    improveSession: (sessionId: number) =>
+        request<{ success: boolean; original: string; improved: string; error?: string }>('/api/ai/improve-session', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: sessionId }),
+        }),
+
+    applyPolish: (sessionId: number, polishedText: string) =>
+        request<{ success: boolean; lines: LyricLine[]; error?: string }>('/api/ai/apply-polish', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: sessionId, polished_text: polishedText }),
         }),
 };
 
