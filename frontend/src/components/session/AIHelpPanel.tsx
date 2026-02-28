@@ -5,7 +5,6 @@ import { useSessionStore } from '../../store/sessionStore';
 import { Button } from '../ui/Button';
 import { HookGenerator } from './HookGenerator';
 import { StructureBuilder } from './StructureBuilder';
-import { useSessionStore } from '../../store/sessionStore';
 import './AIHelpPanel.css';
 
 interface AIHelpPanelProps {
@@ -18,12 +17,12 @@ export const AIHelpPanel: React.FC<AIHelpPanelProps> = ({ sessionId, onClose }) 
     const [answer, setAnswer] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [improvementType, setImprovementType] = useState<'rhyme' | 'flow' | 'wordplay' | 'depth'>('rhyme');
-    const { currentSession } = useSessionStore();
 
     const [polishResult, setPolishResult] = useState('');
     const [isPolishing, setIsPolishing] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
-    const { setLines } = useSessionStore();
+
+    const { currentSession, setLines } = useSessionStore();
 
     const handleAsk = async () => {
         if (!question.trim()) return;

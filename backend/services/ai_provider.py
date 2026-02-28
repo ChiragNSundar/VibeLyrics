@@ -803,16 +803,39 @@ class LMStudioProvider(AIProvider):
     async def improve_line(self, line: str, improvement_type: str) -> str:
         client = self._get_client()
         try:
-            # Combine system instruction into user prompt for better local LLM compatibility
-            prompt = f"{GHOSTWRITER_SYSTEM_INSTRUCTION}\n\nTask: Improve this lyric for {improvement_type}: \"{line}\"\nOutput ONLY the improved line. Do not repeat the original line—rewrite it to be better."
+            # Single user message — Mistral/local LLMs often reject 'system' role
+            prompt = (
+                f"[INST] You are a professional rapper. Rewrite this lyric line to improve the {improvement_type}.\n"
+                f"Only output the new lyric line. No explanation, no labels, no quotes.\n\n"
+                f"Original: {line}\n\n"
+                f"Rewritten: [/INST]"
+            )
             response = await client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=100
+                max_tokens=200,
+                temperature=0.85,
             )
-            return response.choices[0].message.content.strip().strip('"')
-        except Exception:
-            return line
+            raw = response.choices[0].message.content.strip()
+
+            # Strip common prefixes the model might output
+            for prefix in ["Rewritten:", "Improved:", "New lyric:", "Result:", "Output:"]:
+                if raw.lower().startswith(prefix.lower()):
+                    raw = raw[len(prefix):].strip()
+
+            # Take only the first non-empty line
+            for line_candidate in raw.split('\n'):
+                result = line_candidate.strip().strip('"').strip("'")
+                if result and result.lower() != line.lower():
+                    print(f"[LMStudio] improve_line: '{line}' -> '{result}'")
+                    return result
+
+            print(f"[LMStudio] Model echoed original or returned empty, raw: {repr(raw)}")
+            return ""
+        except Exception as e:
+            print(f"[LMStudio] improve_line error: {e}")
+            return ""
+
 
     async def answer_question(self, question: str, context: Optional[Dict]) -> str:
         client = self._get_client()

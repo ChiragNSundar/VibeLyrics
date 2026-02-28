@@ -1,5 +1,6 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { LyricLine, Session } from './api';
+import { openDB } from 'idb';
+import type { DBSchema, IDBPDatabase } from 'idb';
+import type { LyricLine, Session } from './types';
 
 interface VibeLyricsDB extends DBSchema {
     sessions: {

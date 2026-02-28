@@ -72,12 +72,22 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
         try {
             const response = await lineApi.improve(line.id, 'enhance');
             if (response.success && response.improved) {
-                // Show the improvement as editable
-                setEditValue(response.improved);
-                setIsEditing(true);
-                toast.success('AI improvement ready — review and save');
+                // Auto-save the improved version directly
+                const saveResponse = await lineApi.update(line.id, response.improved) as AddLineResponse;
+                if (saveResponse.all_lines && saveResponse.all_lines.length > 0) {
+                    setLines(saveResponse.all_lines);
+                } else {
+                    setLines(
+                        lines.map((l) =>
+                            l.id === line.id
+                                ? { ...l, user_input: response.improved!, final_version: response.improved }
+                                : l
+                        )
+                    );
+                }
+                toast.success('✨ Lyric improved!');
             } else {
-                toast.error(response.error || 'No improvement available');
+                toast.error(response.error || 'AI could not improve this line');
             }
         } catch (error) {
             toast.error('AI improvement failed');

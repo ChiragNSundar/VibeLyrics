@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, RotateCcw } from 'lucide-react';
-import { LineVersion } from '../../services/api';
+import type { LineVersion } from '../../services/api';
 
 interface VersionHistoryProps {
     isOpen: boolean;
@@ -64,7 +64,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                                 No previous versions found.
                             </div>
                         ) : (
-                            versions.map((ver, idx) => {
+                            versions.map((ver) => {
                                 const date = new Date(ver.created_at);
                                 const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                                 const dateString = date.toLocaleDateString();

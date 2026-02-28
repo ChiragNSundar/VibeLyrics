@@ -128,10 +128,18 @@ async def improve_line(data: ImproveRequest, db: AsyncSession = Depends(get_db))
     original_text = line.final_version or line.user_input
 
     provider = get_ai_provider()
+    print(f"[improve] Using provider: {provider.name}, line: '{original_text}', type: {data.improvement_type}")
     improved = await provider.improve_line(original_text, data.improvement_type)
+    print(f"[improve] Result: '{improved}'")
+
+    if not improved:
+        return {
+            "success": False,
+            "error": f"AI provider '{provider.name}' could not improve this line. Check that LM Studio is running and the model is loaded."
+        }
 
     # Track the correction so the AI learns the user's editing tendencies
-    if improved and improved != original_text:
+    if improved != original_text:
         _correction_tracker.track_correction(original_text, improved)
 
     return {
