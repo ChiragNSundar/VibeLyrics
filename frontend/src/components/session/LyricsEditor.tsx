@@ -7,9 +7,12 @@ import { lineApi } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
 import { LineRow } from './LineRow.tsx';
 import { VirtualLineRow } from './VirtualLineRow';
-import { Autocomplete } from './Autocomplete';
 import { AnalysisStrip } from './AnalysisStrip';
 import { Button } from '../ui/Button';
+import { VersionHistory } from './VersionHistory';
+import { Autocomplete } from './Autocomplete';
+import { AdlibChip } from './AdlibChip';
+import { flowApi, statsApi } from '../../services/api';
 import './LyricsEditor.css';
 
 // Threshold for switching to virtualized rendering
@@ -41,12 +44,44 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
     const [isStreaming, setIsStreaming] = useState(false);
     const [syllableCount, setSyllableCount] = useState(0);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+    const [historyPanelConfig, setHistoryPanelConfig] = useState<{ isOpen: boolean; lineId: number | null }>({ isOpen: false, lineId: null });
+    const [historyVersions, setHistoryVersions] = useState<any[]>([]);
+
+    // Flow Templates
+    const [flowTemplates, setFlowTemplates] = useState<any[]>([]);
+    const [selectedFlow, setSelectedFlow] = useState<string>('free');
+
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const eventSourceRef = useRef<EventSource | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const syllableTarget = useMemo(() => getSyllableTarget(bpm), [bpm]);
+    const syllableTarget = useMemo(() => {
+        const baseTargetObj = getSyllableTarget(bpm);
+        // We use the midpoint of the suggested min/max as the "ideal" base target for math
+        const baseTarget = Math.floor((baseTargetObj.min + baseTargetObj.max) / 2);
+        const minBase = baseTargetObj.min;
+        const maxBase = baseTargetObj.max;
+
+        let flowTarget = baseTarget;
+        let flowLabel = `${bpm} BPM (${baseTargetObj.label})`;
+
+        if (selectedFlow !== 'free') {
+            const template = flowTemplates.find(t => t.id === selectedFlow);
+            if (template) {
+                flowTarget = template.syllable_target;
+                flowLabel = template.name;
+                return {
+                    min: Math.floor(flowTarget * 0.9), // Tighter constraint
+                    max: Math.ceil(flowTarget * 1.1),
+                    ideal: flowTarget,
+                    label: flowLabel
+                };
+            }
+        }
+
+        return { min: minBase, max: maxBase, ideal: baseTarget, label: flowLabel };
+    }, [bpm, selectedFlow, flowTemplates]);
 
     // ── Stats ────────────────────────────────────────────────
     const stats = useMemo(() => {
@@ -58,6 +93,19 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
         const totalSyllables = lines.reduce((acc, l) => acc + (l.syllable_count || 0), 0);
         return { totalLines, totalWords, totalSyllables };
     }, [lines]);
+
+    // ── Load Flow Templates ──────────────────────────────────
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const res = await flowApi.getTemplates();
+                if (res.success) setFlowTemplates(res.templates);
+            } catch (err) {
+                console.warn('Failed to fetch flow templates');
+            }
+        };
+        fetchTemplates();
+    }, []);
 
     // Count syllables (simple client-side approximation)
     const countSyllables = (text: string): number => {
@@ -209,6 +257,9 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
                     );
                 }
                 showSaved();
+
+                // Track streak in the background
+                statsApi.checkInStreak().catch(() => { });
             }
         } catch (error) {
             toast.error('Failed to add line');
@@ -260,7 +311,6 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
         }
     };
 
-    // ── Drag-to-reorder ──────────────────────────────────────
     const handleReorder = async (newOrder: LyricLine[]) => {
         // Optimistically update local state
         const reordered = newOrder.map((line, idx) => ({
@@ -282,6 +332,35 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
             showSaved();
         } catch {
             toast.error('Reorder failed');
+        }
+    };
+
+    // ── Version History ───────────────────────────────────────
+    const handleOpenHistory = async (lineId: number) => {
+        setHistoryPanelConfig({ isOpen: true, lineId });
+        try {
+            const res = await lineApi.getHistory(lineId);
+            if (res.success) {
+                setHistoryVersions(res.versions);
+            }
+        } catch (error) {
+            toast.error('Failed to load version history');
+        }
+    };
+
+    const handleRestoreVersion = async (versionId: number) => {
+        if (!historyPanelConfig.lineId) return;
+        try {
+            const res = await lineApi.restoreVersion(historyPanelConfig.lineId, versionId);
+            if (res.success) {
+                // Update local state
+                setLines(lines.map(l => l.id === res.line.id ? res.line : l));
+                toast.success('Version restored!');
+                setHistoryPanelConfig({ isOpen: false, lineId: null });
+                showSaved();
+            }
+        } catch (error) {
+            toast.error('Failed to restore version');
         }
     };
 
@@ -375,7 +454,12 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
                                 zIndex: 50,
                             }}
                         >
-                            <LineRow line={line} index={index} sessionId={sessionId} />
+                            <LineRow
+                                line={line}
+                                index={index}
+                                sessionId={sessionId}
+                                onOpenHistory={() => handleOpenHistory(line.id)}
+                            />
                         </Reorder.Item>
                     ))}
                 </Reorder.Group>
@@ -390,7 +474,12 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
                                 exit={{ opacity: 0, x: 20 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <LineRow line={line} index={index} sessionId={sessionId} />
+                                <LineRow
+                                    line={line}
+                                    index={index}
+                                    sessionId={sessionId}
+                                    onOpenHistory={() => handleOpenHistory(line.id)}
+                                />
                             </motion.div>
                         ))}
                     </AnimatePresence>
@@ -450,13 +539,36 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
                             </span>
                         )}
                     </div>
-                    <div className="hints-right">
+                    <div className="hints-right" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <AdlibChip
+                            sessionId={sessionId}
+                            recentLines={lines.map(l => l.final_version || l.user_input)}
+                            mood={lines.length > 5 ? 'energetic' : undefined}
+                        />
+                        <select
+                            value={selectedFlow}
+                            onChange={(e) => setSelectedFlow(e.target.value)}
+                            style={{ background: 'var(--bg-panel)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.2rem', fontSize: '0.75rem' }}
+                        >
+                            <option value="free">Free Flow</option>
+                            {flowTemplates.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
                         <span className="bpm-hint">{bpm} BPM · {syllableTarget.label}</span>
                     </div>
                 </div>
 
                 <AnalysisStrip text={inputValue} rhymeScheme={rhymeScheme} />
             </div>
+
+            <VersionHistory
+                isOpen={historyPanelConfig.isOpen}
+                onClose={() => setHistoryPanelConfig({ isOpen: false, lineId: null })}
+                versions={historyVersions}
+                onRestore={handleRestoreVersion}
+                currentContent={lines.find(l => l.id === historyPanelConfig.lineId)?.user_input || ''}
+            />
         </div>
     );
 };

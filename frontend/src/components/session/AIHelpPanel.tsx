@@ -3,6 +3,9 @@ import { toast } from 'react-hot-toast';
 import { aiApi, type LyricLine } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
 import { Button } from '../ui/Button';
+import { HookGenerator } from './HookGenerator';
+import { StructureBuilder } from './StructureBuilder';
+import { useSessionStore } from '../../store/sessionStore';
 import './AIHelpPanel.css';
 
 interface AIHelpPanelProps {
@@ -15,6 +18,7 @@ export const AIHelpPanel: React.FC<AIHelpPanelProps> = ({ sessionId, onClose }) 
     const [answer, setAnswer] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [improvementType, setImprovementType] = useState<'rhyme' | 'flow' | 'wordplay' | 'depth'>('rhyme');
+    const { currentSession } = useSessionStore();
 
     const [polishResult, setPolishResult] = useState('');
     const [isPolishing, setIsPolishing] = useState(false);
@@ -182,6 +186,22 @@ export const AIHelpPanel: React.FC<AIHelpPanelProps> = ({ sessionId, onClose }) 
                             {answer}
                         </div>
                     )}
+                </div>
+
+                {/* Song Structure & Hooks */}
+                <div className="ai-section">
+                    <h4>🏗️ Song Architecture</h4>
+                    <StructureBuilder
+                        sessionId={sessionId}
+                        theme={currentSession?.theme}
+                        mood={currentSession?.mood}
+                        bpm={currentSession?.bpm}
+                    />
+                    <HookGenerator
+                        sessionId={sessionId}
+                        theme={currentSession?.theme}
+                        mood={currentSession?.mood}
+                    />
                 </div>
             </div>
         </div>

@@ -9,7 +9,9 @@ import { RhymeWavePanel } from '../components/session/RhymeWavePanel.tsx';
 import { AIHelpPanel } from '../components/session/AIHelpPanel.tsx';
 import { PunchlinePanel } from '../components/session/PunchlinePanel';
 import { RhymeLegend } from '../components/session/RhymeLegend';
+import { BeatTimer } from '../components/session/BeatTimer';
 import { Button } from '../components/ui/Button';
+import { sessionApi } from '../services/api';
 import './SessionPage.css';
 
 export const SessionPage: React.FC = () => {
@@ -25,6 +27,17 @@ export const SessionPage: React.FC = () => {
         loadSession();
         return () => reset();
     }, [sessionId]);
+
+    // ── Session Time Tracker (Heartbeat) ─────────────────────
+    useEffect(() => {
+        if (!currentSession) return;
+        const interval = setInterval(() => {
+            if (document.hasFocus()) {
+                sessionApi.heartbeat(sessionId).catch(console.error);
+            }
+        }, 30000); // 30 seconds
+        return () => clearInterval(interval);
+    }, [sessionId, currentSession]);
 
     // Keyboard shortcuts: Ctrl+Z undo, Ctrl+Y / Ctrl+Shift+Z redo
     useKeyboardShortcuts([
@@ -126,6 +139,9 @@ export const SessionPage: React.FC = () => {
                     <Button variant="secondary" size="sm">
                         📊 Analyze
                     </Button>
+                    <div className="writing-time" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem', marginLeft: '0.5rem' }}>
+                        ⏱️ {currentSession.total_writing_seconds ? Math.floor(currentSession.total_writing_seconds / 60) : 0}m
+                    </div>
                     <Button variant="secondary" size="sm">
                         📄 Export
                     </Button>
@@ -198,6 +214,7 @@ export const SessionPage: React.FC = () => {
 
                 {/* Main Editor */}
                 <div className="editor-container">
+                    <BeatTimer bpm={currentSession.bpm} />
                     <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} rhymeScheme={currentSession.rhyme_scheme} />
                     <RhymeLegend />
                 </div>

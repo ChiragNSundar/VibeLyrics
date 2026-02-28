@@ -10,9 +10,10 @@ interface LineRowProps {
     line: LyricLine;
     index: number;
     sessionId: number;
+    onOpenHistory?: () => void;
 }
 
-export const LineRow: React.FC<LineRowProps> = ({ line }) => {
+export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
     const { lines, setLines } = useSessionStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(line.final_version || line.user_input);
@@ -165,6 +166,11 @@ export const LineRow: React.FC<LineRowProps> = ({ line }) => {
                         <Button variant="icon" onClick={handleImprove} title="AI Improve" disabled={isImproving}>
                             {isImproving ? '⏳' : '✨'}
                         </Button>
+                        {onOpenHistory && (
+                            <Button variant="icon" onClick={onOpenHistory} title="View History">
+                                🕒
+                            </Button>
+                        )}
                         <Button variant="icon" className="delete-btn" onClick={handleDelete} title="Delete">
                             🗑️
                         </Button>

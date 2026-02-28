@@ -8,6 +8,7 @@ interface CardProps {
     hover?: boolean;
     glow?: boolean;
     onClick?: () => void;
+    style?: React.CSSProperties;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -17,6 +18,7 @@ export const Card: React.FC<CardProps> = ({
     hover = false,
     glow = false,
     onClick,
+    style,
 }) => {
     const classes = [
         'card',
@@ -30,7 +32,7 @@ export const Card: React.FC<CardProps> = ({
         .join(' ');
 
     return (
-        <div className={classes} onClick={onClick}>
+        <div className={classes} onClick={onClick} style={style}>
             {children}
         </div>
     );

@@ -2,6 +2,9 @@
 Stats Router
 Writing statistics and achievements
 """
+import json
+import os
+from pathlib import Path
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -12,6 +15,22 @@ from ..database import get_db
 from ..models import LyricSession, LyricLine
 
 router = APIRouter()
+
+STREAKS_FILE = Path("data/streaks.json")
+
+def load_streaks():
+    if not STREAKS_FILE.exists():
+        return {"current_streak": 0, "longest_streak": 0, "last_write_date": None, "history": []}
+    try:
+        with open(STREAKS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {"current_streak": 0, "longest_streak": 0, "last_write_date": None, "history": []}
+
+def save_streaks(data):
+    STREAKS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(STREAKS_FILE, "w") as f:
+        json.dump(data, f)
 
 
 @router.get("/", response_model=dict)
@@ -139,6 +158,137 @@ async def get_achievements(db: AsyncSession = Depends(get_db)):
         "total_sessions": total_sessions
     }
 
+
+@router.get("/vocabulary-growth", response_model=dict)
+async def get_vocabulary_growth(db: AsyncSession = Depends(get_db)):
+    """Get unique vocabulary growth over time"""
+    # Fetch all lines ordered by creation date
+    result = await db.execute(
+        select(LyricLine.created_at, LyricLine.final_version, LyricLine.user_input)
+        .order_by(LyricLine.created_at)
+    )
+    lines = result.all()
+    
+    daily_vocab = {} # date -> set of unique words up to that date
+    cumulative_words = set()
+    
+    for created_at, final_ver, user_input in lines:
+        if not created_at:
+            continue
+            
+        date_str = created_at.strftime('%Y-%m-%d')
+        text = (final_ver or user_input or "").lower()
+        words = [w.strip('.,!?;:\'"()-[]') for w in text.split() if len(w) > 2]
+        
+        cumulative_words.update(words)
+        daily_vocab[date_str] = len(cumulative_words)
+        
+    # Format for chart: sort by date
+    growth_data = [{"date": d, "unique_words": count} for d, count in sorted(daily_vocab.items())]
+    
+    return {
+        "success": True,
+        "growth": growth_data
+    }
+
+
+@router.get("/rhyme-calendar", response_model=dict)
+async def get_rhyme_calendar(db: AsyncSession = Depends(get_db)):
+    """Get dominant rhyme scheme per day for the heatmap"""
+    result = await db.execute(
+        select(LyricSession.created_at, LyricSession.rhyme_scheme, LyricSession.id, LyricSession.title)
+        .where(LyricSession.rhyme_scheme.is_not(None))
+        .order_by(LyricSession.created_at)
+    )
+    sessions = result.all()
+    
+    daily_schemes = {}
+    for created_at, scheme, s_id, title in sessions:
+        if not created_at or not scheme:
+            continue
+            
+        date_str = created_at.strftime('%Y-%m-%d')
+        # If multiple sessions in one day, just keep the latest (simplest approach)
+        daily_schemes[date_str] = {
+            "date": date_str,
+            "scheme": scheme,
+            "session_id": s_id,
+            "session_title": title
+        }
+        
+    calendar_data = list(daily_schemes.values())
+    
+    return {
+        "success": True,
+        "calendar": calendar_data
+    }
+
+
+@router.get("/streak", response_model=dict)
+async def get_streak():
+    """Get current writing streak"""
+    data = load_streaks()
+    
+    # Check if streak was broken (last write was before yesterday)
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    yesterday_date = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    last_write = data.get("last_write_date")
+    if last_write and last_write != today and last_write != yesterday_date:
+        data["current_streak"] = 0
+        save_streaks(data)
+        
+    return {
+        "success": True,
+        "current_streak": data.get("current_streak", 0),
+        "longest_streak": data.get("longest_streak", 0),
+        "last_write_date": data.get("last_write_date"),
+        "history": data.get("history", [])
+    }
+
+
+@router.post("/streak/check-in", response_model=dict)
+async def process_streak_check_in():
+    """Register a writing check-in to increment streak if applicable"""
+    data = load_streaks()
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    
+    # Already checked in today?
+    if data.get("last_write_date") == today:
+        return {
+            "success": True,
+            "current_streak": data.get("current_streak", 0),
+            "longest_streak": data.get("longest_streak", 0),
+            "last_write_date": data.get("last_write_date"),
+            "history": data.get("history", [])
+        }
+        
+    # Was last check-in exactly yesterday?
+    yesterday_date = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
+    if data.get("last_write_date") == yesterday_date:
+        data["current_streak"] = data.get("current_streak", 0) + 1
+    else:
+        data["current_streak"] = 1 # Start fresh
+        
+    if data["current_streak"] > data.get("longest_streak", 0):
+        data["longest_streak"] = data["current_streak"]
+        
+    data["last_write_date"] = today
+    if "history" not in data:
+        data["history"] = []
+    
+    if today not in data["history"]:
+        data["history"].append(today)
+        
+    save_streaks(data)
+    
+    return {
+        "success": True,
+        "current_streak": data["current_streak"],
+        "longest_streak": data["longest_streak"],
+        "last_write_date": data["last_write_date"],
+        "history": data["history"]
+    }
 
 @router.get("/style", response_model=dict)
 async def get_style_analysis(db: AsyncSession = Depends(get_db)):

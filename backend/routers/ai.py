@@ -3,6 +3,7 @@ AI Router
 AI suggestions, improvements, and Q&A
 """
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from ..database import get_db
@@ -370,3 +371,124 @@ Each should rhyme with the last word of the input and fit the flow."""
             "completions": []
         }
 
+
+# ── Phase 5: AI Generators ─────────────────────────────────────────
+
+class AdlibRequest(BaseModel):
+    lines: list[str]
+    mood: str = "energetic"
+
+class HookRequest(BaseModel):
+    theme: str
+    mood: str = "confident"
+    verse_lines: list[str] = []
+
+class StructureRequest(BaseModel):
+    theme: str
+    mood: str = "confident"
+    bpm: int = 140
+
+
+@router.post("/ai/adlibs")
+async def generate_adlibs(data: AdlibRequest):
+    """Generate context-aware adlibs based on the energy of recent bars."""
+    from ..services.advanced_analysis import PunchlineEngine
+    engine = PunchlineEngine()
+
+    # Score the energy of the lines
+    scores = [engine.score_punchline(line)["score"] for line in data.lines if line.strip()]
+    avg_score = sum(scores) / max(1, len(scores))
+
+    # Energy-based adlib selection
+    if avg_score > 50:
+        pool = ["SHEESH!", "No cap! 🧢", "Let's go!", "Talk to 'em!", "Period! 💅",
+                "Say less!", "On God!", "Facts!", "Ayo!", "Gang gang!"]
+    elif avg_score > 25:
+        pool = ["Yeah yeah", "Uh huh", "You know it", "Real talk", "Word",
+                "That's right", "Okay okay", "For sure", "Hmm", "Feel me?"]
+    else:
+        pool = ["Yeah...", "Mmm", "For real", "Damn...", "Woah",
+                "Slowly now...", "Listen...", "True", "Sigh...", "Nah fr"]
+
+    import random
+    selected = random.sample(pool, min(5, len(pool)))
+
+    return {
+        "success": True,
+        "adlibs": selected,
+        "energy_score": round(avg_score),
+        "energy_level": "high" if avg_score > 50 else "medium" if avg_score > 25 else "low"
+    }
+
+
+@router.post("/ai/hook")
+async def generate_hook(data: HookRequest):
+    """Generate catchy hook/chorus options using AI."""
+    provider = get_ai_provider()
+
+    verse_context = "\n".join(data.verse_lines) if data.verse_lines else "No verse provided"
+
+    prompt = f"""Generate exactly 3 different catchy 2-line hooks/choruses for a song.
+
+Theme: {data.theme}
+Mood: {data.mood}
+Verse context:
+{verse_context}
+
+Rules:
+- Each hook should be exactly 2 lines
+- Make them catchy and memorable — suitable for a chorus
+- They should match the theme and mood
+- Use repetition, rhythm, and rhyme for catchiness
+
+Return ONLY the 3 hooks, separated by blank lines. No numbering, no labels."""
+
+    try:
+        result = await provider.generate(prompt)
+        hooks = [h.strip() for h in result.split("\n\n") if h.strip()][:3]
+        return {"success": True, "hooks": hooks}
+    except Exception as e:
+        return {"success": False, "error": str(e), "hooks": []}
+
+
+@router.post("/ai/structure")
+async def generate_structure(data: StructureRequest):
+    """Generate a song structure blueprint using AI."""
+    provider = get_ai_provider()
+
+    prompt = f"""Create a song structure blueprint for a hip-hop/rap song.
+
+Theme: {data.theme}
+Mood: {data.mood}
+BPM: {data.bpm}
+
+Return a JSON array of sections. Each section should have:
+- "section": the section name (Intro, Verse 1, Hook, Verse 2, Bridge, Hook, Outro etc.)
+- "bars": number of bars (4, 8, 12, or 16)
+- "description": a 1-sentence description of what this section should convey
+- "energy": "low", "medium", or "high"
+
+Return ONLY valid JSON array, no other text."""
+
+    try:
+        result = await provider.generate(prompt)
+        import json as json_mod
+        # Try to parse JSON from the response
+        clean = result.strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0]
+        sections = json_mod.loads(clean)
+        return {"success": True, "sections": sections}
+    except Exception as e:
+        # Fallback structure
+        fallback = [
+            {"section": "Intro", "bars": 4, "description": f"Set the tone for {data.theme}", "energy": "low"},
+            {"section": "Verse 1", "bars": 16, "description": "Introduce the story and set the scene", "energy": "medium"},
+            {"section": "Hook", "bars": 8, "description": f"Catchy chorus about {data.theme}", "energy": "high"},
+            {"section": "Verse 2", "bars": 16, "description": "Deepen the narrative with more detail", "energy": "medium"},
+            {"section": "Hook", "bars": 8, "description": f"Repeat the hook for memorability", "energy": "high"},
+            {"section": "Bridge", "bars": 8, "description": "Shift perspective or add a twist", "energy": "low"},
+            {"section": "Hook", "bars": 8, "description": "Final chorus — go hard", "energy": "high"},
+            {"section": "Outro", "bars": 4, "description": "Wind down and close out", "energy": "low"},
+        ]
+        return {"success": True, "sections": fallback, "fallback": True}

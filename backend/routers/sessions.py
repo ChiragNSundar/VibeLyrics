@@ -160,6 +160,31 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
     return {"success": True}
 
 
+@router.post("/sessions/{session_id}/heartbeat", response_model=dict)
+async def session_heartbeat(session_id: int, db: AsyncSession = Depends(get_db)):
+    """Record a writing heartbeat — client pings every 30s to track writing time."""
+    from datetime import timezone as tz
+    result = await db.execute(
+        select(LyricSession).where(LyricSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    now = datetime.now(tz.utc)
+    # If last heartbeat was within 60 seconds, count the interval as writing time
+    if session.last_active_at:
+        delta = (now - session.last_active_at).total_seconds()
+        if delta < 60:
+            session.total_writing_seconds += int(delta)
+
+    session.last_active_at = now
+    return {
+        "success": True,
+        "total_writing_seconds": session.total_writing_seconds
+    }
+
+
 @router.post("/sessions/{session_id}/upload-audio", response_model=dict)
 async def upload_audio(
     session_id: int,
