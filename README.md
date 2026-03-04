@@ -119,6 +119,7 @@ graph TD
             Rhyme[Rhyme Engine]
             Audio[Audio Analyzer]
             AI_Service[AI Provider]
+            NLP[NLP Analysis]
             Scraper[Lyrics Scraper]
             Cache[In-Memory Cache]
         end
@@ -145,8 +146,11 @@ graph TD
     Services --> Rhyme
     Services --> Audio
     Services --> AI_Service
+    Services --> NLP
     Services --> Scraper
     Services --> Cache
+    
+    NLP -->|Uses| AI_Service
     
     AI_Service -->|Prompting| Gemini
     AI_Service -->|Prompting| OpenAI
