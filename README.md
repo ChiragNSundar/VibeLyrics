@@ -249,87 +249,52 @@ vibelyrics/
 - **Node.js 18+**
 - **Git**
 
-### 1. Setup
-
-Clone the repository and enter the directory:
+### 1. Clone & Run (One Command)
 
 ```bash
 git clone https://github.com/yourusername/vibelyrics.git
 cd vibelyrics
+python run.py
 ```
 
-Create a virtual environment and install backend dependencies:
+`run.py` handles **everything** automatically:
+- Creates a Python virtual environment (`.venv`)
+- Installs all Python dependencies from `requirements.txt`
+- Installs frontend Node.js dependencies (`npm install`)
+- Copies `.env.example` to `.env` if missing
+- Frees occupied ports and starts both servers
 
-```bash
-# Windows
-python -m venv .venv
-.venv\Scripts\activate
-
-# Mac/Linux
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-Install frontend dependencies:
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-### 23. **Configure API Keys**
-
-   Copy the example environment file:
-
-   ```bash
-   cp .env.example .env      # Mac/Linux
-   # OR
-   copy .env.example .env    # Windows
-   ```
-
-   Then open `.env` and add your keys:
-
-   ```env
-   GEMINI_API_KEY=your_key_here
-   OPENAI_API_KEY=your_key_here    # Optional
-   ```
-
-### 3. Running the Application
-
-#### Option A: Unified Runner (Recommended)
-
-The robust `run.py` script is the easiest way to start both the FastAPI backend and the React frontend in a single terminal. It handles everything automatically:
-- Installs Python dependencies (`requirements.txt`)
-- Installs Node dependencies (`npm install`)
-- Frees port 5001 if it's currently occupied
-- Stays open and monitors both processes
-
-```bash
-python3 run.py
-```
-
-*For faster restarts, skip dependency checks:*
-```bash
-python3 run.py --skip-install
-```
-
+Once running:
 - **Frontend**: <http://localhost:5173>
-- **Backend**: <http://localhost:5001>
+- **Backend API**: <http://localhost:5001>
+- **API Docs**: <http://localhost:5001/docs>
 
-#### Option B: Manual Mode (Split Terminals)
-
-##### Terminal 1: Backend
-
+*For faster restarts after setup, skip dependency checks:*
 ```bash
+python run.py --skip-install
+```
+
+### 2. Configure API Keys
+
+Open `.env` (auto-created from `.env.example`) and add your keys:
+
+```env
+GEMINI_API_KEY=your_key_here
+OPENAI_API_KEY=your_key_here    # Optional
+```
+
+### Manual Mode (Split Terminals)
+
+If you prefer running each service separately:
+
+**Terminal 1 — Backend:**
+```bash
+.venv\Scripts\activate       # Windows
+source .venv/bin/activate    # Mac/Linux
 python -m uvicorn backend.main:app --reload --port 5001
 ```
 
-##### Terminal 2: Frontend
-
+**Terminal 2 — Frontend:**
 ```bash
 cd frontend
 npm run dev

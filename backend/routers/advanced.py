@@ -111,12 +111,12 @@ async def analyze_verse_punchlines(lines: List[str]):
         score = punchline_engine.score_punchline(line)
         results.append({"line": line, **score})
     
-    avg_score = sum(r["score"] for r in results) / max(1, len(results))
+    avg_score = sum(float(r["score"]) for r in results) / max(1, len(results))
     
     return {
         "success": True,
         "lines": results,
-        "avg_score": round(avg_score, 1)
+        "avg_score": round(float(avg_score), 1)
     }
 
 
@@ -191,7 +191,7 @@ async def brainstorm_themes(data: BrainstormRequest):
     prompt = f"List 5 creative song themes related to: {data.topic}. Return only the themes, one per line."
     response = await provider.answer_question(prompt, None)
     themes = [t.strip("- ") for t in response.split('\n') if t.strip()]
-    return {"success": True, "themes": themes[:10]}
+    return {"success": True, "themes": list(themes[:10])}
 
 @router.post("/brainstorm/titles", response_model=dict)
 async def brainstorm_titles(data: BrainstormRequest):
@@ -200,7 +200,7 @@ async def brainstorm_titles(data: BrainstormRequest):
     prompt = f"List 5 catchy song titles for a song about: {data.topic}. Return only titles, one per line."
     response = await provider.answer_question(prompt, None)
     titles = [t.strip("- ") for t in response.split('\n') if t.strip()]
-    return {"success": True, "titles": titles[:10]}
+    return {"success": True, "titles": list(titles[:10])}
 
 
 # ============ Complexity Endpoints ============
