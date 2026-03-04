@@ -41,9 +41,14 @@
 ### 🧠 Advanced NLP & Wordplay
 
 - **Wordplay Engine**: Instantly generates double entendres, puns, and punchlines based on your song's theme.
+  
+  ![Wordplay Engine](docs/images/punchlines-panel.png)
+
 - **Semantic Drift Detection**: Warns you if your verse starts wandering off-topic from your opening lines.
 - **Interactive 3D Theme Network**: Visualize your recurring lyrical themes as a 3D neural network graph spanning all your sessions.
 - **Beat Analysis**: Drag-and-drop audio uploads automatically extract BPM, musical key, song sections, and suggest optimal syllables-per-bar.
+
+  ![Editor View with Rhyme Scheme](docs/images/editor-wordplay.png)
 
 ### 🧠 Robust AI Engine
 
