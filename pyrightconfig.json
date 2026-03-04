@@ -1,5 +1,8 @@
 {
-    "include": ["backend"],
+    "include": [
+        "backend",
+        "run.py"
+    ],
     "pythonVersion": "3.11",
     "pythonPlatform": "All",
     "venvPath": ".",

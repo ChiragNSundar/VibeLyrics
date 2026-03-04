@@ -189,18 +189,18 @@ async def brainstorm_themes(data: BrainstormRequest):
     """Brainstorm related themes"""
     provider = get_ai_provider()
     prompt = f"List 5 creative song themes related to: {data.topic}. Return only the themes, one per line."
-    response = await provider.answer_question(prompt, None)
+    response: str = await provider.answer_question(prompt, None)
     themes = [t.strip("- ") for t in response.split('\n') if t.strip()]
-    return {"success": True, "themes": list(themes[:10])}
+    return {"success": True, "themes": themes[:10]}  # type: ignore[index]
 
 @router.post("/brainstorm/titles", response_model=dict)
 async def brainstorm_titles(data: BrainstormRequest):
     """Brainstorm song titles"""
     provider = get_ai_provider()
     prompt = f"List 5 catchy song titles for a song about: {data.topic}. Return only titles, one per line."
-    response = await provider.answer_question(prompt, None)
+    response: str = await provider.answer_question(prompt, None)
     titles = [t.strip("- ") for t in response.split('\n') if t.strip()]
-    return {"success": True, "titles": list(titles[:10])}
+    return {"success": True, "titles": titles[:10]}  # type: ignore[index]
 
 
 # ============ Complexity Endpoints ============
