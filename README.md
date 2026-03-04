@@ -8,6 +8,8 @@
 
 ### 📖 Smart Writing Interface
 
+  ![Session Creation Modal](docs/images/session-creation.png)
+
 - **Left-Side Split Panels**: New intuitive layout with floating toggles for **RhymeWave** (rhyme dictionary) and **AI Help**.
 - **Real-Time AI Streaming**: Ghost text streams in instantly as you type (like ChatGPT).
 - **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading.
@@ -36,6 +38,10 @@
   - **Scheme Detection**: Automatically identifies patterns like **ABAB**, **AABB**, and **XAXA** as you write.
 - **🎛️ Deep Customization**: Set your **Favorite Words**, **Banned Words**, and **Slang Preferences** to tailor the AI's vocabulary.
 - **📚 AI Learning Center**: Teach your AI ghostwriter in real-time. Scrape lyrics from the web, upload `.pdf`/`.docx` files, and explore its brain via an interactive neural network force graph. Compare your writing DNA across 6 axes with a radar chart, auto-annotate lyrics, and train the AI on your favorite beats with BPM/key extraction.
+
+  ![Learning Center Dashboard](docs/images/learning-center-word-explorer.png)
+  ![Learning Center Scraper](docs/images/learning-center-scraper.png)
+
 - **⚡ Real-time Analysis**: Instant feedback on syllable counts, stress patterns, and figures of speech.
 
 ### 🧠 Advanced NLP & Wordplay
@@ -47,6 +53,8 @@
 - **Semantic Drift Detection**: Warns you if your verse starts wandering off-topic from your opening lines.
 - **Interactive 3D Theme Network**: Visualize your recurring lyrical themes as a 3D neural network graph spanning all your sessions.
 - **Beat Analysis**: Drag-and-drop audio uploads automatically extract BPM, musical key, song sections, and suggest optimal syllables-per-bar.
+
+  ![Beat Analysis Panel](docs/images/beat-analysis-panel.png)
 
   ![Editor View with Rhyme Scheme](docs/images/editor-wordplay.png)
 
