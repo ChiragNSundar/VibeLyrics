@@ -33,6 +33,9 @@
 
 - **👻 AI Ghostwriter ("Vibe")**: An advanced AI partner that mimics your unique style, vocabulary, and emotional tone. It learns from your **Journal** and respects your **Banned/Favorite Words**.
 - **📓 Private Journal**: Capture loose thoughts and daily emotions. The AI reads this context to provide suggestions that match your current headspace.
+
+  ![Journal](docs/images/journal-search.png)
+
 - **🎤 Advanced Rhyme Engine**:
   - **Multi-Color Highlights**: Visualizes assonance, consonance, and internal rhymes in real-time.
   - **Scheme Detection**: Automatically identifies patterns like **ABAB**, **AABB**, and **XAXA** as you write.
@@ -60,6 +63,8 @@
 
 ### 🧠 Robust AI Engine
 
+  ![AI Provider Settings](docs/images/settings-ai-provider.png)
+
 - **Model Rotation**: Automatic fallback hierarchy (Gemini 2.5 → 2.0 → Flash Lite → Gemma).
 - **Quota Management**: Intelligently handles rate limits without disrupting your flow.
 - **Real-Time Streaming**: Instant ghost-text suggestions that adapt to your typing speed.
@@ -75,6 +80,10 @@ Write in the signature style of legendary artists:
 - **Transformation**: Rewrite your lines to match a specific artist's voice.
 
 ### 📊 Stats & Gamification
+
+  ![Stats Dashboard](docs/images/stats-dashboard.png)
+  
+  ![Vocabulary Age](docs/images/vocabulary-age.png)
 
 - **Writing Dashboard**: Track lines written, vocabulary growth, and daily consistency.
 - **Rhyme Scheme Analysis**: See which schemes you use most (AABB, ABAB, Compound).
