@@ -1,0 +1,108 @@
+.complexity-meter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 14px;
+    min-width: 140px;
+}
+
+.complexity-gauge {
+    position: relative;
+    width: 90px;
+    height: 90px;
+}
+
+.complexity-gauge svg {
+    transform: rotate(-90deg);
+    width: 90px;
+    height: 90px;
+}
+
+.complexity-gauge .gauge-bg {
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.15);
+    stroke-width: 6;
+}
+
+.complexity-gauge .gauge-fill {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        stroke 0.4s ease;
+    filter: drop-shadow(0 0 6px var(--gauge-color, #60a5fa));
+}
+
+.complexity-score-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.complexity-score-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.complexity-score-max {
+    font-size: 0.6rem;
+    color: #64748b;
+    display: block;
+}
+
+.complexity-grade-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: rgba(96, 165, 250, 0.15);
+    color: #93c5fd;
+}
+
+.complexity-details {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-align: center;
+    line-height: 1.3;
+    max-width: 140px;
+}
+
+.complexity-dimensions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 0.5rem;
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.complexity-dim {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.6rem;
+    color: #94a3b8;
+}
+
+.complexity-dim .dim-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.complexity-dim .dim-value {
+    font-weight: 700;
+    color: #cbd5e1;
+    font-variant-numeric: tabular-nums;
+}

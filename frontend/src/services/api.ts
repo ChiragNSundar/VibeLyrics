@@ -264,9 +264,15 @@ export async function request<T>(
     options: RequestInit = {}
 ): Promise<T> {
     try {
+        // Don't set Content-Type for FormData — browser must set multipart boundary
+        const isFormData = options.body instanceof FormData;
+        const headers: Record<string, string> = isFormData
+            ? {}
+            : { 'Content-Type': 'application/json' };
+
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             headers: {
-                'Content-Type': 'application/json',
+                ...headers,
                 ...options.headers,
             },
             ...options,
@@ -627,3 +633,120 @@ export const flowApi = {
 };
 
 // ============ Features ============
+
+// NLP Analysis Types
+export interface WordplaySuggestion {
+    text: string;
+    type: string;
+    explanation: string;
+}
+
+export interface WordplayResponse {
+    success: boolean;
+    suggestions: WordplaySuggestion[];
+    source: string;
+    theme: string;
+}
+
+export interface ComplexityScoreResponse {
+    success: boolean;
+    score: number;
+    grade: string;
+    dimensions: {
+        internal_rhyme: number;
+        multisyllabic: number;
+        assonance: number;
+        consonance: number;
+        vocabulary: number;
+    };
+    details: string;
+}
+
+export interface SemanticDriftResponse {
+    success: boolean;
+    drift_score: number;
+    status: 'stable' | 'drifting' | 'off-topic';
+    warning: string;
+    anchor_keywords: string[];
+    recent_keywords: string[];
+}
+
+export interface ThemeNode {
+    id: string;
+    label: string;
+    frequency: number;
+    sessions_count: number;
+    size: number;
+    x: number;
+    y: number;
+    z: number;
+    color: string;
+    cluster: number;
+}
+
+export interface ThemeLink {
+    source: string;
+    target: string;
+    value: number;
+    shared_sessions: number;
+}
+
+export interface ThemeNetworkResponse {
+    success: boolean;
+    nodes: ThemeNode[];
+    links: ThemeLink[];
+}
+
+export interface AudioUploadAnalysisResponse {
+    success: boolean;
+    filename: string;
+    bpm: number;
+    key: { key: string; mode: string; confidence: number; label: string };
+    sections: Array<{
+        label: string;
+        start_sec: number;
+        end_sec: number;
+        bars: number;
+        energy: string;
+    }>;
+    waveform: number[];
+    syllables_per_bar: number;
+    beats_per_bar: number;
+}
+
+// NLP Analysis APIs
+export const nlpApi = {
+    getWordplaySuggestions: (theme: string, sessionId?: number, mood?: string, count: number = 5) =>
+        request<WordplayResponse>('/api/nlp/wordplay', {
+            method: 'POST',
+            body: JSON.stringify({ theme, session_id: sessionId, mood, count }),
+        }),
+
+    getComplexityScore: (lines: string[]) =>
+        request<ComplexityScoreResponse>('/api/nlp/complexity-score', {
+            method: 'POST',
+            body: JSON.stringify({ lines }),
+        }),
+
+    getSemanticDrift: (sessionId: number) =>
+        request<SemanticDriftResponse>('/api/nlp/semantic-drift', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: sessionId }),
+        }),
+
+    getThemeNetwork: () =>
+        request<ThemeNetworkResponse>('/api/nlp/theme-network'),
+
+    uploadAndAnalyzeAudio: (file: File, sessionId?: number) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const url = sessionId
+            ? `/api/audio/upload-and-analyze?session_id=${sessionId}`
+            : '/api/audio/upload-and-analyze';
+        return request<AudioUploadAnalysisResponse>(url, {
+            method: 'POST',
+            body: formData,
+        });
+    },
+};
+

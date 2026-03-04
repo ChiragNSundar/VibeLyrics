@@ -503,3 +503,193 @@ async def get_artist_styles():
     """Get available artist styles for adlibs"""
     styles = adlib_gen.get_artist_styles()
     return {"success": True, "styles": styles}
+
+
+# ============ NLP Analysis Endpoints ============
+
+from ..services.nlp_analysis import (
+    WordplayEngine,
+    RhymeComplexityScorer,
+    SemanticDriftDetector,
+    ThemeClusterer,
+)
+
+wordplay_engine = WordplayEngine()
+complexity_scorer_nlp = RhymeComplexityScorer()
+drift_detector = SemanticDriftDetector()
+theme_clusterer = ThemeClusterer()
+
+
+class WordplayRequest(BaseModel):
+    theme: str = Field(..., min_length=1)
+    session_id: Optional[int] = None
+    mood: Optional[str] = None
+    count: int = Field(default=5, ge=1, le=10)
+
+
+class ComplexityScoreRequest(BaseModel):
+    lines: List[str] = Field(..., min_length=1)
+
+
+class SemanticDriftRequest(BaseModel):
+    session_id: int
+
+
+@router.post("/nlp/wordplay", response_model=dict)
+async def generate_wordplay(data: WordplayRequest, db: AsyncSession = Depends(get_db)):
+    """Generate contextual wordplay suggestions (double-entendres, puns, metaphorical twists)"""
+    recent_lines = []
+    mood = data.mood
+
+    if data.session_id:
+        result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.session_id == data.session_id)
+            .order_by(LyricLine.line_number.desc())
+            .limit(6)
+        )
+        recent_lines = [l.final_version or l.user_input for l in result.scalars().all()]
+        recent_lines.reverse()
+
+        if not mood:
+            session_result = await db.execute(
+                select(LyricSession).where(LyricSession.id == data.session_id)
+            )
+            session = session_result.scalar_one_or_none()
+            if session:
+                mood = session.mood
+
+    result = await wordplay_engine.generate_wordplay(
+        theme=data.theme,
+        recent_lines=recent_lines,
+        mood=mood,
+        count=data.count,
+    )
+    return {"success": True, **result}
+
+
+@router.post("/nlp/complexity-score", response_model=dict)
+async def score_rhyme_complexity(data: ComplexityScoreRequest):
+    """Score lyric complexity on a 0-100 scale with dimensional breakdown"""
+    result = complexity_scorer_nlp.score(data.lines)
+    return {"success": True, **result}
+
+
+@router.post("/nlp/semantic-drift", response_model=dict)
+async def detect_semantic_drift(data: SemanticDriftRequest, db: AsyncSession = Depends(get_db)):
+    """Detect thematic drift between early and recent lyrics in a session"""
+    result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == data.session_id)
+        .order_by(LyricLine.line_number)
+    )
+    lines = result.scalars().all()
+
+    if not lines:
+        raise HTTPException(status_code=404, detail="Session not found or empty")
+
+    text_lines = [l.final_version or l.user_input for l in lines]
+
+    # Get session theme
+    session_result = await db.execute(
+        select(LyricSession).where(LyricSession.id == data.session_id)
+    )
+    session = session_result.scalar_one_or_none()
+    session_theme = session.theme if session and session.theme else ""
+
+    drift_result = drift_detector.detect(text_lines, session_theme)
+    return {"success": True, **drift_result}
+
+
+@router.get("/nlp/theme-network", response_model=dict)
+async def get_theme_network(db: AsyncSession = Depends(get_db)):
+    """Get theme clustering data for 3D neural network visualization"""
+    from sqlalchemy import select as sa_select
+
+    sessions_result = await db.execute(sa_select(LyricSession))
+    sessions = sessions_result.scalars().all()
+
+    sessions_data = []
+    for session in sessions:
+        lines_result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.session_id == session.id)
+            .order_by(LyricLine.line_number)
+        )
+        lines = lines_result.scalars().all()
+        text_lines = [l.final_version or l.user_input for l in lines]
+        sessions_data.append({
+            "id": session.id,
+            "title": session.title,
+            "lines": text_lines,
+        })
+
+    graph = theme_clusterer.cluster(sessions_data)
+    return {"success": True, **graph}
+
+
+# ============ Audio Upload & Analyze ============
+
+from fastapi import UploadFile, File as FastAPIFile
+
+
+@router.post("/audio/upload-and-analyze", response_model=dict)
+async def upload_and_analyze_audio(
+    file: UploadFile = FastAPIFile(...),
+    session_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload an audio file, analyze BPM/Key/sections, optionally link to session"""
+    import os
+    import uuid
+
+    # Save file
+    os.makedirs("uploads/audio", exist_ok=True)
+    ext = os.path.splitext(file.filename or "audio.wav")[1]
+    safe_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join("uploads/audio", safe_name)
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    try:
+        bpm = audio_analyzer.detect_bpm(file_path)
+        key_info = audio_analyzer.detect_key(file_path)
+        sections = audio_analyzer.detect_sections(file_path)
+        waveform = audio_analyzer.get_waveform_data(file_path)
+
+        # Calculate syllable-per-bar recommendation based on BPM
+        # Typical hip-hop: 4 beats per bar, each beat around 2 syllables at moderate tempo
+        beats_per_bar = 4
+        seconds_per_bar = (60.0 / bpm) * beats_per_bar if bpm > 0 else 2.0
+        # Average speaking rate ~4-5 syllables/sec in rap
+        syllables_per_bar = round(seconds_per_bar * 4.5)
+
+        # Link to session if requested
+        if session_id:
+            session_result = await db.execute(
+                select(LyricSession).where(LyricSession.id == session_id)
+            )
+            session = session_result.scalar_one_or_none()
+            if session:
+                session.audio_path = safe_name
+                session.bpm = round(bpm)
+                await db.commit()
+
+        return {
+            "success": True,
+            "filename": safe_name,
+            "bpm": round(bpm, 1),
+            "key": key_info,
+            "sections": sections,
+            "waveform": waveform,
+            "syllables_per_bar": syllables_per_bar,
+            "beats_per_bar": beats_per_bar,
+        }
+    except Exception as e:
+        # Clean up file on error
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail=f"Audio analysis failed: {str(e)}")
+

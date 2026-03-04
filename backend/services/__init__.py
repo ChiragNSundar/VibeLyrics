@@ -7,3 +7,4 @@ from .advanced_analysis import PunchlineEngine, MetaphorGenerator, ComplexitySco
 from .learning import StyleExtractor, VocabularyManager, CorrectionTracker
 from .references import FolderManager, TxtParser, StructuredParser
 from .audio import AudioAnalyzer, AdlibGenerator
+from .nlp_analysis import WordplayEngine, RhymeComplexityScorer, SemanticDriftDetector, ThemeClusterer

@@ -3,6 +3,7 @@ import { learningApi } from '../services/api';
 import type { LearningStatusResponse } from '../services/api';
 import BrainMap from '../components/learning/BrainMap';
 import DnaMatcher from '../components/learning/DnaMatcher';
+import ThemeNetwork3D from '../components/learning/ThemeNetwork3D';
 import './LearningCenter.css';
 
 const LearningCenter: React.FC = () => {
@@ -24,7 +25,7 @@ const LearningCenter: React.FC = () => {
     const [uploadMessage, setUploadMessage] = useState('');
 
     // Phase 4 State
-    const [dashboardTab, setDashboardTab] = useState<'stats' | 'brainmap' | 'dna'>('stats');
+    const [dashboardTab, setDashboardTab] = useState<'stats' | 'brainmap' | 'themes' | 'dna'>('stats');
     const [annotations, setAnnotations] = useState<Array<{ line: string; score: number; techniques: string[]; notes: string[] }>>([]);
     const [audioResult, setAudioResult] = useState<{ bpm: number; key: string; energy: string } | null>(null);
     const [audioUploading, setAudioUploading] = useState(false);
@@ -328,6 +329,7 @@ const LearningCenter: React.FC = () => {
                         <div className="dash-tab-bar">
                             <button className={`dash-tab ${dashboardTab === 'stats' ? 'active' : ''}`} onClick={() => setDashboardTab('stats')}>📊 Stats</button>
                             <button className={`dash-tab ${dashboardTab === 'brainmap' ? 'active' : ''}`} onClick={() => setDashboardTab('brainmap')}>🕸️ Brain Map</button>
+                            <button className={`dash-tab ${dashboardTab === 'themes' ? 'active' : ''}`} onClick={() => setDashboardTab('themes')}>🧠 Theme Network</button>
                             <button className={`dash-tab ${dashboardTab === 'dna' ? 'active' : ''}`} onClick={() => setDashboardTab('dna')}>🧬 Lyrical DNA</button>
                         </div>
 
@@ -449,6 +451,14 @@ const LearningCenter: React.FC = () => {
                                 <h3>🕸️ Neural Vocabulary Map</h3>
                                 <p className="hint">Explore how the AI connects words. Node size = frequency. Lines = co-occurrence.</p>
                                 <BrainMap />
+                            </section>
+                        )}
+
+                        {dashboardTab === 'themes' && (
+                            <section className="learning-card brain-map-card">
+                                <h3>🧠 3D Theme Network</h3>
+                                <p className="hint">Visualize how recurring themes connect across all your sessions. Drag to rotate, scroll to zoom.</p>
+                                <ThemeNetwork3D />
                             </section>
                         )}
 

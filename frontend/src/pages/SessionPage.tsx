@@ -11,6 +11,10 @@ import { AIHelpPanel } from '../components/session/AIHelpPanel.tsx';
 import { PunchlinePanel } from '../components/session/PunchlinePanel';
 import { RhymeLegend } from '../components/session/RhymeLegend';
 import { BeatTimer } from '../components/session/BeatTimer';
+import { WordplayPanel } from '../components/session/WordplayPanel';
+import { ComplexityMeter } from '../components/session/ComplexityMeter';
+import { DriftIndicator } from '../components/session/DriftIndicator';
+import { AudioInfoCard } from '../components/session/AudioInfoCard';
 import { Button } from '../components/ui/Button';
 import { sessionApi, aiApi } from '../services/api';
 import './SessionPage.css';
@@ -22,7 +26,7 @@ export const SessionPage: React.FC = () => {
     const { currentSession, setSession, lines, setLines, reset, undo, redo } = useSessionStore();
     const { aiProvider } = useSettingsStore(); // global provider from Settings
     const [isLoading, setIsLoading] = useState(true);
-    const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp' | 'punchline'>('none');
+    const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp' | 'punchline' | 'wordplay' | 'audio'>('none');
 
     useEffect(() => {
         loadSession();
@@ -70,7 +74,7 @@ export const SessionPage: React.FC = () => {
 
 
 
-    const togglePanel = (panel: 'rhymewave' | 'aihelp' | 'punchline') => {
+    const togglePanel = (panel: 'rhymewave' | 'aihelp' | 'punchline' | 'wordplay' | 'audio') => {
         setActivePanel(activePanel === panel ? 'none' : panel);
     };
 
@@ -161,6 +165,20 @@ export const SessionPage: React.FC = () => {
                     >
                         🔥
                     </button>
+                    <button
+                        className={`panel-toggle ${activePanel === 'wordplay' ? 'active' : ''}`}
+                        onClick={() => togglePanel('wordplay')}
+                        title="Wordplay Engine"
+                    >
+                        🎯
+                    </button>
+                    <button
+                        className={`panel-toggle ${activePanel === 'audio' ? 'active' : ''}`}
+                        onClick={() => togglePanel('audio')}
+                        title="Beat Analysis"
+                    >
+                        🎵
+                    </button>
                 </div>
 
                 {/* Left Panel */}
@@ -198,12 +216,44 @@ export const SessionPage: React.FC = () => {
                             <PunchlinePanel sessionId={sessionId} mood={currentSession?.mood} />
                         </motion.div>
                     )}
+                    {activePanel === 'wordplay' && (
+                        <motion.div
+                            className="side-panel"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 400, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <WordplayPanel
+                                sessionId={sessionId}
+                                sessionTheme={currentSession?.theme}
+                                sessionMood={currentSession?.mood}
+                            />
+                        </motion.div>
+                    )}
+                    {activePanel === 'audio' && (
+                        <motion.div
+                            className="side-panel"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 400, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <AudioInfoCard sessionId={sessionId} />
+                        </motion.div>
+                    )}
                 </AnimatePresence>
 
                 {/* Main Editor */}
                 <div className="editor-container">
-                    <BeatTimer bpm={currentSession.bpm} />
+                    <div className="editor-top-bar">
+                        <BeatTimer bpm={currentSession.bpm} />
+                        <ComplexityMeter
+                            lines={lines.map(l => l.final_version || l.user_input)}
+                        />
+                    </div>
                     <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} rhymeScheme={currentSession.rhyme_scheme} />
+                    <DriftIndicator sessionId={sessionId} lineCount={lines.length} />
                     <RhymeLegend />
                 </div>
             </div>
