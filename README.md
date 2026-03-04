@@ -1,4 +1,4 @@
-# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.7.0-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
@@ -37,6 +37,13 @@
 - **🎛️ Deep Customization**: Set your **Favorite Words**, **Banned Words**, and **Slang Preferences** to tailor the AI's vocabulary.
 - **📚 AI Learning Center**: Teach your AI ghostwriter in real-time. Scrape lyrics from the web, upload `.pdf`/`.docx` files, and explore its brain via an interactive neural network force graph. Compare your writing DNA across 6 axes with a radar chart, auto-annotate lyrics, and train the AI on your favorite beats with BPM/key extraction.
 - **⚡ Real-time Analysis**: Instant feedback on syllable counts, stress patterns, and figures of speech.
+
+### 🧠 Advanced NLP & Wordplay
+
+- **Wordplay Engine**: Instantly generates double entendres, puns, and punchlines based on your song's theme.
+- **Semantic Drift Detection**: Warns you if your verse starts wandering off-topic from your opening lines.
+- **Interactive 3D Theme Network**: Visualize your recurring lyrical themes as a 3D neural network graph spanning all your sessions.
+- **Beat Analysis**: Drag-and-drop audio uploads automatically extract BPM, musical key, song sections, and suggest optimal syllables-per-bar.
 
 ### 🧠 Robust AI Engine
 

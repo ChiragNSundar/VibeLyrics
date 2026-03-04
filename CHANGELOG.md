@@ -2,6 +2,23 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.7.0] - 2026-03-04
+
+### 🚀 Phase 6: Advanced Intelligence & Analytics
+
+#### 🤖 Advanced AI & NLP
+- **Wordplay Engine** — New side panel that generates dual-meaning bars, puns, and metaphorical twists tailored to your song's theme and mood.
+- **Complexity Meter** — Real-time, animated circular gauge (0-100) alongside the BeatTimer that analyzes rhyme density, multi-syllabics, assonance, and vocabulary.
+- **Semantic Drift Indicator** — Visual pulsing bar below the editor that warns you if your verse starts drifting off-topic compared to the opening lines.
+
+#### 🎵 Beat & Audio Integration
+- **Beat Analysis Card** — Drag-and-drop audio directly into the session panel.
+- **Smart Metrics** — Automatically extracts BPM, Musical Key (w/ mode and confidence), and suggests optimal Syllables-per-Bar.
+- **Song Structure** — Analyzes the beat's energy to detect intros, verses, and drops.
+
+#### 🧠 Visual Knowledge Base
+- **Interactive 3D Theme Network** — Replaced flat lists with a Canvas-based 3D force-directed graph in the Learning Center. Watch how your recurring themes link together across all your sessions.
+
 ## [2.6.0] - 2026-02-27
 
 ### 🚀 Phase 5: The Intelligence Suite 
