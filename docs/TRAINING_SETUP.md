@@ -28,6 +28,28 @@ Complete guide to fine-tuning a local AI model on your VibeLyrics writing style.
 
 ---
 
+## How Custom Models Work
+
+When you want to train VibeLyrics on your unique style, here is the exact lifecycle:
+
+### Phase 1: Training (Teaching your style)
+1. **The Base Model:** You start with a raw, un-styled model (like `llama-3-8b`) downloaded from Hugging Face or via LM Studio.
+2. **Generate Your Data:** In VibeLyrics' **Training Hub**, you click "Generate Dataset". This packages all your written lyrics, punchlines, and DPO rejected/chosen pairs into an Alpaca JSON format.
+3. **Configure & Train:** In the **LM Studio tab** of the Training Hub, you select your base model and click **🚀 Auto-Train** (or run the generated python script manually). 
+4. **What the script does:** 
+   - It feeds the base model your lyrics dataset (the "SFT" phase) to learn your vocabulary and flow.
+   - It feeds it your rejected lines (the "DPO" phase) to learn what clichés to avoid.
+   - It packages this newly trained "brain" into a single file called a **GGUF** (e.g., `vibelyrics-aggressive.gguf`).
+
+### Phase 2: Using Your Custom Model (Writing)
+1. **Load it:** You open the LM Studio application, take your newly created `vibelyrics.gguf` file, and load it.
+2. **Start the Server:** Inside LM Studio, start the "Local Server" (running on port `1234`).
+3. **Connect VibeLyrics:** Open VibeLyrics, go to **Settings ⚙️ -> AI Provider**, and select **LM Studio (Local)**.
+
+**The Result:** The ghost-text suggestions streaming into your editor are now coming directly from your custom model running locally on your PC. It will naturally use your favorite words, match your syllable counts, and write in the specific mood/genre you trained it on!
+
+---
+
 ## Quality-Gated Data Export
 
 VibeLyrics scores each line with a **complexity score** (0-100). Set a quality threshold to only train on your best work:
