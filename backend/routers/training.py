@@ -1,7 +1,7 @@
 """
-Training Router
-REST API for training data export/import, LM Studio model discovery,
-and fine-tuning pipeline management.
+Training Router — Advanced
+REST API for training data management, DPO export, multi-LoRA profiles,
+micro-feedback, auto-train pipeline, and LM Studio integration.
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -19,6 +19,8 @@ from ..services.training_data import (
     TrainingDataGenerator,
     LMStudioTrainingManager,
     SuggestionTracker,
+    MicroFeedbackTracker,
+    LoRAProfileManager,
 )
 
 router = APIRouter()
@@ -26,6 +28,8 @@ router = APIRouter()
 _generator = TrainingDataGenerator()
 _lm_manager = LMStudioTrainingManager()
 _suggestion_tracker = SuggestionTracker()
+_feedback_tracker = MicroFeedbackTracker()
+_profile_manager = LoRAProfileManager()
 
 
 # ── Pydantic models ────────────────────────────────────────────────
@@ -43,11 +47,33 @@ class TrainingConfigUpdate(BaseModel):
     gradient_accumulation_steps: Optional[int] = None
     quantization: Optional[str] = None
     dataset_format: Optional[str] = None
+    active_profile: Optional[str] = None
+    enable_dpo: Optional[bool] = None
+    dpo_beta: Optional[float] = None
+    quality_threshold: Optional[float] = None
+    enable_rag: Optional[bool] = None
 
 
 class SuggestionFeedback(BaseModel):
     suggestion_id: str
     status: str  # "accepted" or "rejected"
+    user_replacement: Optional[str] = None
+    feedback_type: Optional[str] = None
+
+
+class MicroFeedbackRequest(BaseModel):
+    suggestion_id: str
+    feedback_type: str  # more_complex, change_rhyme, etc.
+    original_text: str
+    context: Optional[str] = ""
+
+
+class LoRAProfileCreate(BaseModel):
+    id: str
+    name: str
+    mood_tags: List[str]
+    bpm_range: List[int]
+    description: Optional[str] = ""
 
 
 # ── Dataset endpoints ──────────────────────────────────────────────
@@ -66,6 +92,13 @@ async def preview_dataset(n: int = 10):
     return {"success": True, "pairs": pairs, "total": len(pairs)}
 
 
+@router.get("/preview/dpo")
+async def preview_dpo_dataset(n: int = 10):
+    """Preview first N DPO preference pairs."""
+    pairs = _generator.preview_dpo(n)
+    return {"success": True, "pairs": pairs, "total": len(pairs)}
+
+
 @router.get("/formats")
 async def get_formats():
     """List available export formats."""
@@ -73,14 +106,18 @@ async def get_formats():
 
 
 @router.post("/generate")
-async def generate_dataset(db: AsyncSession = Depends(get_db)):
-    """Regenerate the full training dataset from all current data sources."""
+async def generate_dataset(
+    db: AsyncSession = Depends(get_db),
+    quality_threshold: float = 0.0,
+    enable_rag: bool = True,
+):
+    """Regenerate the full training dataset with quality controls."""
     try:
         # Fetch sessions
         result = await db.execute(select(LyricSession))
         sessions = [s.to_dict() for s in result.scalars().all()]
 
-        # Fetch lines
+        # Fetch lines (to_dict already includes rhyme_end, has_internal_rhyme, complexity_score)
         result = await db.execute(select(LyricLine))
         lines = [l.to_dict() for l in result.scalars().all()]
 
@@ -88,7 +125,17 @@ async def generate_dataset(db: AsyncSession = Depends(get_db)):
         result = await db.execute(select(LineVersion))
         versions = [v.to_dict() for v in result.scalars().all()]
 
-        metadata = _generator.generate(sessions, lines, versions)
+        # Use config threshold if not specified
+        if quality_threshold == 0.0:
+            quality_threshold = _lm_manager.get_config().get("quality_threshold", 0.0)
+        if enable_rag:
+            enable_rag = _lm_manager.get_config().get("enable_rag", True)
+
+        metadata = _generator.generate(
+            sessions, lines, versions,
+            quality_threshold=quality_threshold,
+            enable_rag=enable_rag,
+        )
         return {"success": True, **metadata}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -96,10 +143,7 @@ async def generate_dataset(db: AsyncSession = Depends(get_db)):
 
 @router.get("/export")
 async def export_dataset(format: str = "zip"):
-    """
-    Download training dataset in the specified format.
-    Formats: zip, alpaca, jsonl, text
-    """
+    """Download training dataset in the specified format."""
     try:
         if format == "zip":
             data = _generator.export_zip()
@@ -130,6 +174,16 @@ async def export_dataset(format: str = "zip"):
                     "Content-Disposition": "attachment; filename=conversations.jsonl"
                 },
             )
+        elif format == "dpo":
+            dpo = _generator.get_dpo_json()
+            content = json.dumps(dpo, indent=2)
+            return StreamingResponse(
+                io.BytesIO(content.encode()),
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": "attachment; filename=dpo_pairs.json"
+                },
+            )
         elif format == "text":
             corpus = _generator.get_text_corpus()
             return StreamingResponse(
@@ -154,10 +208,8 @@ async def import_dataset(file: UploadFile = File(...)):
         content = await file.read()
         text = content.decode("utf-8")
 
-        # Detect format
         if file.filename and file.filename.endswith(".jsonl"):
             entries = [json.loads(line) for line in text.strip().split("\n") if line.strip()]
-            # Convert JSONL to Alpaca format
             alpaca = []
             for entry in entries:
                 messages = entry.get("messages", [])
@@ -189,15 +241,121 @@ async def import_dataset(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Suggestion feedback ────────────────────────────────────────────
+# ── Suggestion & Micro-Feedback ────────────────────────────────────
 
 @router.post("/suggestion-feedback")
 async def suggestion_feedback(data: SuggestionFeedback):
-    """Mark an AI suggestion as accepted or rejected."""
+    """Mark an AI suggestion as accepted or rejected (with optional DPO replacement)."""
     if data.status not in ("accepted", "rejected"):
         raise HTTPException(status_code=400, detail="Status must be 'accepted' or 'rejected'")
-    _suggestion_tracker.update_status(data.suggestion_id, data.status)
+    _suggestion_tracker.update_status(
+        data.suggestion_id,
+        data.status,
+        user_replacement=data.user_replacement,
+        feedback_type=data.feedback_type,
+    )
     return {"success": True, "id": data.suggestion_id, "status": data.status}
+
+
+@router.post("/micro-feedback")
+async def submit_micro_feedback(data: MicroFeedbackRequest):
+    """Submit granular micro-feedback on a suggestion."""
+    valid_types = [
+        "more_complex", "change_rhyme", "more_aggressive",
+        "fix_syllables", "too_generic", "off_topic", "better_wordplay",
+    ]
+    if data.feedback_type not in valid_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid feedback_type. Valid: {valid_types}"
+        )
+    fb_id = _feedback_tracker.log_feedback(
+        data.suggestion_id, data.feedback_type,
+        data.original_text, data.context or "",
+    )
+    # Also update the suggestion's feedback type
+    _suggestion_tracker.update_status(
+        data.suggestion_id, "rejected",
+        feedback_type=data.feedback_type,
+    )
+    return {"success": True, "feedback_id": fb_id}
+
+
+@router.get("/feedback-stats")
+async def get_feedback_stats():
+    """Get micro-feedback distribution stats."""
+    return {
+        "success": True,
+        "suggestion_feedback": _suggestion_tracker.get_feedback_stats(),
+        "total_suggestions": len(_suggestion_tracker.get_all()),
+        "accepted": len(_suggestion_tracker.get_accepted()),
+        "rejected": len(_suggestion_tracker.get_rejected()),
+        "dpo_pairs": len(_suggestion_tracker.get_dpo_pairs()),
+    }
+
+
+# ── LoRA Profiles ─────────────────────────────────────────────────
+
+@router.get("/profiles")
+async def get_lora_profiles():
+    """Get all LoRA training profiles."""
+    return {"success": True, "profiles": _profile_manager.get_profiles()}
+
+
+@router.post("/profiles")
+async def create_lora_profile(data: LoRAProfileCreate):
+    """Create a new LoRA training profile."""
+    profile = _profile_manager.add_profile(data.model_dump())
+    return {"success": True, "profile": profile}
+
+
+@router.post("/profiles/{profile_id}/generate")
+async def generate_profile_dataset(
+    profile_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a filtered dataset for a specific LoRA profile."""
+    profile = _profile_manager.get_profile(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+
+    try:
+        # First generate the full dataset
+        result = await db.execute(select(LyricSession))
+        sessions = [s.to_dict() for s in result.scalars().all()]
+        result = await db.execute(select(LyricLine))
+        lines = [l.to_dict() for l in result.scalars().all()]
+        result = await db.execute(select(LineVersion))
+        versions = [v.to_dict() for v in result.scalars().all()]
+
+        _generator.generate(sessions, lines, versions)
+        full_dataset = _generator._dataset
+
+        # Filter for this profile
+        filtered = _profile_manager.filter_dataset_for_profile(
+            full_dataset, sessions, profile_id
+        )
+
+        # Save profile-specific dataset
+        import os
+        profile_dir = os.path.join("data/training/profiles", profile_id)
+        os.makedirs(profile_dir, exist_ok=True)
+        profile_path = os.path.join(profile_dir, "alpaca.json")
+        alpaca = [
+            {"instruction": p["instruction"], "input": p.get("input", ""), "output": p["output"]}
+            for p in filtered
+        ]
+        with open(profile_path, "w") as f:
+            json.dump(alpaca, f, indent=2)
+
+        return {
+            "success": True,
+            "profile": profile_id,
+            "total_pairs": len(filtered),
+            "dataset_path": profile_path,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── LM Studio endpoints ───────────────────────────────────────────
@@ -230,8 +388,8 @@ async def update_training_config(data: TrainingConfigUpdate):
 
 
 @router.post("/lmstudio/start")
-async def start_training():
-    """Generate the training script and prepare for fine-tuning."""
+async def start_training(auto_run: bool = False):
+    """Generate training script and optionally auto-run it."""
     import os
 
     dataset_path = _generator.DATASET_FILE
@@ -249,12 +407,13 @@ async def start_training():
             detail="Training dataset is empty. Add more data and regenerate.",
         )
 
-    alpaca_path = os.path.join("data", "training", "alpaca.json")
+    profile = _lm_manager.get_config().get("active_profile") or "default"
+    alpaca_path = os.path.join("data", "training", f"alpaca_{profile}.json")
     os.makedirs(os.path.dirname(alpaca_path), exist_ok=True)
     with open(alpaca_path, "w") as f:
         json.dump(alpaca, f, indent=2)
 
-    result = _lm_manager.start_training(alpaca_path)
+    result = _lm_manager.start_training(alpaca_path, auto_run=auto_run)
     return {"success": True, **result}
 
 

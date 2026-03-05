@@ -751,20 +751,26 @@ export const nlpApi = {
 };
 
 
-// ============ Training API ============
+// ============ Training API — Advanced ============
 
 export const trainingApi = {
+    // ── Dataset ──
     getStatus: () =>
         request<any>('/api/training/status'),
 
     preview: (n: number = 10) =>
         request<any>(`/api/training/preview?n=${n}`),
 
+    previewDpo: (n: number = 10) =>
+        request<any>(`/api/training/preview/dpo?n=${n}`),
+
     getFormats: () =>
         request<any>('/api/training/formats'),
 
-    generate: () =>
-        request<any>('/api/training/generate', { method: 'POST' }),
+    generate: (qualityThreshold: number = 0, enableRag: boolean = true) =>
+        request<any>(`/api/training/generate?quality_threshold=${qualityThreshold}&enable_rag=${enableRag}`, {
+            method: 'POST',
+        }),
 
     exportDataset: (format: string = 'zip') =>
         `/api/training/export?format=${format}`,
@@ -778,12 +784,62 @@ export const trainingApi = {
         });
     },
 
-    submitSuggestionFeedback: (suggestionId: string, status: 'accepted' | 'rejected') =>
+    // ── Suggestion Feedback + DPO ──
+    submitSuggestionFeedback: (
+        suggestionId: string,
+        status: 'accepted' | 'rejected',
+        userReplacement?: string,
+        feedbackType?: string,
+    ) =>
         request<any>('/api/training/suggestion-feedback', {
             method: 'POST',
-            body: JSON.stringify({ suggestion_id: suggestionId, status }),
+            body: JSON.stringify({
+                suggestion_id: suggestionId,
+                status,
+                user_replacement: userReplacement || null,
+                feedback_type: feedbackType || null,
+            }),
         }),
 
+    // ── Micro-Feedback ──
+    submitMicroFeedback: (
+        suggestionId: string,
+        feedbackType: string,
+        originalText: string,
+        context?: string,
+    ) =>
+        request<any>('/api/training/micro-feedback', {
+            method: 'POST',
+            body: JSON.stringify({
+                suggestion_id: suggestionId,
+                feedback_type: feedbackType,
+                original_text: originalText,
+                context: context || '',
+            }),
+        }),
+
+    getFeedbackStats: () =>
+        request<any>('/api/training/feedback-stats'),
+
+    // ── LoRA Profiles ──
+    getProfiles: () =>
+        request<any>('/api/training/profiles'),
+
+    createProfile: (profile: {
+        id: string; name: string; mood_tags: string[];
+        bpm_range: number[]; description?: string;
+    }) =>
+        request<any>('/api/training/profiles', {
+            method: 'POST',
+            body: JSON.stringify(profile),
+        }),
+
+    generateProfileDataset: (profileId: string) =>
+        request<any>(`/api/training/profiles/${profileId}/generate`, {
+            method: 'POST',
+        }),
+
+    // ── LM Studio ──
     getLMStudioModels: () =>
         request<any>('/api/training/lmstudio/models'),
 
@@ -796,8 +852,10 @@ export const trainingApi = {
             body: JSON.stringify(config),
         }),
 
-    startTraining: () =>
-        request<any>('/api/training/lmstudio/start', { method: 'POST' }),
+    startTraining: (autoRun: boolean = false) =>
+        request<any>(`/api/training/lmstudio/start?auto_run=${autoRun}`, {
+            method: 'POST',
+        }),
 
     getTrainingStatus: () =>
         request<any>('/api/training/lmstudio/status'),

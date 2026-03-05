@@ -1,8 +1,11 @@
 """
-Training Data Service
-- Generate fine-tuning datasets from VibeLyrics learned data
-- Export in Alpaca JSON, conversational JSONL, and plain-text corpus formats
-- Import external datasets for merging
+Training Data Service — Advanced
+- Score-gated dataset generation (quality filtering)
+- DPO preference pairs (chosen/rejected training)
+- Multi-LoRA profile management (mood/genre-specific training splits)
+- RAG-augmented training (self-referential callback pairs)
+- Granular micro-feedback tracking
+- Import/export in Alpaca, JSONL, DPO, and plain-text formats
 - LM Studio model discovery and training pipeline management
 """
 import json
@@ -12,16 +15,23 @@ import zipfile
 import time
 import subprocess
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
 
 TRAINING_DIR = "data/training"
 SUGGESTION_LOG = "data/suggestion_log.json"
+DPO_LOG = "data/dpo_pairs.json"
+FEEDBACK_LOG = "data/micro_feedback.json"
+LORA_PROFILES_DIR = os.path.join(TRAINING_DIR, "profiles")
 
+
+# ═══════════════════════════════════════════════════════════════════
+#  1. SUGGESTION TRACKER — Enhanced with DPO + Micro-Feedback
+# ═══════════════════════════════════════════════════════════════════
 
 class SuggestionTracker:
-    """Track AI suggestion acceptance/rejection for training signal."""
+    """Track AI suggestion acceptance/rejection + micro-feedback for DPO training."""
 
     DATA_FILE = SUGGESTION_LOG
 
@@ -59,25 +69,64 @@ class SuggestionTracker:
                 "suggestion": suggestion,
                 "action": action,
                 "status": "pending",
+                "user_replacement": None,
+                "feedback_type": None,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
         self._save()
         return suggestion_id
 
-    def update_status(self, suggestion_id: str, status: str):
-        """Mark a suggestion as 'accepted' or 'rejected'."""
+    def update_status(self, suggestion_id: str, status: str,
+                      user_replacement: Optional[str] = None,
+                      feedback_type: Optional[str] = None):
+        """
+        Mark a suggestion as accepted/rejected.
+        For DPO: if rejected, user_replacement is what the user wrote instead.
+        feedback_type: 'more_complex', 'change_rhyme', 'more_aggressive',
+                       'fix_syllables', 'too_generic', 'off_topic'
+        """
         for s in self.suggestions:
             if s["id"] == suggestion_id:
                 s["status"] = status
+                if user_replacement:
+                    s["user_replacement"] = user_replacement
+                if feedback_type:
+                    s["feedback_type"] = feedback_type
                 break
         self._save()
 
     def get_accepted(self) -> List[Dict]:
         return [s for s in self.suggestions if s.get("status") == "accepted"]
 
+    def get_rejected(self) -> List[Dict]:
+        return [s for s in self.suggestions if s.get("status") == "rejected"]
+
+    def get_dpo_pairs(self) -> List[Dict]:
+        """Get DPO-ready chosen/rejected pairs from rejected suggestions with replacements."""
+        pairs = []
+        for s in self.suggestions:
+            if s.get("status") == "rejected" and s.get("user_replacement"):
+                pairs.append({
+                    "prompt": s.get("prompt", ""),
+                    "chosen": s["user_replacement"],
+                    "rejected": s["suggestion"],
+                    "feedback_type": s.get("feedback_type", "general"),
+                    "action": s.get("action", "continue"),
+                })
+        return pairs
+
     def get_all(self) -> List[Dict]:
         return self.suggestions
+
+    def get_feedback_stats(self) -> Dict:
+        """Get counts of each feedback type."""
+        counts: Dict[str, int] = {}
+        for s in self.suggestions:
+            ft = s.get("feedback_type")
+            if ft:
+                counts[ft] = counts.get(ft, 0) + 1
+        return counts
 
     def reset(self):
         self.suggestions = []
@@ -85,24 +134,220 @@ class SuggestionTracker:
             os.remove(self.DATA_FILE)
 
 
+class MicroFeedbackTracker:
+    """Track granular micro-feedback for fine-grained training signals."""
+
+    DATA_FILE = FEEDBACK_LOG
+
+    def __init__(self):
+        self.feedback: List[Dict] = []
+        self._load()
+
+    def _load(self):
+        if os.path.exists(self.DATA_FILE):
+            try:
+                with open(self.DATA_FILE, "r") as f:
+                    self.feedback = json.load(f)
+            except Exception:
+                self.feedback = []
+
+    def _save(self):
+        os.makedirs(os.path.dirname(self.DATA_FILE), exist_ok=True)
+        with open(self.DATA_FILE, "w") as f:
+            json.dump(self.feedback[-1000:], f, indent=2)
+
+    def log_feedback(self, suggestion_id: str, feedback_type: str,
+                     original_text: str, context: str = "") -> str:
+        """
+        Log micro-feedback on a suggestion.
+        feedback_type: more_complex, change_rhyme, more_aggressive,
+                       fix_syllables, too_generic, off_topic, better_wordplay
+        """
+        fb_id = f"fb_{int(time.time() * 1000)}"
+        self.feedback.append({
+            "id": fb_id,
+            "suggestion_id": suggestion_id,
+            "feedback_type": feedback_type,
+            "original_text": original_text,
+            "context": context,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        self._save()
+        return fb_id
+
+    def get_all(self) -> List[Dict]:
+        return self.feedback
+
+    def get_feedback_instructions(self) -> List[Dict]:
+        """
+        Convert micro-feedback into negative instruction training pairs.
+        E.g., "too_generic" → instruction to be more specific.
+        """
+        FEEDBACK_MAP = {
+            "more_complex": "Use more advanced wordplay, multi-syllabic rhymes, and complex metaphors.",
+            "change_rhyme": "Change the rhyme scheme; use a different end rhyme or internal rhymes.",
+            "more_aggressive": "Make the delivery harder, more confrontational and intense.",
+            "fix_syllables": "Match the syllable count to fit the beat and flow pattern.",
+            "too_generic": "Avoid clichés. Be more specific, personal, and original.",
+            "off_topic": "Stay on-theme. The line should connect to what came before it.",
+            "better_wordplay": "Add clever double entendres, metaphors, or punchlines.",
+        }
+        pairs = []
+        for fb in self.feedback:
+            instruction = FEEDBACK_MAP.get(fb["feedback_type"], "Improve this line.")
+            if fb.get("original_text"):
+                pairs.append({
+                    "instruction": f"Rewrite this rap line. {instruction}",
+                    "input": fb["original_text"],
+                    "output": "",  # To be filled by user's actual replacement
+                    "source": "micro_feedback",
+                    "feedback_type": fb["feedback_type"],
+                })
+        return pairs
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  2. MULTI-LORA PROFILE MANAGER
+# ═══════════════════════════════════════════════════════════════════
+
+class LoRAProfileManager:
+    """
+    Manage mood/genre-specific LoRA training profiles.
+    Each profile produces a separate training dataset and LoRA adapter.
+    """
+
+    PROFILES_FILE = os.path.join(LORA_PROFILES_DIR, "profiles.json")
+
+    DEFAULT_PROFILES = [
+        {
+            "id": "aggressive",
+            "name": "Aggressive / Diss",
+            "mood_tags": ["aggressive", "angry", "intense", "dark", "hard"],
+            "bpm_range": [120, 180],
+            "description": "Hard-hitting bars, confrontational delivery",
+        },
+        {
+            "id": "melodic",
+            "name": "Melodic / R&B",
+            "mood_tags": ["melodic", "emotional", "sad", "romantic", "chill"],
+            "bpm_range": [70, 110],
+            "description": "Smooth, emotional, sing-rap flow",
+        },
+        {
+            "id": "trap",
+            "name": "Trap / Hype",
+            "mood_tags": ["hype", "confident", "energetic", "trap", "turnt"],
+            "bpm_range": [130, 160],
+            "description": "High-energy trap cadence and ad-libs",
+        },
+        {
+            "id": "conscious",
+            "name": "Conscious / Lyrical",
+            "mood_tags": ["conscious", "thoughtful", "lyrical", "deep", "storytelling"],
+            "bpm_range": [80, 120],
+            "description": "Intricate wordplay, deep themes, storytelling",
+        },
+    ]
+
+    def __init__(self):
+        self.profiles: List[Dict] = []
+        self._load()
+
+    def _load(self):
+        if os.path.exists(self.PROFILES_FILE):
+            try:
+                with open(self.PROFILES_FILE, "r") as f:
+                    self.profiles = json.load(f)
+            except Exception:
+                self.profiles = list(self.DEFAULT_PROFILES)
+        else:
+            self.profiles = list(self.DEFAULT_PROFILES)
+
+    def _save(self):
+        os.makedirs(LORA_PROFILES_DIR, exist_ok=True)
+        with open(self.PROFILES_FILE, "w") as f:
+            json.dump(self.profiles, f, indent=2)
+
+    def get_profiles(self) -> List[Dict]:
+        return self.profiles
+
+    def get_profile(self, profile_id: str) -> Optional[Dict]:
+        for p in self.profiles:
+            if p["id"] == profile_id:
+                return p
+        return None
+
+    def add_profile(self, profile: Dict) -> Dict:
+        self.profiles.append(profile)
+        self._save()
+        return profile
+
+    def match_session(self, mood: str, bpm: int) -> Optional[str]:
+        """Determine which LoRA profile a session matches."""
+        mood_lower = (mood or "").lower()
+        for profile in self.profiles:
+            # Check mood tags
+            mood_match = any(tag in mood_lower for tag in profile.get("mood_tags", []))
+            # Check BPM range
+            bpm_range = profile.get("bpm_range", [0, 300])
+            bpm_match = bpm_range[0] <= bpm <= bpm_range[1]
+            if mood_match or (bpm_match and mood_lower):
+                return profile["id"]
+        return None
+
+    def filter_dataset_for_profile(self, dataset: List[Dict],
+                                   db_sessions: List[Dict],
+                                   profile_id: str) -> List[Dict]:
+        """Filter a training dataset to only include pairs matching a profile."""
+        profile = self.get_profile(profile_id)
+        if not profile:
+            return dataset
+
+        # Build set of session IDs matching this profile
+        matching_sids = set()
+        for s in db_sessions:
+            mood = (s.get("mood") or "").lower()
+            bpm = s.get("bpm", 140)
+            mood_match = any(tag in mood for tag in profile.get("mood_tags", []))
+            bpm_range = profile.get("bpm_range", [0, 300])
+            bpm_match = bpm_range[0] <= bpm <= bpm_range[1]
+            if mood_match or bpm_match:
+                matching_sids.add(s["id"])
+
+        # Filter: keep pairs from matching sessions + non-session pairs
+        return [
+            p for p in dataset
+            if p.get("session_id") in matching_sids or "session_id" not in p
+        ]
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  3. TRAINING DATA GENERATOR — Advanced
+# ═══════════════════════════════════════════════════════════════════
+
 class TrainingDataGenerator:
     """
-    Generate fine-tuning datasets from all VibeLyrics learning sources.
+    Generate fine-tuning datasets with advanced quality controls.
 
     Sources:
-    1. Session lines (consecutive line pairs)
-    2. Line versions  (rewrite pairs)
-    3. Corrections    (improve pairs from CorrectionTracker)
-    4. Suggestion log (accepted AI suggestions)
-    5. Imported datasets (user-supplied)
+    1. Session lines       — consecutive line pairs (score-gated)
+    2. Line versions       — rewrite pairs
+    3. Corrections         — improve pairs
+    4. Accepted suggestions — positive examples
+    5. DPO pairs           — chosen/rejected preference pairs
+    6. RAG callbacks       — self-referential lyric pairs
+    7. Micro-feedback      — negative instruction pairs
+    8. Imported datasets   — user-supplied
     """
 
     DATASET_FILE = os.path.join(TRAINING_DIR, "dataset.json")
     METADATA_FILE = os.path.join(TRAINING_DIR, "metadata.json")
     IMPORTED_FILE = os.path.join(TRAINING_DIR, "imported.json")
+    DPO_FILE = os.path.join(TRAINING_DIR, "dpo_dataset.json")
 
     def __init__(self):
         self._dataset: List[Dict] = []
+        self._dpo_dataset: List[Dict] = []
         self._metadata: Dict = {}
         self._load()
 
@@ -121,6 +366,12 @@ class TrainingDataGenerator:
                     self._metadata = json.load(f)
             except Exception:
                 self._metadata = {}
+        if os.path.exists(self.DPO_FILE):
+            try:
+                with open(self.DPO_FILE, "r") as f:
+                    self._dpo_dataset = json.load(f)
+            except Exception:
+                self._dpo_dataset = []
 
     def _save(self):
         os.makedirs(TRAINING_DIR, exist_ok=True)
@@ -128,39 +379,65 @@ class TrainingDataGenerator:
             json.dump(self._dataset, f, indent=2)
         with open(self.METADATA_FILE, "w") as f:
             json.dump(self._metadata, f, indent=2)
+        with open(self.DPO_FILE, "w") as f:
+            json.dump(self._dpo_dataset, f, indent=2)
 
     # ── dataset generation ─────────────────────────────────────────
 
     def generate(self, db_sessions: List[Dict], db_lines: List[Dict],
-                 db_versions: List[Dict]) -> Dict:
+                 db_versions: List[Dict],
+                 quality_threshold: float = 0.0,
+                 enable_rag: bool = True) -> Dict:
         """
         Rebuild the entire training dataset from current DB + JSON data.
 
         Parameters:
-            db_sessions - list of session dicts from SQLite
-            db_lines    - list of line dicts from SQLite
-            db_versions - list of version dicts from SQLite
+            db_sessions       - list of session dicts from SQLite
+            db_lines          - list of line dicts from SQLite
+            db_versions       - list of version dicts from SQLite
+            quality_threshold - min complexity_score to include (0 = no filter)
+            enable_rag        - generate RAG callback pairs
         """
         pairs: List[Dict] = []
+        quality_stats = {"total_lines": 0, "quality_passed": 0, "quality_filtered": 0}
 
-        # ── 1. Consecutive session lines ──
-        sessions_map: Dict[int, List[str]] = {}
+        # ── 1. Consecutive session lines (SCORE-GATED) ──
+        sessions_map: Dict[int, List[Dict]] = {}
         for line in db_lines:
             sid = line.get("session_id")
             text = line.get("final_version") or line.get("user_input", "")
+            score = line.get("complexity_score") or 0
+            syllables = line.get("syllable_count") or 0
+            stress = line.get("stress_pattern") or ""
+            rhyme_end = line.get("rhyme_end") or ""
+            has_internal = line.get("has_internal_rhyme", False)
+
             if sid and text.strip():
-                sessions_map.setdefault(sid, []).append(text.strip())
+                quality_stats["total_lines"] += 1
+                if quality_threshold > 0 and score < quality_threshold:
+                    quality_stats["quality_filtered"] += 1
+                    continue
+                quality_stats["quality_passed"] += 1
+                sessions_map.setdefault(sid, []).append({
+                    "text": text.strip(),
+                    "score": score,
+                    "syllables": syllables,
+                    "stress": stress,
+                    "rhyme_end": rhyme_end,
+                    "has_internal": has_internal,
+                })
 
         session_meta: Dict[int, Dict] = {}
         for s in db_sessions:
             session_meta[s["id"]] = s
 
-        for sid, lines in sessions_map.items():
+        for sid, line_dicts in sessions_map.items():
             meta = session_meta.get(sid, {})
             mood = meta.get("mood", "")
             theme = meta.get("theme", "")
             bpm = meta.get("bpm", 140)
 
+            # Build rich context with metre info
             context_parts = []
             if theme:
                 context_parts.append(f"theme: {theme}")
@@ -170,18 +447,34 @@ class TrainingDataGenerator:
                 context_parts.append(f"BPM: {bpm}")
             context = ", ".join(context_parts) if context_parts else "freestyle"
 
-            for i in range(len(lines) - 1):
+            for i in range(len(line_dicts) - 1):
+                curr = line_dicts[i]
+                nxt = line_dicts[i + 1]
+
+                # Build syllable/metre-tagged instruction
+                metre_hint = ""
+                if nxt["syllables"] > 0:
+                    metre_hint = f" Target: ~{nxt['syllables']} syllables."
+                if nxt["rhyme_end"]:
+                    metre_hint += f" Rhyme with '{nxt['rhyme_end']}'."
+
+                quality_tag = ""
+                if curr["score"] >= 60:
+                    quality_tag = " [HIGH QUALITY]"
+                elif curr["score"] >= 30:
+                    quality_tag = " [GOOD]"
+
                 pairs.append({
-                    "instruction": f"Continue this rap verse ({context}). "
-                                   "Output only the next lyric line.",
-                    "input": lines[i],
-                    "output": lines[i + 1],
+                    "instruction": f"Continue this rap verse ({context}).{metre_hint}"
+                                   f" Output only the next lyric line.{quality_tag}",
+                    "input": curr["text"],
+                    "output": nxt["text"],
                     "source": "session_lines",
                     "session_id": sid,
+                    "quality_score": (curr["score"] + nxt["score"]) / 2,
                 })
 
         # ── 2. Line versions (rewrite pairs) ──
-        # Group versions by line_id
         version_map: Dict[int, List[Dict]] = {}
         for v in db_versions:
             lid = v.get("line_id")
@@ -243,7 +536,32 @@ class TrainingDataGenerator:
             except Exception:
                 pass
 
-        # ── 5. Imported datasets ──
+        # ── 5. DPO preference pairs ──
+        dpo_pairs: List[Dict] = []
+        suggestion_tracker = SuggestionTracker()
+        raw_dpo = suggestion_tracker.get_dpo_pairs()
+        for dp in raw_dpo:
+            if dp["chosen"] and dp["rejected"]:
+                dpo_pairs.append({
+                    "prompt": dp["prompt"],
+                    "chosen": dp["chosen"],
+                    "rejected": dp["rejected"],
+                    "feedback_type": dp.get("feedback_type", "general"),
+                })
+
+        # ── 6. RAG-augmented callback pairs ──
+        if enable_rag:
+            rag_pairs = self._generate_rag_pairs(line_dicts_all=db_lines, sessions=db_sessions)
+            pairs.extend(rag_pairs)
+
+        # ── 7. Micro-feedback instruction pairs ──
+        feedback_tracker = MicroFeedbackTracker()
+        feedback_pairs = feedback_tracker.get_feedback_instructions()
+        for fp in feedback_pairs:
+            if fp.get("input"):
+                pairs.append(fp)
+
+        # ── 8. Imported datasets ──
         if os.path.exists(self.IMPORTED_FILE):
             try:
                 with open(self.IMPORTED_FILE, "r") as f:
@@ -255,13 +573,70 @@ class TrainingDataGenerator:
                 pass
 
         self._dataset = pairs
+        self._dpo_dataset = dpo_pairs
         self._metadata = {
             "total_pairs": len(pairs),
+            "dpo_pairs": len(dpo_pairs),
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "sources": self._count_sources(pairs),
+            "quality_stats": quality_stats,
+            "quality_threshold": quality_threshold,
+            "feedback_stats": suggestion_tracker.get_feedback_stats(),
         }
         self._save()
         return self._metadata
+
+    def _generate_rag_pairs(self, line_dicts_all: List[Dict],
+                            sessions: List[Dict]) -> List[Dict]:
+        """
+        Generate RAG-augmented self-referential training pairs.
+        Find similar past lyrics and create 'callback' instruction pairs.
+        """
+        pairs = []
+        # Collect all finalized lines with their text
+        all_lines = []
+        for line in line_dicts_all:
+            text = (line.get("final_version") or line.get("user_input", "")).strip()
+            if text and len(text) > 10:
+                all_lines.append({
+                    "text": text,
+                    "session_id": line.get("session_id"),
+                    "score": line.get("complexity_score") or 0,
+                })
+
+        if len(all_lines) < 10:
+            return pairs  # Not enough data for meaningful RAG
+
+        # Simple word-overlap similarity for RAG (no heavy deps needed)
+        # Find pairs of lines from different sessions with shared themes
+        for i, line_a in enumerate(all_lines[:50]):  # Cap to avoid O(n²) explosion
+            words_a = set(line_a["text"].lower().split())
+            # Skip very short word sets
+            if len(words_a) < 3:
+                continue
+            for j, line_b in enumerate(all_lines):
+                if i == j or line_a["session_id"] == line_b["session_id"]:
+                    continue
+                words_b = set(line_b["text"].lower().split())
+                if len(words_b) < 3:
+                    continue
+                overlap = words_a & words_b - {"the", "a", "i", "to", "and", "in", "it", "my", "is", "of", "you", "that", "on", "for", "with"}
+                similarity = len(overlap) / max(len(words_a | words_b), 1)
+
+                if similarity > 0.15 and len(overlap) >= 2:
+                    pairs.append({
+                        "instruction": f"Write a callback line that references this past lyric. "
+                                       f"Shared themes: {', '.join(list(overlap)[:4])}. "
+                                       "Output only the new callback line.",
+                        "input": line_a["text"],
+                        "output": line_b["text"],
+                        "source": "rag_callbacks",
+                    })
+
+                if len(pairs) >= 50:  # Cap RAG pairs
+                    return pairs
+
+        return pairs
 
     def _count_sources(self, pairs: List[Dict]) -> Dict[str, int]:
         counts: Dict[str, int] = {}
@@ -285,7 +660,6 @@ class TrainingDataGenerator:
 
     def get_jsonl_conversations(self) -> List[Dict]:
         """Return dataset as ChatML / conversational JSONL entries."""
-        # Load user style for system prompt
         style_context = self._load_style_context()
         system_msg = (
             "You are VibeLyrics, an elite rap ghostwriter AI. "
@@ -303,6 +677,10 @@ class TrainingDataGenerator:
             ]
             entries.append({"messages": messages})
         return entries
+
+    def get_dpo_json(self) -> List[Dict]:
+        """Return DPO preference dataset for RLHF/DPO training."""
+        return self._dpo_dataset
 
     def get_text_corpus(self) -> str:
         """Return all lyrics as a plain-text corpus for continued pretraining."""
@@ -337,7 +715,7 @@ class TrainingDataGenerator:
     # ── export ZIP ─────────────────────────────────────────────────
 
     def export_zip(self) -> bytes:
-        """Create an in-memory ZIP file with all 3 export formats + metadata."""
+        """Create an in-memory ZIP file with all export formats + metadata."""
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             # Alpaca JSON
@@ -348,6 +726,11 @@ class TrainingDataGenerator:
             jsonl_entries = self.get_jsonl_conversations()
             jsonl_text = "\n".join(json.dumps(e) for e in jsonl_entries)
             zf.writestr("conversations.jsonl", jsonl_text)
+
+            # DPO pairs
+            dpo = self.get_dpo_json()
+            if dpo:
+                zf.writestr("dpo_pairs.json", json.dumps(dpo, indent=2))
 
             # Text corpus
             corpus = self.get_text_corpus()
@@ -361,10 +744,7 @@ class TrainingDataGenerator:
     # ── import ─────────────────────────────────────────────────────
 
     def import_dataset(self, data: List[Dict]) -> Dict:
-        """
-        Import an external dataset (Alpaca format).
-        Merges with imported.json, does NOT overwrite generated data.
-        """
+        """Import an external dataset (Alpaca format). Merges with imported.json."""
         os.makedirs(TRAINING_DIR, exist_ok=True)
 
         existing: List[Dict] = []
@@ -375,7 +755,6 @@ class TrainingDataGenerator:
             except Exception:
                 existing = []
 
-        # Validate and normalize entries
         added = 0
         for entry in data:
             if "instruction" in entry and "output" in entry:
@@ -395,18 +774,23 @@ class TrainingDataGenerator:
     # ── query & preview ────────────────────────────────────────────
 
     def get_stats(self) -> Dict:
-        """Return dataset statistics."""
         if not self._metadata:
             return {
                 "total_pairs": 0,
+                "dpo_pairs": 0,
                 "generated_at": None,
                 "sources": {},
+                "quality_stats": {},
+                "quality_threshold": 0,
+                "feedback_stats": {},
             }
         return self._metadata
 
     def preview(self, n: int = 10) -> List[Dict]:
-        """Return the first N training pairs."""
         return self._dataset[:n]
+
+    def preview_dpo(self, n: int = 10) -> List[Dict]:
+        return self._dpo_dataset[:n]
 
     def get_available_formats(self) -> List[Dict]:
         return [
@@ -425,6 +809,13 @@ class TrainingDataGenerator:
                 "extension": ".jsonl",
             },
             {
+                "id": "dpo",
+                "name": "DPO Preference Pairs",
+                "description": "Chosen/rejected pairs for DPO training. "
+                               "Teaches the model what NOT to write.",
+                "extension": ".json",
+            },
+            {
                 "id": "text",
                 "name": "Plain Text Corpus",
                 "description": "Raw lyrics text for continued pretraining or "
@@ -434,21 +825,20 @@ class TrainingDataGenerator:
             {
                 "id": "zip",
                 "name": "Complete ZIP Bundle",
-                "description": "All formats bundled together with metadata.",
+                "description": "All formats (SFT + DPO + corpus) bundled with metadata.",
                 "extension": ".zip",
             },
         ]
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  4. LM STUDIO TRAINING MANAGER — Multi-LoRA + Automated Pipeline
+# ═══════════════════════════════════════════════════════════════════
+
 class LMStudioTrainingManager:
     """
-    Manage LM Studio model discovery and training pipeline.
-
-    Training flow:
-    1. Export data from VibeLyrics as Alpaca JSON
-    2. Fine-tune with Unsloth / axolotl (external process)
-    3. Convert to GGUF
-    4. Load into LM Studio
+    Manage LM Studio model discovery, multi-LoRA training,
+    and automated fine-tuning pipeline.
     """
 
     CONFIG_FILE = os.path.join(TRAINING_DIR, "training_config.json")
@@ -457,6 +847,7 @@ class LMStudioTrainingManager:
     def __init__(self):
         self.config = self._load_config()
         self.status = self._load_status()
+        self._process = None  # Subprocess handle for auto-train
 
     def _load_config(self) -> Dict:
         if os.path.exists(self.CONFIG_FILE):
@@ -482,6 +873,11 @@ class LMStudioTrainingManager:
             "gradient_accumulation_steps": 4,
             "quantization": "4bit",
             "dataset_format": "alpaca",
+            "active_profile": None,       # Multi-LoRA: active profile ID
+            "enable_dpo": False,           # Enable DPO training phase
+            "dpo_beta": 0.1,              # DPO beta parameter
+            "quality_threshold": 0.0,     # Score gate threshold
+            "enable_rag": True,           # Enable RAG callback pairs
         }
 
     def _load_status(self) -> Dict:
@@ -491,7 +887,13 @@ class LMStudioTrainingManager:
                     return json.load(f)
             except Exception:
                 pass
-        return {"state": "idle", "progress": 0, "message": "", "started_at": None}
+        return {
+            "state": "idle",
+            "progress": 0,
+            "message": "",
+            "started_at": None,
+            "log_lines": [],
+        }
 
     def save_config(self, config: Dict):
         os.makedirs(TRAINING_DIR, exist_ok=True)
@@ -508,6 +910,18 @@ class LMStudioTrainingManager:
         return self.config
 
     def get_status(self) -> Dict:
+        # If there's a running subprocess, check on it
+        if self._process and self._process.poll() is not None:
+            exit_code = self._process.poll()
+            self.status["state"] = "completed" if exit_code == 0 else "failed"
+            self.status["progress"] = 100 if exit_code == 0 else self.status["progress"]
+            self.status["message"] = (
+                "Training complete! Model ready for GGUF conversion."
+                if exit_code == 0 else
+                f"Training failed with exit code {exit_code}."
+            )
+            self._process = None
+            self._save_status()
         return self.status
 
     def discover_lmstudio_models(self) -> List[Dict]:
@@ -534,53 +948,82 @@ class LMStudioTrainingManager:
             pass
         return []
 
-    def start_training(self, dataset_path: str) -> Dict:
+    def start_training(self, dataset_path: str,
+                       auto_run: bool = False) -> Dict:
         """
-        Kick off a fine-tuning job.
-        This creates a training script and runs it as a subprocess.
-        The actual training uses Unsloth for QLoRA fine-tuning.
+        Generate training script and optionally auto-run it.
+        Supports SFT + DPO phases and multi-LoRA profiles.
         """
+        profile_name = self.config.get("active_profile") or "default"
+        script_path = os.path.join(TRAINING_DIR, f"train_{profile_name}.py")
+
         self.status = {
             "state": "preparing",
             "progress": 5,
-            "message": "Generating training script...",
+            "message": f"Generating training script for profile '{profile_name}'...",
             "started_at": datetime.now(timezone.utc).isoformat(),
             "dataset_path": dataset_path,
+            "profile": profile_name,
+            "log_lines": [],
         }
         self._save_status()
 
-        # Generate the training script
-        script_path = os.path.join(TRAINING_DIR, "train.py")
         self._generate_training_script(script_path, dataset_path)
 
-        self.status["state"] = "ready"
-        self.status["progress"] = 10
-        self.status["message"] = (
-            f"Training script generated at {script_path}. "
-            "Run it manually or use the auto-train feature. "
-            "See docs/TRAINING_SETUP.md for instructions."
-        )
-        self.status["script_path"] = script_path
-        self._save_status()
+        if auto_run:
+            self.status["state"] = "training"
+            self.status["progress"] = 15
+            self.status["message"] = "Training started in background..."
+            self._save_status()
+            try:
+                self._process = subprocess.Popen(
+                    ["python", script_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    cwd=os.getcwd(),
+                )
+                self.status["pid"] = self._process.pid
+                self._save_status()
+            except Exception as e:
+                self.status["state"] = "failed"
+                self.status["message"] = f"Failed to start: {str(e)}"
+                self._save_status()
+        else:
+            self.status["state"] = "ready"
+            self.status["progress"] = 10
+            self.status["message"] = (
+                f"Training script generated at {script_path}. "
+                "Run manually or click 'Auto-Train' to execute. "
+                "See docs/TRAINING_SETUP.md for instructions."
+            )
+            self.status["script_path"] = script_path
 
+        self._save_status()
         return self.status
 
     def _generate_training_script(self, script_path: str, dataset_path: str):
-        """Generate a Python training script using Unsloth."""
+        """Generate a Python training script with SFT + optional DPO."""
         os.makedirs(os.path.dirname(script_path), exist_ok=True)
         config = self.config
+        profile = config.get("active_profile") or "default"
+        enable_dpo = config.get("enable_dpo", False)
+        dpo_beta = config.get("dpo_beta", 0.1)
+        dpo_path = os.path.abspath(os.path.join(TRAINING_DIR, "dpo_dataset.json"))
+
         script = f'''#!/usr/bin/env python3
 """
-VibeLyrics Fine-Tuning Script
+VibeLyrics Fine-Tuning Script — Profile: {profile}
 Auto-generated by VibeLyrics Training Hub
-Uses Unsloth for QLoRA fine-tuning.
+Supports SFT{" + DPO" if enable_dpo else ""} training with Unsloth.
 """
-import json, os
+import json, os, sys
 
 # ── Configuration ──
 BASE_MODEL     = "{config['base_model']}"
 DATASET_PATH   = r"{os.path.abspath(dataset_path)}"
 OUTPUT_DIR     = r"{os.path.abspath(config['output_dir'])}"
+PROFILE        = "{profile}"
 LORA_RANK      = {config['lora_rank']}
 LORA_ALPHA     = {config['lora_alpha']}
 EPOCHS         = {config['epochs']}
@@ -590,14 +1033,17 @@ MAX_SEQ_LEN    = {config['max_seq_length']}
 WARMUP_STEPS   = {config['warmup_steps']}
 WEIGHT_DECAY   = {config['weight_decay']}
 GRAD_ACCUM     = {config['gradient_accumulation_steps']}
+ENABLE_DPO     = {enable_dpo}
+DPO_BETA       = {dpo_beta}
+DPO_PATH       = r"{dpo_path}"
 
 def main():
     print("=" * 60)
-    print("VibeLyrics Fine-Tuning Pipeline")
+    print(f"VibeLyrics Fine-Tuning — Profile: {{PROFILE}}")
     print("=" * 60)
 
-    # Step 1: Load model with Unsloth
-    print("\\n[1/5] Loading base model with Unsloth 4-bit quantization...")
+    # Step 1: Load model
+    print("\\n[1/6] Loading base model with Unsloth 4-bit quantization...")
     from unsloth import FastLanguageModel
 
     model, tokenizer = FastLanguageModel.from_pretrained(
@@ -608,7 +1054,7 @@ def main():
     )
 
     # Step 2: Add LoRA adapters
-    print("[2/5] Attaching LoRA adapters...")
+    print("[2/6] Attaching LoRA adapters...")
     model = FastLanguageModel.get_peft_model(
         model,
         r=LORA_RANK,
@@ -620,36 +1066,35 @@ def main():
         use_gradient_checkpointing="unsloth",
     )
 
-    # Step 3: Load dataset
-    print("[3/5] Loading VibeLyrics training dataset...")
+    # Step 3: Load SFT dataset
+    print("[3/6] Loading VibeLyrics training dataset...")
     from datasets import Dataset
 
     with open(DATASET_PATH, "r") as f:
         raw_data = json.load(f)
 
-    # Format as Alpaca prompt template
     TEMPLATE = """Below is an instruction that describes a task, paired with an input. Write a response.
 
 ### Instruction:
-{{instruction}}
+{{{{instruction}}}}
 
 ### Input:
-{{input}}
+{{{{input}}}}
 
 ### Response:
-{{output}}"""
+{{{{output}}}}"""
 
     def format_sample(sample):
-        text = TEMPLATE.replace("{{instruction}}", sample["instruction"])
-        text = text.replace("{{input}}", sample.get("input", ""))
-        text = text.replace("{{output}}", sample["output"])
+        text = TEMPLATE.replace("{{{{instruction}}}}", sample["instruction"])
+        text = text.replace("{{{{input}}}}", sample.get("input", ""))
+        text = text.replace("{{{{output}}}}", sample["output"])
         return {{"text": text + tokenizer.eos_token}}
 
     dataset = Dataset.from_list(raw_data).map(format_sample)
-    print(f"    Loaded {{len(dataset)}} training samples")
+    print(f"    Loaded {{len(dataset)}} SFT training samples")
 
-    # Step 4: Train
-    print("[4/5] Starting fine-tuning...")
+    # Step 4: SFT Training
+    print("[4/6] Starting SFT fine-tuning...")
     from trl import SFTTrainer
     from transformers import TrainingArguments
 
@@ -680,36 +1125,78 @@ def main():
     )
 
     trainer.train()
-    print("    Training complete!")
+    print("    SFT Training complete!")
 
-    # Step 5: Save and convert
-    print("[5/5] Saving model...")
-    lora_dir = os.path.join(OUTPUT_DIR, "lora_adapter")
+    # Step 5: DPO Phase (optional)
+    if ENABLE_DPO and os.path.exists(DPO_PATH):
+        print("[5/6] Starting DPO preference training...")
+        try:
+            with open(DPO_PATH, "r") as f:
+                dpo_data = json.load(f)
+            if dpo_data:
+                from trl import DPOTrainer, DPOConfig
+
+                def format_dpo(sample):
+                    return {{
+                        "prompt": sample["prompt"],
+                        "chosen": sample["chosen"],
+                        "rejected": sample["rejected"],
+                    }}
+
+                dpo_dataset = Dataset.from_list(dpo_data).map(format_dpo)
+                print(f"    Loaded {{len(dpo_dataset)}} DPO preference pairs")
+
+                dpo_trainer = DPOTrainer(
+                    model=model,
+                    ref_model=None,
+                    train_dataset=dpo_dataset,
+                    tokenizer=tokenizer,
+                    args=DPOConfig(
+                        per_device_train_batch_size=2,
+                        num_train_epochs=1,
+                        learning_rate=5e-6,
+                        beta=DPO_BETA,
+                        output_dir=os.path.join(OUTPUT_DIR, "dpo"),
+                        logging_steps=5,
+                    ),
+                )
+                dpo_trainer.train()
+                print("    DPO Training complete!")
+            else:
+                print("    No DPO pairs found, skipping...")
+        except Exception as e:
+            print(f"    DPO training skipped: {{e}}")
+    else:
+        print("[5/6] DPO skipped (not enabled or no data)")
+
+    # Step 6: Save and convert
+    print("[6/6] Saving model...")
+    lora_dir = os.path.join(OUTPUT_DIR, f"lora_{{PROFILE}}")
     model.save_pretrained(lora_dir)
     tokenizer.save_pretrained(lora_dir)
     print(f"    LoRA adapter saved to: {{lora_dir}}")
 
-    # Merge and save in float16 for GGUF conversion
-    merged_dir = os.path.join(OUTPUT_DIR, "merged_model")
+    merged_dir = os.path.join(OUTPUT_DIR, f"merged_{{PROFILE}}")
     model.save_pretrained_merged(merged_dir, tokenizer, save_method="merged_16bit")
     print(f"    Merged model saved to: {{merged_dir}}")
 
-    # GGUF conversion
-    gguf_path = os.path.join(OUTPUT_DIR, "vibelyrics-model.gguf")
+    gguf_name = f"vibelyrics-{{PROFILE}}"
     print(f"    Converting to GGUF (Q4_K_M)...")
     model.save_pretrained_gguf(
-        gguf_path.replace(".gguf", ""),
+        os.path.join(OUTPUT_DIR, gguf_name),
         tokenizer,
         quantization_method="q4_k_m",
     )
-    print(f"    GGUF saved to: {{gguf_path}}")
+    print(f"    GGUF saved to: {{os.path.join(OUTPUT_DIR, gguf_name + '.gguf')}}")
 
     print()
     print("=" * 60)
     print("DONE! Next steps:")
-    print(f"  1. Copy the GGUF file to your LM Studio models folder")
+    print(f"  1. Copy the GGUF to your LM Studio models folder")
     print(f"  2. Load it in LM Studio")
     print(f"  3. Set VibeLyrics provider to 'lmstudio'")
+    if PROFILE != "default":
+        print(f"  4. This is the '{{PROFILE}}' LoRA — best for matching moods/genres")
     print("=" * 60)
 
 if __name__ == "__main__":

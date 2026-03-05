@@ -43,7 +43,13 @@
 - **📚 AI Learning Center**: Teach your AI ghostwriter in real-time. Scrape lyrics from the web, upload `.pdf`/`.docx` files, and explore its brain via an interactive neural network force graph. Compare your writing DNA across 6 axes with a radar chart, auto-annotate lyrics, and train the AI on your favorite beats with BPM/key extraction.
 
   ![Learning Center Dashboard](docs/images/learning-center-word-explorer.png)
-  ![Learning Center Scraper](docs/images/learning-center-scraper.png)
+
+### 🧪 Advanced Training Pipeline
+
+- **Multi-LoRA Profiles**: Train distinct adapters for specific moods (Aggressive, Melodic) and BPM ranges.
+- **Score-Gated DPO Preference Training**: Teaches the model what *not* to write using rejected AI suggestions (DPO) and quality gating (only trains on your highest-complexity lines).
+- **RAG-Augmented Callbacks**: Automatically discovers thematic links across old sessions, training the AI to drop self-referential lyrical callbacks.
+- **1-Click Auto-Train**: Spin up an Unsloth background training session directly from the UI, generating fresh GGUF models for LM Studio.
 
 - **⚡ Real-time Analysis**: Instant feedback on syllable counts, stress patterns, and figures of speech.
 
@@ -121,6 +127,7 @@ graph TD
             AI_Service[AI Provider]
             NLP[NLP Analysis]
             Scraper[Lyrics Scraper]
+            Training[Training Generator\n& Auto-Train]
             Cache[In-Memory Cache]
         end
     end
@@ -136,6 +143,7 @@ graph TD
     subgraph "Persistence"
         SQLite[(SQLite DB)]
         Files[File System]
+        Export[Training Datasets\nZip/Alpaca]
     end
 
     User <-->|Interaction| Client
@@ -148,9 +156,13 @@ graph TD
     Services --> AI_Service
     Services --> NLP
     Services --> Scraper
+    Services --> Training
     Services --> Cache
     
     NLP -->|Uses| AI_Service
+    Training -->|Tracks Feedback| DB_Layer
+    Training -->|Generates| Export
+    Training -->|Triggers Script| LMStudio
     
     AI_Service -->|Prompting| Gemini
     AI_Service -->|Prompting| OpenAI

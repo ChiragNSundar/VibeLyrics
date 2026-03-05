@@ -8,4 +8,4 @@ from .learning import StyleExtractor, VocabularyManager, CorrectionTracker
 from .references import FolderManager, TxtParser, StructuredParser
 from .audio import AudioAnalyzer, AdlibGenerator
 from .nlp_analysis import WordplayEngine, RhymeComplexityScorer, SemanticDriftDetector, ThemeClusterer
-from .training_data import TrainingDataGenerator, SuggestionTracker, LMStudioTrainingManager
+from .training_data import TrainingDataGenerator, SuggestionTracker, LMStudioTrainingManager, MicroFeedbackTracker, LoRAProfileManager

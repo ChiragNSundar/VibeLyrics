@@ -2,9 +2,25 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
-## [2.7.0] - 2026-03-04
+## [2.8.0] - 2026-03-05
 
-### 🚀 Phase 6: Advanced Intelligence & Analytics
+### 🚀 Phase 7: Advanced Training Pipeline
+
+#### 🧠 Training Data & Quality Controls
+- **Score-Gated Datasets** — Filter training data by complexity score to ensure the model only learns from your best lines.
+- **Micro-Feedback System** — Granular feedback types (e.g., "more_complex", "change_rhyme") to create specific negative training signals.
+- **RAG-Augmented Callbacks** — Automatically finds similar past lyrics to generate self-referential training pairs.
+
+#### ⚖️ DPO Preference Training
+- **Chosen/Rejected Pairs** — When you reject an AI suggestion and write your own, VibeLyrics creates preference data to teach the model what *not* to write.
+- **DPO Phase Integration** — Seamlessly integrates Direct Preference Optimization into the fine-tuning script.
+
+#### 🎭 Multi-LoRA Profiles & Auto-Train
+- **Specialized Profiles** — Train distinct LoRA models for different moods and genres (e.g., Aggressive, Melodic, Trap).
+- **Auto-Train Pipeline** — Launch the full Unsloth Python training script directly from the UI as a background process.
+- **Import Support** — Ingest external Alpaca or ChatML JSONL datasets to augment your training corpus.
+
+## [2.7.0] - 2026-03-04
 
 #### 🤖 Advanced AI & NLP
 - **Wordplay Engine** — New side panel that generates dual-meaning bars, puns, and metaphorical twists tailored to your song's theme and mood.

@@ -1,235 +1,232 @@
-# VibeLyrics Training Setup Guide
+# VibeLyrics Training Setup — Advanced Guide
 
-Complete guide for exporting training data, fine-tuning a custom model with Unsloth, converting to GGUF, and loading into LM Studio.
+Complete guide to fine-tuning a local AI model on your VibeLyrics writing style.
+
+## Table of Contents
+1. [Quick Start](#quick-start)
+2. [Quality-Gated Data Export](#quality-gated-data-export)
+3. [DPO Preference Training](#dpo-preference-training)
+4. [Multi-LoRA Profiles](#multi-lora-profiles)
+5. [RAG-Augmented Training](#rag-augmented-training)
+6. [Unsloth Fine-Tuning](#unsloth-fine-tuning)
+7. [GGUF Conversion & LM Studio](#gguf-conversion--lm-studio)
+8. [Micro-Feedback System](#micro-feedback-system)
+9. [Auto-Train Pipeline](#auto-train-pipeline)
+10. [Importing Datasets](#importing-datasets)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
-## Prerequisites
-
-| Requirement | Version | Notes |
-|---|---|---|
-| Python | 3.10+ | Must have CUDA support for GPU training |
-| CUDA Toolkit | 11.8+ or 12.x | Required for Unsloth |
-| LM Studio | Latest | [Download](https://lmstudio.ai/) |
-| VRAM | 8 GB+ | 16 GB recommended for 7B models |
-| Disk Space | ~30 GB | For base model + fine-tuned output |
-
----
-
-## Step 1: Export Training Data from VibeLyrics
-
-### Via Training Hub UI
-
-1. Open VibeLyrics and navigate to **AI Learning Center** → **🔬 Training Hub**
-2. Click **🔄 Generate Dataset** to build training pairs from all your learned data
-3. Review the source breakdown and preview
-4. Click **Download** on the **Complete ZIP Bundle** format
-
-### Via API
+## Quick Start
 
 ```bash
-# Generate dataset from all sources
-curl -X POST http://localhost:8000/api/training/generate
-
-# Download as ZIP
-curl http://localhost:8000/api/training/export?format=zip -o training_data.zip
-
-# Or specific formats
-curl http://localhost:8000/api/training/export?format=alpaca -o alpaca.json
-curl http://localhost:8000/api/training/export?format=jsonl -o conversations.jsonl
-curl http://localhost:8000/api/training/export?format=text -o corpus.txt
+# 1. Open VibeLyrics → Learning Center → 🔬 Training Hub
+# 2. Click "Generate Dataset" on the Overview tab
+# 3. Go to Export tab → Download ZIP bundle
+# 4. Follow Unsloth instructions below to fine-tune
 ```
-
-The ZIP includes:
-- `alpaca.json` — Instruction-tuning format
-- `conversations.jsonl` — ChatML conversational format
-- `corpus.txt` — Plain text corpus
-- `metadata.json` — Dataset statistics
 
 ---
 
-## Step 2: Install Unsloth
+## Quality-Gated Data Export
+
+VibeLyrics scores each line with a **complexity score** (0-100). Set a quality threshold to only train on your best work:
+
+| Threshold | Effect |
+|-----------|--------|
+| 0 | No filter (all lines included) |
+| 30 | Good quality lines only |
+| 60 | High quality — advanced wordplay only |
+
+**Set threshold:** LM Studio tab → Training Configuration → "Quality Threshold" field.
+
+When generating a dataset, lines with `complexity_score < threshold` are excluded. The Overview tab shows how many lines were filtered.
+
+### Syllable & Metre Tagging
+
+Training instructions automatically include syllable targets and rhyme hints:
+```
+"Continue this rap verse (theme: struggle, mood: aggressive, BPM: 140).
+ Target: ~12 syllables. Rhyme with 'pain'. Output only the next lyric line. [HIGH QUALITY]"
+```
+
+---
+
+## DPO Preference Training
+
+DPO (Direct Preference Optimization) teaches the model what *not* to write.
+
+### How It Works
+
+1. **AI suggests a line** → You reject it and write your own
+2. VibeLyrics saves: `{chosen: your_line, rejected: ai_suggestion}`
+3. During training, the model is penalized for the rejected style
+
+### Providing DPO Data
+
+When rejecting an AI suggestion via the API:
+```json
+POST /api/training/suggestion-feedback
+{
+    "suggestion_id": "sug_17098234...",
+    "status": "rejected",
+    "user_replacement": "My better version of the line",
+    "feedback_type": "too_generic"
+}
+```
+
+### Feedback Types
+- `more_complex` — Needs advanced wordplay
+- `change_rhyme` — Different rhyme scheme wanted
+- `more_aggressive` — Harder delivery needed
+- `fix_syllables` — Syllable count was off
+- `too_generic` — Too cliché
+- `off_topic` — Didn't match the theme
+- `better_wordplay` — Needs cleverer punchlines
+
+### Exporting DPO Data
+- **DPO tab** in Training Hub shows pair counts
+- Export → Download "DPO Preference Pairs" format
+- ZIP bundle includes `dpo_pairs.json` automatically
+
+---
+
+## Multi-LoRA Profiles
+
+Train specialized LoRA adapters for different moods/genres:
+
+| Profile | Mood Tags | BPM Range |
+|---------|-----------|-----------|
+| Aggressive / Diss | aggressive, angry, intense | 120-180 |
+| Melodic / R&B | melodic, emotional, romantic | 70-110 |
+| Trap / Hype | hype, confident, energetic | 130-160 |
+| Conscious / Lyrical | conscious, thoughtful, deep | 80-120 |
+
+### Using Profiles
+
+1. **🎭 LoRA Profiles tab** → Click profile card → "Generate" to create filtered dataset
+2. **Select** a profile to make it active
+3. **LM Studio tab** → "Generate Script" creates a profile-specific training script
+4. Output: `vibelyrics-aggressive.gguf`, `vibelyrics-melodic.gguf`, etc.
+
+---
+
+## RAG-Augmented Training
+
+When enabled (default), the dataset generator finds similar lines across different sessions and creates **callback** training pairs:
+
+```
+"Write a callback line that references this past lyric.
+ Shared themes: grind, hustle. Output only the new callback line."
+```
+
+This teaches the model to make self-referential lyrics — a hallmark of great rappers.
+
+Toggle: **LM Studio tab → Enable RAG Callbacks** checkbox.
+
+---
+
+## Unsloth Fine-Tuning
+
+### Prerequisites
 
 ```bash
-# Create a dedicated venv
-python -m venv training_venv
-# Windows
-training_venv\Scripts\activate
-# Linux/Mac
-source training_venv/bin/activate
-
-# Install Unsloth (CUDA 12.x)
-pip install unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
-pip install xformers trl datasets peft accelerate bitsandbytes
-
-# For CUDA 11.8, use:
-# pip install unsloth[cu118] @ git+https://github.com/unslothai/unsloth.git
+pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+pip install --no-deps "trl<0.9.0" peft accelerate bitsandbytes xformers
 ```
 
----
-
-## Step 3: Run Fine-Tuning
-
-### Option A: Use the Auto-Generated Script
-
-1. In the Training Hub, go to **🧪 LM Studio** tab
-2. Configure hyperparameters (defaults are good to start)
-3. Click **🚀 Generate Training Script**
-4. Run the generated script:
+### Running the Generated Script
 
 ```bash
-cd path/to/VibeLyrics
-python data/training/train.py
+# After clicking "Generate Script" in Training Hub:
+cd data/training
+python train_default.py        # or train_aggressive.py, etc.
 ```
 
-### Option B: Manual Training
+The script handles:
+1. Loading base model (4-bit quantized)
+2. Attaching LoRA adapters
+3. **SFT phase** — main instruction fine-tuning
+4. **DPO phase** (if enabled) — preference optimization
+5. Saving LoRA adapter + merged model
+6. GGUF conversion (Q4_K_M)
 
-```python
-from unsloth import FastLanguageModel
-from datasets import Dataset
-import json
+---
 
-# 1. Load model
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="unsloth/Mistral-7B-Instruct-v0.3-bnb-4bit",
-    max_seq_length=512,
-    load_in_4bit=True,
-)
+## GGUF Conversion & LM Studio
 
-# 2. Add LoRA
-model = FastLanguageModel.get_peft_model(
-    model, r=16, lora_alpha=16,
-    target_modules=["q_proj","k_proj","v_proj","o_proj","gate_proj","up_proj","down_proj"],
-    lora_dropout=0, bias="none",
-    use_gradient_checkpointing="unsloth",
-)
+After training completes:
 
-# 3. Load your exported data
-with open("alpaca.json") as f:
-    data = json.load(f)
+1. Copy `data/training/output/vibelyrics-{profile}.gguf` to LM Studio's models folder
+2. Open LM Studio → Load the model
+3. In VibeLyrics, set provider to `lmstudio`
 
-TEMPLATE = """Below is an instruction that describes a task, paired with an input. Write a response.
+LM Studio models folder default locations:
+- **Windows:** `C:\Users\<you>\.cache\lm-studio\models\`
+- **macOS:** `~/.cache/lm-studio/models/`
+- **Linux:** `~/.cache/lm-studio/models/`
 
-### Instruction:
-{instruction}
+---
 
-### Input:
-{input}
+## Micro-Feedback System
 
-### Response:
-{output}"""
+Beyond accept/reject, VibeLyrics captures granular feedback to refine training:
 
-def format_sample(s):
-    return {"text": TEMPLATE.format(**s) + tokenizer.eos_token}
-
-dataset = Dataset.from_list(data).map(format_sample)
-
-# 4. Train
-from trl import SFTTrainer
-from transformers import TrainingArguments
-
-SFTTrainer(
-    model=model, tokenizer=tokenizer,
-    train_dataset=dataset,
-    dataset_text_field="text",
-    max_seq_length=512,
-    args=TrainingArguments(
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=4,
-        warmup_steps=10,
-        num_train_epochs=3,
-        learning_rate=2e-4,
-        fp16=True, logging_steps=5,
-        optim="adamw_8bit",
-        output_dir="./output",
-    ),
-).train()
-
-# 5. Save
-model.save_pretrained_merged("./merged_model", tokenizer, save_method="merged_16bit")
-model.save_pretrained_gguf("./gguf_model", tokenizer, quantization_method="q4_k_m")
+Each feedback type generates a targeted training instruction. For example, clicking "Too Generic" creates:
+```
+"Rewrite this rap line. Avoid clichés. Be more specific, personal, and original."
 ```
 
----
-
-## Step 4: Load into LM Studio
-
-1. Find the generated `.gguf` file in `data/training/output/` (or your output dir)
-2. Copy it to your LM Studio models directory:
-   - **Windows:** `C:\Users\<you>\.lmstudio\models\`
-   - **Mac:** `~/.lmstudio/models/`
-   - **Linux:** `~/.lmstudio/models/`
-3. Open LM Studio → **Local Models** → Your model should appear
-4. Load it and test with a prompt
+These micro-instructions are mixed into the training data to teach the model your specific preferences.
 
 ---
 
-## Step 5: Configure VibeLyrics
+## Auto-Train Pipeline
 
-1. In VibeLyrics, go to **Settings**
-2. Switch AI Provider to **LM Studio**
-3. Ensure LM Studio is running with your fine-tuned model loaded
-4. Test by going to a session and requesting a suggestion
+Two options for running training:
 
----
+| Mode | Button | Description |
+|------|--------|-------------|
+| Script Only | 📝 Generate Script | Creates `train_{profile}.py` for manual execution |
+| Auto-Train | 🚀 Auto-Train | Runs training as background subprocess |
 
-## Importing External Datasets
+Auto-Train requirements:
+- Python environment with Unsloth installed
+- CUDA-compatible GPU (8GB+ VRAM recommended)
+- Dataset must be generated first
 
-You can import additional training data into VibeLyrics:
-
-### Via UI
-1. Go to **Training Hub** → **📥 Import**
-2. Drag and drop a `.json` (Alpaca) or `.jsonl` (ChatML) file
-
-### Via API
-```bash
-curl -X POST http://localhost:8000/api/training/import \
-  -F "file=@external_dataset.json"
-```
-
-Imported data is stored separately in `data/training/imported.json` and merged when generating datasets.
+Pipeline status shows in real-time on the LM Studio tab.
 
 ---
 
-## Hyperparameter Guide
+## Importing Datasets
 
-| Parameter | Default | Description |
-|---|---|---|
-| `base_model` | `unsloth/Mistral-7B-Instruct-v0.3-bnb-4bit` | HuggingFace model name |
-| `lora_rank` | 16 | LoRA rank (higher = more capacity, more VRAM) |
-| `lora_alpha` | 16 | LoRA scaling factor |
-| `epochs` | 3 | Training passes over data |
-| `learning_rate` | 2e-4 | Learning rate |
-| `batch_size` | 4 | Per-device batch size |
-| `max_seq_length` | 512 | Maximum token length per sample |
-| `quantization` | 4bit | QLoRA quantization level |
+Import external rap datasets to augment your training data:
 
-### Tips
-- **Small dataset (<100 pairs):** Use 5-10 epochs, lr=5e-5
-- **Medium dataset (100-1000):** Use 3 epochs, lr=2e-4 (default)
-- **Large dataset (1000+):** Use 1-2 epochs, lr=1e-4
-- **Overfitting signs:** Loss goes very low → model repeats training data verbatim
+**Supported formats:**
+- Alpaca JSON: `[{"instruction": "...", "input": "...", "output": "..."}]`
+- ChatML JSONL: `{"messages": [{"role": "user", ...}, {"role": "assistant", ...}]}`
 
----
-
-## Recommended Base Models
-
-| Model | VRAM | Quality | Speed |
-|---|---|---|---|
-| `unsloth/Mistral-7B-Instruct-v0.3-bnb-4bit` | ~6 GB | ⭐⭐⭐⭐ | Fast |
-| `unsloth/Llama-3.1-8B-Instruct-bnb-4bit` | ~6 GB | ⭐⭐⭐⭐⭐ | Fast |
-| `unsloth/Qwen2.5-7B-Instruct-bnb-4bit` | ~6 GB | ⭐⭐⭐⭐ | Fast |
-| `unsloth/Phi-3.5-mini-instruct-bnb-4bit` | ~4 GB | ⭐⭐⭐ | Very Fast |
+Import via: **📥 Import tab** → drag & drop or file picker
 
 ---
 
 ## Troubleshooting
 
-| Issue | Fix |
-|---|---|
-| `CUDA out of memory` | Reduce `batch_size` to 2, or `max_seq_length` to 256 |
-| `No module named 'unsloth'` | Activate the training venv: `training_venv\Scripts\activate` |
-| Model outputs gibberish | More training data needed, or reduce epochs (overfitting) |
-| LM Studio doesn't show model | Ensure GGUF is in `~/.lmstudio/models/` and restart LM Studio |
-| Training loss doesn't decrease | Increase learning rate or check data quality |
-| Empty dataset | Run "Generate Dataset" first — need sessions/lines in VibeLyrics |
+| Issue | Solution |
+|-------|----------|
+| CUDA out of memory | Reduce batch_size to 2, max_seq_length to 256 |
+| Training loss not decreasing | Increase dataset size, reduce learning_rate |
+| DPO makes model worse | Reduce dpo_beta (try 0.05), ensure enough DPO pairs (50+) |
+| GGUF loading fails | Re-run conversion, try Q5_K_M instead of Q4_K_M |
+| Profile dataset empty | Check that sessions have matching mood tags |
+| RAG pairs too noisy | Increase quality_threshold to filter low-quality source lines |
+
+### Recommended Hyperparameters by Dataset Size
+
+| Dataset Size | Epochs | Learning Rate | Quality Threshold |
+|-------------|--------|---------------|-------------------|
+| < 100 pairs | 5-10 | 1e-4 | 0 (use all data) |
+| 100-500 pairs | 3-5 | 2e-4 | 20 |
+| 500-2000 pairs | 2-3 | 2e-4 | 30 |
+| 2000+ pairs | 1-2 | 3e-4 | 40+ |
