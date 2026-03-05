@@ -750,3 +750,55 @@ export const nlpApi = {
     },
 };
 
+
+// ============ Training API ============
+
+export const trainingApi = {
+    getStatus: () =>
+        request<any>('/api/training/status'),
+
+    preview: (n: number = 10) =>
+        request<any>(`/api/training/preview?n=${n}`),
+
+    getFormats: () =>
+        request<any>('/api/training/formats'),
+
+    generate: () =>
+        request<any>('/api/training/generate', { method: 'POST' }),
+
+    exportDataset: (format: string = 'zip') =>
+        `/api/training/export?format=${format}`,
+
+    importDataset: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return request<any>('/api/training/import', {
+            method: 'POST',
+            body: formData,
+        });
+    },
+
+    submitSuggestionFeedback: (suggestionId: string, status: 'accepted' | 'rejected') =>
+        request<any>('/api/training/suggestion-feedback', {
+            method: 'POST',
+            body: JSON.stringify({ suggestion_id: suggestionId, status }),
+        }),
+
+    getLMStudioModels: () =>
+        request<any>('/api/training/lmstudio/models'),
+
+    getTrainingConfig: () =>
+        request<any>('/api/training/lmstudio/config'),
+
+    setTrainingConfig: (config: Record<string, any>) =>
+        request<any>('/api/training/lmstudio/config', {
+            method: 'POST',
+            body: JSON.stringify(config),
+        }),
+
+    startTraining: () =>
+        request<any>('/api/training/lmstudio/start', { method: 'POST' }),
+
+    getTrainingStatus: () =>
+        request<any>('/api/training/lmstudio/status'),
+};

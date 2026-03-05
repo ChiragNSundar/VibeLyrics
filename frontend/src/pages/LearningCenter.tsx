@@ -4,6 +4,7 @@ import type { LearningStatusResponse } from '../services/api';
 import BrainMap from '../components/learning/BrainMap';
 import DnaMatcher from '../components/learning/DnaMatcher';
 import ThemeNetwork3D from '../components/learning/ThemeNetwork3D';
+import TrainingHub from '../components/learning/TrainingHub';
 import './LearningCenter.css';
 
 const LearningCenter: React.FC = () => {
@@ -25,7 +26,7 @@ const LearningCenter: React.FC = () => {
     const [uploadMessage, setUploadMessage] = useState('');
 
     // Phase 4 State
-    const [dashboardTab, setDashboardTab] = useState<'stats' | 'brainmap' | 'themes' | 'dna'>('stats');
+    const [dashboardTab, setDashboardTab] = useState<'stats' | 'brainmap' | 'themes' | 'dna' | 'training'>('stats');
     const [annotations, setAnnotations] = useState<Array<{ line: string; score: number; techniques: string[]; notes: string[] }>>([]);
     const [audioResult, setAudioResult] = useState<{ bpm: number; key: string; energy: string } | null>(null);
     const [audioUploading, setAudioUploading] = useState(false);
@@ -331,6 +332,7 @@ const LearningCenter: React.FC = () => {
                             <button className={`dash-tab ${dashboardTab === 'brainmap' ? 'active' : ''}`} onClick={() => setDashboardTab('brainmap')}>🕸️ Brain Map</button>
                             <button className={`dash-tab ${dashboardTab === 'themes' ? 'active' : ''}`} onClick={() => setDashboardTab('themes')}>🧠 Theme Network</button>
                             <button className={`dash-tab ${dashboardTab === 'dna' ? 'active' : ''}`} onClick={() => setDashboardTab('dna')}>🧬 Lyrical DNA</button>
+                            <button className={`dash-tab ${dashboardTab === 'training' ? 'active' : ''}`} onClick={() => setDashboardTab('training')}>🔬 Training Hub</button>
                         </div>
 
                         {dashboardTab === 'stats' && (
@@ -467,6 +469,11 @@ const LearningCenter: React.FC = () => {
                                 <h3>🧬 Your Lyrical DNA</h3>
                                 <p className="hint">See how your writing measures across 6 key dimensions.</p>
                                 <DnaMatcher />
+                            </section>
+                        )}
+                        {dashboardTab === 'training' && (
+                            <section className="learning-card">
+                                <TrainingHub />
                             </section>
                         )}
                     </div>

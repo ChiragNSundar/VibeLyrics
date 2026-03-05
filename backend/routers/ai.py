@@ -11,6 +11,7 @@ from ..models import LyricSession, LyricLine, UserProfile, JournalEntry
 from ..schemas import SuggestRequest, ImproveRequest, AskRequest, ProviderSwitch, RhymeCompleteRequest
 from ..services.ai_provider import get_ai_provider, set_provider
 from ..services.learning import StyleExtractor, CorrectionTracker, VocabularyManager
+from ..services.training_data import SuggestionTracker
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ router = APIRouter()
 _style_extractor = StyleExtractor()
 _correction_tracker = CorrectionTracker()
 _vocab_manager = VocabularyManager()
+_suggestion_tracker = SuggestionTracker()
 
 
 @router.post("/ai/suggest", response_model=dict)
@@ -108,9 +110,18 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
     provider = get_ai_provider()
     suggestion = await provider.get_suggestion(context)
 
+    # Log for training data collection
+    suggestion_id = _suggestion_tracker.log_suggestion(
+        session_id=data.session_id,
+        prompt=data.partial_text or (line_texts[-1] if line_texts else ""),
+        suggestion=suggestion,
+        action=data.action,
+    )
+
     return {
         "success": True,
-        "suggestion": suggestion
+        "suggestion": suggestion,
+        "suggestion_id": suggestion_id
     }
 
 
@@ -142,10 +153,19 @@ async def improve_line(data: ImproveRequest, db: AsyncSession = Depends(get_db))
     if improved != original_text:
         _correction_tracker.track_correction(original_text, improved)
 
+    # Log for training data
+    suggestion_id = _suggestion_tracker.log_suggestion(
+        session_id=0,
+        prompt=original_text,
+        suggestion=improved,
+        action=f"improve_{data.improvement_type}",
+    )
+
     return {
         "success": True,
         "original": original_text,
-        "improved": improved
+        "improved": improved,
+        "suggestion_id": suggestion_id
     }
 
 
