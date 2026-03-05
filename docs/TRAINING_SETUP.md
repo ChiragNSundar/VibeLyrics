@@ -233,6 +233,24 @@ Import via: **📥 Import tab** → drag & drop or file picker
 
 ---
 
+## How to Build a Dataset from Scratch
+
+If you're starting with zero (or very little) existing data but want to train a highly capable model, use these strategies:
+
+### 1. The "Synthetic Data" Strategy (Scrape)
+Use the built-in Lyrics Scraper in the Learning Center to pull albums from your favorite artists (e.g., Kendrick, Cole). When you click "Generate Dataset" in the Training Hub, the system converts those scraped songs into thousands of SFT pairs. Your model instantly learns complex rhyme structures from the greats without you typing a single line.
+
+### 2. The "Style Cloning" Strategy (Import)
+Find open-source hip-hop datasets on HuggingFace (e.g., Rap Genius datasets). Go to the **📥 Import tab** and upload them. You instantly bootstrap your model with thousands of examples of formatting and song structure.
+
+### 3. The "Seed & Iterate" Strategy (AI Generation)
+Instead of writing 1,000 lines manually, write 10 great lines. Set up an aggressive beat, write a few punchlines, and use the VibeLyrics "Ghost text" and "⚡ Improve" tools. Accept the great suggestions. Reject the bad ones (which automatically creates ⚖️ DPO preference pairs). You can generate a 500-pair dataset in an hour just by actively curating the AI's outputs.
+
+### 4. Leverage the "Score-Gate" (Quality Control)
+If you generate data automatically, much of it might be "filler" lines ("Yeah", "Uh"). When generating your dataset, set the **Quality Threshold to 40 or 50**. VibeLyrics will discard simple lines and *only* train your model on lines with complex internal rhymes, multi-syllabic setups, and high vocabulary scores. A model trained on 500 elite lines is much better than one trained on 5,000 basic lines.
+
+---
+
 ## Troubleshooting
 
 | Issue | Solution |
