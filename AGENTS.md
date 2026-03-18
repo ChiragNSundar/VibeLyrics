@@ -1,64 +1,86 @@
 # Agents Guide to VibeLyrics
 
-Welcome, fellow agent! This file (`AGENTS.md`) provides critical context on the VibeLyrics project. Whenever you interact with this repository, read this document to understand the architecture, guidelines, and philosophy before making changes.
+Welcome, AI Agent or Coding Assistant! This file (`AGENTS.md`) is your master manual for understanding, navigating, and building upon the VibeLyrics project. 
+
+Whenever you enter this repository to assist a human developer, **read this entire document first**. It contains critical architectural decisions, strict aesthetic rules, and technical contexts that you must obey.
 
 ---
 
-## 🎤 Project Overview
+## 🎤 1. Core Mission & Vibe
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite.
-It uses advanced AI (Gemini, Claude, OpenAI, Local LLMs), NLP algorithms (syllable detection, rhyme matching), and a robust React/FastAPI architecture to help artists write better lyrics.
+Our users are artists, rappers, and songwriters. They don't just want a "text editor." They want a creative environment that feels like a futuristic recording studio.
 
-**Key Aesthetic:** "Dreamy Glassmorphism." The UI should feel premium, creative, and immersive. Deep-space backgrounds, frosted-glass cards, and smooth Framer Motion animations. Generic styling is strictly disallowed.
-
----
-
-## 📐 Architecture Snapshot
-
-- **Frontend:** React 19, TypeScript, Vite 7, Tailwind CSS 4, Zustand 5, Framer Motion 12.
-- **Backend:** FastAPI (Python 3.11+), SQLAlchemy 2 (Async), AIOSQLite.
-- **AI Core:** LangChain concepts without the bloat. Custom endpoints in `backend/routers/ai.py` handle context management. Support for multi-provider fallback.
-- **Advanced Features:** Rhyme scoring, complexity meters, semantic drift detection, AI Arena (Automated RLHF), Continual Learning, and Concept Erasure.
-- **Persistence:** Local SQLite (`data/vibelyrics.db`). Training logs, DPO pairs, and session exports live in `data/`.
+**Key Aesthetic: "Dreamy Glassmorphism"**
+- The UI MUST feel premium, creative, immersive, and sleek.
+- We use deep-space dark modes, aurora gradients, `backdrop-blur`, and frosted-glass cards.
+- **Strict Rule:** Generic SaaS styling (plain white backgrounds, boring blue buttons, rigid grids) is strictly disallowed. Every UI change you make must include fluid transitions, hover effects, and a sense of depth (shadows/glows).
 
 ---
 
-## 🛠️ The `run.py` Script (Your Best Friend)
-**DO NOT manually run standard npm/pip commands unless debugging.**
-The user relies on `run.py` to launch the app. It handles virtual environments, dependency syncing, and port management automatically.
+## 📐 2. Architecture & Tech Stack
 
-- Start app: `python run.py`
-- Fast start (skip installs): `python run.py --skip-install`
+VibeLyrics uses a robust, separated monolithic architecture:
 
----
+### 💻 Frontend (React SPA)
+- **Framework:** React 19 + TypeScript + Vite 7
+- **Styling:** Tailwind CSS 4 (+ `clsx` and `tailwind-merge` for dynamic classes)
+- **State Management:** Zustand 5. (We do NOT use Redux or Context API for heavy global state).
+- **Animations:** Framer Motion 12. Most UI state changes should be wrapped in an `<AnimatePresence>` or `<motion.div>`.
+- **Icons:** `@heroicons/react/24/outline` (and `solid`).
 
-## 🚨 Strict Development Rules
-
-1. **Do No Harm:** When modifying existing files, your edits should be additive or strictly non-destructive unless the user explicitly requests a rewrite. Never break existing features (e.g., the complex rhyme highlighting logic in `Lines.tsx`).
-2. **Absolute Imports:** Always use absolute paths or proper relative paths that resolve correctly in both Vite and Python.
-3. **Handle Fast Feedback Loops:** If making UI changes, ensure they are responsive and animated. Use Framer Motion (`<motion.div>`) for state transitions.
-4. **Backend Singletons:** When adding stateful classes to FastAPI routers (like `SuggestionTracker` or `ContinualLearningManager`), instantiate them globally near the top of the router to avoid wiping state on every request.
-5. **No Placeholders:** If you are asked to implement a feature, write the actual working code. Do not write `// TODO: implement logic here`.
-6. **Linting Awareness:** The Pyre2 linter in this IDE setup often fails to resolve the virtual environment correctly. You may see fake `ImportError: Could not find import...` for standard library or installed packages (`fastapi`, `sqlalchemy`). **Ignore these fake import errors and proceed.**
-
----
-
-## 🗺️ Navigation Highlights
-
-- **`frontend/src/components/session/`**: The heart of the app. Look here for `Editor.tsx`, `RhymeCompleter.tsx`, `WordExplorer.tsx`, and `Lines.tsx`.
-- **`backend/services/`**: The core intelligence.
-  - `rhyme_detector.py` (Phonetics and highlighting)
-  - `nlp_analysis.py` (Complexity, drift, wordplay)
-  - `training_data.py` (DPO, RLHF, Continual Learning)
-- **`backend/routers/`**: The API surface. `ai.py` (Ghostwriter, Arena), `lines.py` (CRUD, streaming), `training.py` (Fine-tuning orchestration).
+### 🔌 Backend (FastAPI Services)
+- **Framework:** FastAPI (Python 3.11+)
+- **Database:** SQLAlchemy 2 (Async) with `aiosqlite`. Persistence is handled locally via SQLite (`data/vibelyrics.db`).
+- **Structure:**
+  - `routers/`: API endpoints grouped by domain (`ai.py`, `lines.py`, `settings.py`).
+  - `services/`: The brains. (`rhyme_detector.py`, `nlp_analysis.py`, `training_data.py`).
+  - `schemas/`: Pydantic models for request/response validation.
+  - `models/`: SQLAlchemy ORM definitions mapping to tables.
 
 ---
 
-## 🚀 Recent Upgrades (Phase 7 & 8)
-If you are modifying AI or Training features, be aware that VibeLyrics currently supports:
-- **DPO Preference Pairs:** Rejecting an AI suggestion + writing your own sends a negative training signal.
-- **AI Arena:** 4-way shootout for the best line, generating RLHF data.
-- **Continual Learning:** Silent buffering of high-complexity lyrics to auto-train background LoRAs.
-- **Concept Erasure:** Synthetic DPO pairs designed to surgically unlearn clichés.
-- **LM Studio Integration:** Automated API triggers to launch model training runs locally.
+## 🧠 3. Advanced AI & NLP Engines (Read Carefully!)
 
-*Stay creative, write clean code, and keep the vibes immaculate.*
+This project contains several highly advanced mathematical and NLP-based engines. **Do not destructively modify these unless explicitly instructed.**
+
+### 3.1 The Rhyme & Phonetic Engine
+Located in `services/rhyme_detector.py`. This engine uses CMU dictionary sets and vowel/consonant matching algorithms to find multi-syllabic rhymes.
+- It returns complex HTML highlighting data.
+- The React frontend (`Editor.tsx` & `Lines.tsx`) relies on injecting this exact HTML to color-code assonance and consonance.
+
+### 3.2 Automated RLHF & DPO (Phase 7 & 8)
+VibeLyrics continuously learns from its user:
+- **DPO (Direct Preference Optimization):** When a user rejects an AI suggestion and rewrites it, we log this as a (Chosen, Rejected) pair.
+- **AI Arena:** A 4-way AI suggestion shootout. The winning line is "Chosen", the 3 losers are "Rejected" DPO pairs.
+- **Concept Erasure:** We synthetically generate negative DPO pairs to teach the model to *unlearn* clichés (banned words).
+- All of this logic happens inside `services/training_data.py`. Tracker classes (`SuggestionTracker`, `RLHFTracker`) act as **Singletons** instantiated inside the outer scope of the FastAPI router.
+
+### 3.3 The Model Fallback Strategy
+Located in `services/ai_provider.py`. The system attempts to generate text using Gemini 2.0. If rate-limited, it falls back to Gemini 2.0 Flash, then OpenAI, then a local LM Studio instance.
+
+---
+
+## 🚨 4. Iron-Clad Development Rules
+
+As an AI, you must abide by these rules without exception:
+
+1. **The `run.py` Rule:** The user *always* starts the app using `python run.py`. This script handles virtual environments (`.venv`), pip installations, npm installations, and environment variables. Do NOT instruct the user to run `npm start` or `uvicorn` manually.
+2. **Do No Harm (Additive Changes):** When asked to add a feature, append it. Do not refactor core engine files (`rhyme_detector.py` or `.tsx` rendering logic) unless the user specifically asks you to "rewrite" or "repair" them.
+3. **Absolute Imports over Relative:** In Python, use `from backend.services...`. In Vite/React, use standard relative paths that resolve correctly, avoiding deeply nested `../../../` if an alias (like `src/`) can be configured/used safely.
+4. **No Skeleton Code:** If a user says "implement X", write the FULL code. Never return `// TODO: Implement logic here` inside a class/function.
+5. **Stateful Singletons:** When you create a class to track state in FastAPI (like a buffer or vote logger), instantiate it globally outside the endpoint definitions. FastAPI endpoints are re-evaluated per request; local instances will get wiped.
+6. **Linting Awareness (Fake Imports):** The user's IDE (`pyre2`) often cannot map the `run.py`-generated `.venv` paths. You will see fake lint errors complaining `Could not find import fastapi...`. **Ignore these.** The app runs perfectly. Do not try to fix these by injecting `sys.path.append()`.
+
+---
+
+## 🗺️ 5. Project Navigation Guide
+
+If you need to know where something is, check this map:
+
+- **Adding a new DB Table?** `backend/models/index.py` → run `db.create_all()` logic located in `database.py`.
+- **Modifying the UI for the Editor?** `frontend/src/components/session/` (Look at `Editor.tsx`).
+- **Adding a new API Endpoint?** Add it to the relevant file in `backend/routers/`, then immediately update `frontend/src/services/api.ts` with the corresponding fetch method.
+- **Working on AI behavior?** `backend/services/ai_provider.py` (for models/prompts) and `backend/services/nlp_analysis.py` (for text analytics like complexity scores).
+- **Training or LoRA config?** `backend/services/training_data.py` handles the file exports (JSONL Alpaca format) and LM Studio payload triggers.
+
+*Stay creative, stay precise, and keep the vibes immaculate.*
