@@ -9,23 +9,34 @@ This `.md` file provides direct system instructions, rigid coding conventions, a
 - **Backend Database:** SQLAlchemy 2.0 (Async), AIOSQLite (`vibelyrics.db`).
 - **Environment:** Unified project running locally.
 
-## 🚀 2. Local Environment Execution
-The user runs the application strictly through a unified auto-launcher:
-- **`python run.py`**
-- Do NOT advise the user to use standard package managers (`npm i`, `pip install`) or run servers (`uvicorn`, `npm run dev`) manually. `run.py` handles the `.venv`, port assignment (5173 / 5001), and dependency synchronization automatically.
+## 🚀 2. Local Environment & Execution
+The application strictly uses a unified launcher:
+- **Run the Stack:** `python run.py`
+- **Fast Restart:** `python run.py --skip-install`
+- The script manages the `.venv` directory, handles port bindings (Frontend: 5173, Backend: 5001), and syncs requirements.
+- **NEVER** instruct the user to run `npm run dev` or `uvicorn` in separate terminals unless explicitly debugging a crash that `run.py` masks.
 
 ## 💅 3. The React/Tailwind Dictate
 When modifying or creating React files:
 1. **Dreamy Glassmorphism:** We employ an ethereal, dark-space, frosted-glass aesthetic.
 2. **Mandatory Classes:** Rely on `backdrop-blur-md`, `bg-black/30`, `bg-white/5`, `border-white/10`.
 3. **Animations are Required:** Any modal, popover, dropping list, or toast notification MUST be wrapped in `<AnimatePresence>` and utilize `<motion.div>`.
-4. **State Management:** Use `frontend/src/store/` (Zustand) for global states (e.g., active sessions, API keys). Do not add heavy Context API providers.
+4. **### State Management & Components
+- Global state is handled by **Zustand** (look in `frontend/src/store/`).
+- If you add a new global feature (like a new settings toggle or a training mode status), create or update a Zustand slice.
+- **Custom Hooks:** Separate complex `useEffect` or state logic into reusable custom hooks (`frontend/src/hooks/`) rather than bloating UI components.
+- **TypeScript Strictness:** Never use `any` unless absolutely forced by a rigid third-party library. Declare strict `interface`s for all props. Avoid prop-drilling more than 2 levels deep.
+- Local UI state (like dropdown open/close) should use `useState`.
 5. **Sanitization Rules:** The `Lines.tsx` component handles raw HTML from the backend RhymeEngine via `dangerouslySetInnerHTML`. Treat this specific implementation with extreme care.
 
 ## ⚙️ 4. The FastAPI/SQLAlchemy Dictate
 When modifying or creating backend Python files:
 1. **100% Async SQLite:** Use `await db.execute(select(Model))` and `result.scalars().all()`. Never write synchronous DB pulls on the main thread.
-2. **Pydantic Validation:** All data entering a route in `routers/` must be mapped via a Schema in `schemas/`. Do not pass untyped dictionaries into routes.
+2. **### Pydantic v2 & SQLAlchemy 2.0 Paradigms
+- Data payloads coming into routers must be validated via Pydantic `BaseModel` classes defined in `backend/schemas/`.
+- Do not use raw dictionaries for incoming request bodies (`@app.post("/endpoint") async def endpoint(data: dict)` is strictly forbidden).
+- **Pydantic v2:** Use modern syntax like `model_dump()` instead of the deprecated `dict()`.
+- **SQLAlchemy 2.0:** Use modern `select()` constructs (`select(Model).where(...)`) exclusively instead of the legacy `session.query()`.
 3. **Service Segregation:** API Endpoint logic goes in `routers/`. Algorithmic calculation, database formatting, file I/O, and LLM polling go in `services/`.
 4. **AI Generation Hierarchy:** Use the abstracted utilities in `services/ai_provider.py`. Do not import `google.generativeai` directly into random routers; filter it through the provider service for rate-limit fallbacks.
 5. **Memory State Retention (Singletons):** FastAPI processes requests statelessly. To persist memory in-app (e.g., Continual Learning buffers or Session Trackers), declare class instances globally at the top of the Router file, rather than inside the endpoint definitions.

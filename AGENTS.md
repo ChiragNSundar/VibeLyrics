@@ -8,13 +8,12 @@ Whenever you are summoned into this repository, **parse this entire document fir
 
 ## 🎤 1. Core Mission & Design Philosophy
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite.
-Our users are artists, rappers, and songwriters. They don't just want a "text editor." They want a creative environment that feels like a futuristic recording studio.
+It uses advanced AI (Gemini, Claude, OpenAI, Local LLMs), NLP algorithms (syllable detection, rhyme matching), and a robust React/FastAPI architecture to help artists write better lyrics.
 
 **Key Aesthetic: "Dreamy Glassmorphism"**
 - The UI MUST feel premium, creative, immersive, and sleek.
-- We strictly avoid generic SaaS styling (plain white backgrounds, boring colored buttons, rigid grids).
-- Every UI element you touch must include fluid transitions, hover effects, and a sense of depth (shadows/glows).
-- Use `backdrop-blur-md`, `bg-black/40`, white gradients, and glowing borders.
+- We use deep-space dark modes, aurora gradients, `backdrop-blur`, and frosted-glass cards.
+- **Strict Rule:** Generic SaaS styling (plain white backgrounds, boring blue buttons, rigid grids) is strictly disallowed. Every UI change you make must include fluid transitions, hover effects, and a sense of depth (shadows/glows).
 
 ---
 
@@ -67,6 +66,8 @@ As an AI, you must abide by these rules without exception:
 3. **Absolute Imports over Relative:** In Python, use `from .database import ...` or `from ..services import ...`. In Vite/React, refer to the path clearly.
 4. **No Skeleton Code:** Write the FULL code for a file structure. Avoid dumping `// TODO: Implement logic here` inside classes/functions.
 5. **Linting Awareness (Fake Imports):** The Pyre2 linter struggles to map `run.py`-generated `.venv` paths dynamically. You will see fake lint errors like `Could not find import fastapi...`. **Ignore these.** Do not inject `sys.path.append()` hacks to fix IDE ghosts.
+6. **Database Schema Changes:** We rely on `Base.metadata.create_all()` on startup and do not use Alembic. If you add a new column or table, you must inform the user to either run a manual SQL `ALTER TABLE` or delete `data/vibelyrics.db` and restart to recreate the schema.
+7. **Quality Assurance:** If building new core features, remember we have `backend/tests/` (Pytest) and frontend tests (Vitest/Playwright). Ensure your code is testable and robust.
 
 ---
 
