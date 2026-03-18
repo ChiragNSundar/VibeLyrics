@@ -23,6 +23,9 @@ TRAINING_DIR = "data/training"
 SUGGESTION_LOG = "data/suggestion_log.json"
 DPO_LOG = "data/dpo_pairs.json"
 FEEDBACK_LOG = "data/micro_feedback.json"
+RLHF_LOG = "data/rlhf_log.json"
+CONTINUAL_BUFFER = "data/continual_buffer.json"
+CONTINUAL_CONFIG_FILE = "data/continual_config.json"
 LORA_PROFILES_DIR = os.path.join(TRAINING_DIR, "profiles")
 
 
@@ -321,6 +324,282 @@ class LoRAProfileManager:
         ]
 
 
+
+# ═══════════════════════════════════════════════════════════════════
+#  2b. RLHF TRACKER (AI Arena)
+# ═══════════════════════════════════════════════════════════════════
+
+class RLHFTracker:
+    """
+    Track AI Arena votes for Reinforcement Learning from Human Feedback.
+    Each arena round generates 1 chosen + 3 rejected DPO pairs.
+    """
+
+    DATA_FILE = RLHF_LOG
+
+    def __init__(self):
+        self.matches: List[Dict] = []
+        self._load()
+
+    def _load(self):
+        if os.path.exists(self.DATA_FILE):
+            try:
+                with open(self.DATA_FILE, "r") as f:
+                    self.matches = json.load(f)
+            except Exception:
+                self.matches = []
+
+    def _save(self):
+        os.makedirs(os.path.dirname(self.DATA_FILE) or ".", exist_ok=True)
+        with open(self.DATA_FILE, "w") as f:
+            json.dump(self.matches[-500:], f, indent=2)
+
+    def log_vote(self, prompt: str, variants: List[str],
+                 chosen_index: int, session_id: int = 0) -> str:
+        """
+        Log an arena vote.  variants = list of 4 AI-generated lines.
+        chosen_index = index of the one the user picked.
+        Returns a match_id.
+        """
+        match_id = f"arena_{int(time.time() * 1000)}"
+        self.matches.append({
+            "id": match_id,
+            "prompt": prompt,
+            "variants": variants,
+            "chosen_index": chosen_index,
+            "chosen": variants[chosen_index] if chosen_index < len(variants) else "",
+            "rejected": [v for i, v in enumerate(variants) if i != chosen_index],
+            "session_id": session_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        self._save()
+        return match_id
+
+    def get_dpo_pairs(self) -> List[Dict]:
+        """Convert arena results into DPO-format chosen/rejected pairs."""
+        pairs = []
+        for m in self.matches:
+            chosen = m.get("chosen", "")
+            for rejected in m.get("rejected", []):
+                if chosen and rejected:
+                    pairs.append({
+                        "prompt": m.get("prompt", ""),
+                        "chosen": chosen,
+                        "rejected": rejected,
+                        "feedback_type": "arena_vote",
+                    })
+        return pairs
+
+    def get_stats(self) -> Dict:
+        total = len(self.matches)
+        dpo_count = sum(len(m.get("rejected", [])) for m in self.matches)
+        return {"total_matches": total, "dpo_pairs_generated": dpo_count}
+
+    def get_all(self) -> List[Dict]:
+        return self.matches
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  2c. CONTINUAL LEARNING MANAGER
+# ═══════════════════════════════════════════════════════════════════
+
+class ContinualLearningManager:
+    """
+    Buffer high-complexity lines as they are written.
+    When buffer reaches batch_size, trigger a background training run.
+    """
+
+    BUFFER_FILE = CONTINUAL_BUFFER
+    CONFIG_FILE = CONTINUAL_CONFIG_FILE
+
+    DEFAULT_CONFIG = {
+        "enabled": False,
+        "min_complexity": 55,
+        "batch_size": 50,
+        "auto_retrain": True,
+    }
+
+    def __init__(self):
+        self.buffer: List[Dict] = []
+        self.config: Dict = dict(self.DEFAULT_CONFIG)
+        self._load()
+
+    def _load(self):
+        if os.path.exists(self.BUFFER_FILE):
+            try:
+                with open(self.BUFFER_FILE, "r") as f:
+                    self.buffer = json.load(f)
+            except Exception:
+                self.buffer = []
+        if os.path.exists(self.CONFIG_FILE):
+            try:
+                with open(self.CONFIG_FILE, "r") as f:
+                    self.config = json.load(f)
+            except Exception:
+                self.config = dict(self.DEFAULT_CONFIG)
+
+    def _save(self):
+        os.makedirs(os.path.dirname(self.BUFFER_FILE) or ".", exist_ok=True)
+        with open(self.BUFFER_FILE, "w") as f:
+            json.dump(self.buffer, f, indent=2)
+        with open(self.CONFIG_FILE, "w") as f:
+            json.dump(self.config, f, indent=2)
+
+    def get_config(self) -> Dict:
+        return self.config
+
+    def update_config(self, updates: Dict) -> Dict:
+        self.config.update(updates)
+        self._save()
+        return self.config
+
+    def push_line(self, text: str, complexity_score: float,
+                  session_id: int = 0) -> Dict:
+        """
+        Push a line into the buffer if it meets the quality threshold.
+        Returns status dict with buffer_size and whether training was triggered.
+        """
+        if not self.config.get("enabled", False):
+            return {"buffered": False, "reason": "continual_learning_disabled"}
+
+        min_comp = self.config.get("min_complexity", 55)
+        if complexity_score < min_comp:
+            return {"buffered": False, "reason": "below_threshold",
+                    "score": complexity_score, "threshold": min_comp}
+
+        self.buffer.append({
+            "text": text,
+            "complexity_score": complexity_score,
+            "session_id": session_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        self._save()
+
+        batch_size = self.config.get("batch_size", 50)
+        triggered = False
+        if len(self.buffer) >= batch_size and self.config.get("auto_retrain", True):
+            triggered = True
+            # Caller (lines router) will trigger the actual training
+
+        return {
+            "buffered": True,
+            "buffer_size": len(self.buffer),
+            "batch_size": batch_size,
+            "training_triggered": triggered,
+        }
+
+    def flush_buffer(self) -> List[Dict]:
+        """Return and clear the buffer (called when training starts)."""
+        flushed = list(self.buffer)
+        self.buffer = []
+        self._save()
+        return flushed
+
+    def get_buffer_status(self) -> Dict:
+        return {
+            "enabled": self.config.get("enabled", False),
+            "buffer_size": len(self.buffer),
+            "batch_size": self.config.get("batch_size", 50),
+            "min_complexity": self.config.get("min_complexity", 55),
+            "progress_pct": round(
+                len(self.buffer) / max(self.config.get("batch_size", 50), 1) * 100, 1
+            ),
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  2d. CONCEPT ERASER (Anti-Cliché)
+# ═══════════════════════════════════════════════════════════════════
+
+class ConceptEraser:
+    """
+    Surgically removes cliché words/phrases from model output by generating
+    synthetic negative DPO pairs. If a user bans 'fire', we take a good line
+    ending in 'wire', create a rejected version ending in 'fire', and pair
+    them as (chosen='wire' original, rejected='fire' synthetic).
+    """
+
+    def generate_erasure_pairs(self, banned_words: List[str],
+                               high_quality_lines: List[Dict]) -> List[Dict]:
+        """
+        Generate synthetic DPO pairs to erase banned concepts.
+
+        Args:
+            banned_words: Words the user wants the model to never use.
+            high_quality_lines: List of dicts with 'text' key.
+
+        Returns:
+            List of DPO-format dicts {prompt, chosen, rejected, feedback_type}.
+        """
+        if not banned_words:
+            return []
+
+        pairs = []
+        banned_set = set(w.lower().strip() for w in banned_words if w.strip())
+
+        for line_dict in high_quality_lines:
+            text = line_dict.get("text", "").strip()
+            if not text or len(text) < 5:
+                continue
+
+            words = text.lower().split()
+            last_word = words[-1].strip(".,!?;:'\"") if words else ""
+
+            for banned in banned_set:
+                # Strategy 1: If the line does NOT contain the banned word,
+                # create a synthetic rejected version that does
+                if banned not in text.lower():
+                    # Replace the last word with the banned word
+                    if last_word and last_word != banned:
+                        original_words = text.split()
+                        rejected_words = original_words[:-1] + [banned]
+                        rejected_line = " ".join(rejected_words)
+                        pairs.append({
+                            "prompt": f"Continue this verse. Output only the next lyric line.",
+                            "chosen": text,
+                            "rejected": rejected_line,
+                            "feedback_type": "concept_erasure",
+                            "erased_word": banned,
+                        })
+
+                # Strategy 2: If the line DOES contain the banned word,
+                # it IS the rejected example; need a 'chosen' replacement
+                elif banned in text.lower():
+                    # Create chosen version by replacing banned word with [REDACTED]
+                    import re as re_mod
+                    clean = re_mod.sub(
+                        r'\b' + re_mod.escape(banned) + r'\b',
+                        "___",
+                        text,
+                        flags=re_mod.IGNORECASE,
+                    )
+                    if clean != text:
+                        pairs.append({
+                            "prompt": f"Continue this verse. Avoid the word '{banned}'. "
+                                      f"Output only the next lyric line.",
+                            "chosen": clean,
+                            "rejected": text,
+                            "feedback_type": "concept_erasure",
+                            "erased_word": banned,
+                        })
+
+            if len(pairs) >= 100:  # Cap erasure pairs
+                break
+
+        return pairs
+
+    def get_erasure_stats(self, banned_words: List[str],
+                          high_quality_lines: List[Dict]) -> Dict:
+        """Preview how many erasure pairs would be generated."""
+        pairs = self.generate_erasure_pairs(banned_words, high_quality_lines)
+        words_targeted = set(p.get("erased_word", "") for p in pairs)
+        return {
+            "total_pairs": len(pairs),
+            "words_targeted": list(words_targeted),
+            "banned_words_count": len(banned_words),
+        }
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  3. TRAINING DATA GENERATOR — Advanced
 # ═══════════════════════════════════════════════════════════════════
@@ -387,7 +666,8 @@ class TrainingDataGenerator:
     def generate(self, db_sessions: List[Dict], db_lines: List[Dict],
                  db_versions: List[Dict],
                  quality_threshold: float = 0.0,
-                 enable_rag: bool = True) -> Dict:
+                 enable_rag: bool = True,
+                 **kwargs) -> Dict:
         """
         Rebuild the entire training dataset from current DB + JSON data.
 
@@ -549,6 +829,27 @@ class TrainingDataGenerator:
                     "feedback_type": dp.get("feedback_type", "general"),
                 })
 
+        # ── 5b. RLHF Arena DPO pairs ──
+        rlhf_tracker = RLHFTracker()
+        for dp in rlhf_tracker.get_dpo_pairs():
+            if dp["chosen"] and dp["rejected"]:
+                dpo_pairs.append(dp)
+
+        # ── 5c. Concept Erasure synthetic DPO pairs ──
+        eraser = ConceptEraser()
+        # Gather banned words from user profile (passed via generate call or loaded)
+        banned_words = kwargs.get("banned_words", [])
+        if banned_words:
+            high_q = [{"text": ld["text"]} for ld in sessions_map.get(list(sessions_map.keys())[0], []) if ld.get("score", 0) >= 30] if sessions_map else []
+            # Flatten all high-quality lines across all sessions
+            high_q = []
+            for sid_lines in sessions_map.values():
+                for ld in sid_lines:
+                    if ld.get("score", 0) >= 30:
+                        high_q.append({"text": ld["text"]})
+            erasure_pairs = eraser.generate_erasure_pairs(banned_words, high_q)
+            dpo_pairs.extend(erasure_pairs)
+
         # ── 6. RAG-augmented callback pairs ──
         if enable_rag:
             rag_pairs = self._generate_rag_pairs(line_dicts_all=db_lines, sessions=db_sessions)
@@ -582,6 +883,8 @@ class TrainingDataGenerator:
             "quality_stats": quality_stats,
             "quality_threshold": quality_threshold,
             "feedback_stats": suggestion_tracker.get_feedback_stats(),
+            "rlhf_stats": rlhf_tracker.get_stats(),
+            "erasure_pairs": len(erasure_pairs) if banned_words else 0,
         }
         self._save()
         return self._metadata

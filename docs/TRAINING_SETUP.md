@@ -13,7 +13,10 @@ Complete guide to fine-tuning a local AI model on your VibeLyrics writing style.
 8. [Micro-Feedback System](#micro-feedback-system)
 9. [Auto-Train Pipeline](#auto-train-pipeline)
 10. [Importing Datasets](#importing-datasets)
-11. [Troubleshooting](#troubleshooting)
+11. [AI Arena (Automated RLHF)](#ai-arena-automated-rlhf)
+12. [Continual Learning](#continual-learning)
+13. [Concept Erasure (Anti-Cliché)](#concept-erasure-anti-cliché)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -248,6 +251,51 @@ Instead of writing 1,000 lines manually, write 10 great lines. Set up an aggress
 
 ### 4. Leverage the "Score-Gate" (Quality Control)
 If you generate data automatically, much of it might be "filler" lines ("Yeah", "Uh"). When generating your dataset, set the **Quality Threshold to 40 or 50**. VibeLyrics will discard simple lines and *only* train your model on lines with complex internal rhymes, multi-syllabic setups, and high vocabulary scores. A model trained on 500 elite lines is much better than one trained on 5,000 basic lines.
+
+---
+
+## AI Arena (Automated RLHF)
+
+Instead of manually writing replacement lines for DPO data, use the **AI Arena** to rapidly generate preference pairs:
+
+1. In the editor, click the **🏟️ Arena** button
+2. The AI generates **4 distinct line variations** for the current context
+3. Pick the best one — it gets inserted into your verse
+4. The 3 rejected variants are **automatically logged** as negative DPO pairs
+
+Each arena vote creates **3 DPO pairs** instantly. After 20 arena rounds, you have 60 high-quality preference pairs.
+
+**API:** `POST /api/ai/arena` → generates variants | `POST /api/training/rlhf/vote` → submits your pick
+
+---
+
+## Continual Learning
+
+Enable **Continual Learning** to automatically buffer your best lines for retraining:
+
+1. Go to **Training Hub → LM Studio tab → Continual Learning**
+2. Toggle **Enabled** on
+3. Set **Min Complexity** (default: 55) — only lines scoring above this are buffered
+4. Set **Batch Size** (default: 50) — when the buffer fills, auto-retraining triggers
+
+Every line you type that exceeds the complexity threshold is silently pushed into the buffer. When the buffer is full and `auto_retrain` is on, the system triggers a background training run.
+
+**API:** `GET/POST /api/training/continual/config` | `GET /api/training/continual/status`
+
+---
+
+## Concept Erasure (Anti-Cliché)
+
+Surgically remove overused words from your model's vocabulary by generating **synthetic negative DPO pairs**:
+
+1. Identify banned words (e.g., "fire", "desire", "rain")
+2. Call `POST /api/training/erasure/preview` with your banned list to see how many pairs would be generated
+3. Call `POST /api/training/erasure/generate` to create the pairs
+4. These are automatically included in DPO training when you regenerate the dataset
+
+**How it works:**
+- **Strategy 1:** Takes a good line NOT containing the banned word. Replaces the last word with the banned word to create a synthetic *rejected* version. The original stays as *chosen*.
+- **Strategy 2:** Lines already containing the banned word become *rejected* examples.
 
 ---
 

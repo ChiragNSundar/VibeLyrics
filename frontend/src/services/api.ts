@@ -859,4 +859,57 @@ export const trainingApi = {
 
     getTrainingStatus: () =>
         request<any>('/api/training/lmstudio/status'),
+
+    // ── Phase 8: RLHF Arena ──
+
+    generateArenaVariants: (sessionId: number, mood?: string, theme?: string, count: number = 4) =>
+        request<any>('/api/ai/arena', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: sessionId, mood, theme, count }),
+        }),
+
+    submitRlhfVote: (prompt: string, variants: string[], chosenIndex: number, sessionId: number = 0) =>
+        request<any>('/api/training/rlhf/vote', {
+            method: 'POST',
+            body: JSON.stringify({ prompt, variants, chosen_index: chosenIndex, session_id: sessionId }),
+        }),
+
+    getRlhfStats: () =>
+        request<any>('/api/training/rlhf/stats'),
+
+    getRlhfHistory: () =>
+        request<any>('/api/training/rlhf/history'),
+
+    // ── Phase 8: Continual Learning ──
+
+    getContinualConfig: () =>
+        request<any>('/api/training/continual/config'),
+
+    updateContinualConfig: (config: { enabled?: boolean; min_complexity?: number; batch_size?: number; auto_retrain?: boolean }) =>
+        request<any>('/api/training/continual/config', {
+            method: 'POST',
+            body: JSON.stringify(config),
+        }),
+
+    getContinualStatus: () =>
+        request<any>('/api/training/continual/status'),
+
+    flushContinualBuffer: () =>
+        request<any>('/api/training/continual/flush', {
+            method: 'POST',
+        }),
+
+    // ── Phase 8: Concept Erasure ──
+
+    previewErasure: (bannedWords: string[]) =>
+        request<any>('/api/training/erasure/preview', {
+            method: 'POST',
+            body: JSON.stringify({ banned_words: bannedWords }),
+        }),
+
+    generateErasurePairs: (bannedWords: string[]) =>
+        request<any>('/api/training/erasure/generate', {
+            method: 'POST',
+            body: JSON.stringify({ banned_words: bannedWords }),
+        }),
 };

@@ -520,3 +520,72 @@ Return ONLY valid JSON array, no other text."""
             {"section": "Outro", "bars": 4, "description": "Wind down and close out", "energy": "low"},
         ]
         return {"success": True, "sections": fallback, "fallback": True}
+
+
+# ── Phase 8: AI Arena (RLHF) ──────────────────────────────────────
+
+class ArenaRequest(BaseModel):
+    session_id: int
+    context_lines: list[str] = []
+    mood: str = "confident"
+    theme: str = ""
+    count: int = 4
+
+
+@router.post("/ai/arena")
+async def generate_arena_variants(data: ArenaRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Generate multiple AI line variants for RLHF arena voting.
+    Returns 4 distinct variations so the user can pick the best one.
+    """
+    # Build context
+    result = await db.execute(
+        select(LyricSession).where(LyricSession.id == data.session_id)
+    )
+    session = result.scalar_one_or_none()
+
+    lines_result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == data.session_id)
+        .order_by(LyricLine.line_number.desc())
+        .limit(6)
+    )
+    recent = list(reversed(lines_result.scalars().all()))
+    line_texts = [l.final_version or l.user_input for l in recent]
+
+    prompt_context = "\n".join(line_texts[-4:]) if line_texts else "(start of verse)"
+    mood = data.mood or (session.mood if session else "confident")
+    theme = data.theme or (session.theme if session else "life")
+
+    provider = get_ai_provider()
+    prompt = f"""Generate exactly {data.count} different next-line options for this rap verse.
+
+Recent lines:
+{prompt_context}
+
+Mood: {mood}
+Theme: {theme}
+
+Rules:
+- Each line should be DISTINCT in style, wordplay, and rhyme scheme
+- Vary between aggressive, clever, emotional, and simple approaches
+- Each line should fit the flow of the verse
+- Return ONLY {data.count} lines, one per line, no numbering or labels."""
+
+    try:
+        result_text = await provider.generate(prompt)
+        variants = [v.strip() for v in result_text.strip().split("\n") if v.strip()][:data.count]
+
+        # Pad if fewer than requested
+        while len(variants) < data.count:
+            variants.append(f"(variant {len(variants) + 1} unavailable)")
+
+        return {
+            "success": True,
+            "variants": variants,
+            "prompt_context": prompt_context,
+            "count": len(variants),
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e), "variants": []}
+

@@ -21,6 +21,9 @@ from ..services.training_data import (
     SuggestionTracker,
     MicroFeedbackTracker,
     LoRAProfileManager,
+    RLHFTracker,
+    ContinualLearningManager,
+    ConceptEraser,
 )
 
 router = APIRouter()
@@ -30,6 +33,9 @@ _lm_manager = LMStudioTrainingManager()
 _suggestion_tracker = SuggestionTracker()
 _feedback_tracker = MicroFeedbackTracker()
 _profile_manager = LoRAProfileManager()
+_rlhf_tracker = RLHFTracker()
+_continual_manager = ContinualLearningManager()
+_concept_eraser = ConceptEraser()
 
 
 # ── Pydantic models ────────────────────────────────────────────────
@@ -421,3 +427,118 @@ async def start_training(auto_run: bool = False):
 async def get_pipeline_status():
     """Check training pipeline status."""
     return {"success": True, **_lm_manager.get_status()}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Phase 8: RLHF Arena, Continual Learning, Concept Erasure
+# ═══════════════════════════════════════════════════════════════════
+
+
+# ── RLHF Arena ──
+
+class RLHFVoteRequest(BaseModel):
+    prompt: str
+    variants: List[str]
+    chosen_index: int
+    session_id: int = 0
+
+
+@router.post("/rlhf/vote")
+async def submit_rlhf_vote(data: RLHFVoteRequest):
+    """Submit an AI Arena vote — chosen variant + rejected variants become DPO pairs."""
+    if data.chosen_index < 0 or data.chosen_index >= len(data.variants):
+        raise HTTPException(status_code=400, detail="chosen_index out of range")
+    match_id = _rlhf_tracker.log_vote(
+        prompt=data.prompt,
+        variants=data.variants,
+        chosen_index=data.chosen_index,
+        session_id=data.session_id,
+    )
+    return {
+        "success": True,
+        "match_id": match_id,
+        "dpo_pairs_created": len(data.variants) - 1,
+    }
+
+
+@router.get("/rlhf/stats")
+async def get_rlhf_stats():
+    """Get RLHF arena statistics."""
+    return {"success": True, **_rlhf_tracker.get_stats()}
+
+
+@router.get("/rlhf/history")
+async def get_rlhf_history():
+    """Get recent RLHF arena match history."""
+    matches = _rlhf_tracker.get_all()
+    return {"success": True, "matches": matches[-20:], "total": len(matches)}
+
+
+# ── Continual Learning ──
+
+class ContinualConfigUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    min_complexity: Optional[int] = None
+    batch_size: Optional[int] = None
+    auto_retrain: Optional[bool] = None
+
+
+@router.get("/continual/config")
+async def get_continual_config():
+    """Get continual learning configuration."""
+    return {"success": True, **_continual_manager.get_config()}
+
+
+@router.post("/continual/config")
+async def update_continual_config(data: ContinualConfigUpdate):
+    """Update continual learning configuration."""
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    config = _continual_manager.update_config(update)
+    return {"success": True, "config": config}
+
+
+@router.get("/continual/status")
+async def get_continual_status():
+    """Get continual learning buffer status and progress."""
+    return {"success": True, **_continual_manager.get_buffer_status()}
+
+
+@router.post("/continual/flush")
+async def flush_continual_buffer():
+    """Flush the continual learning buffer and return its contents."""
+    flushed = _continual_manager.flush_buffer()
+    return {"success": True, "flushed_count": len(flushed), "items": flushed[:10]}
+
+
+# ── Concept Erasure ──
+
+class ErasurePreviewRequest(BaseModel):
+    banned_words: List[str]
+
+
+@router.post("/erasure/preview")
+async def preview_erasure(data: ErasurePreviewRequest, db: AsyncSession = Depends(get_db)):
+    """Preview how many synthetic DPO pairs concept erasure would generate."""
+    # Get high-quality lines to use as source material
+    result = await db.execute(
+        select(LyricLine).where(LyricLine.complexity_score >= 30)
+    )
+    lines = result.scalars().all()
+    high_q = [{"text": l.final_version or l.user_input} for l in lines if l.final_version or l.user_input]
+
+    stats = _concept_eraser.get_erasure_stats(data.banned_words, high_q)
+    return {"success": True, **stats}
+
+
+@router.post("/erasure/generate")
+async def generate_erasure_pairs(data: ErasurePreviewRequest, db: AsyncSession = Depends(get_db)):
+    """Generate and return concept erasure DPO pairs for the given banned words."""
+    result = await db.execute(
+        select(LyricLine).where(LyricLine.complexity_score >= 30)
+    )
+    lines = result.scalars().all()
+    high_q = [{"text": l.final_version or l.user_input} for l in lines if l.final_version or l.user_input]
+
+    pairs = _concept_eraser.generate_erasure_pairs(data.banned_words, high_q)
+    return {"success": True, "pairs": pairs[:20], "total": len(pairs)}
+

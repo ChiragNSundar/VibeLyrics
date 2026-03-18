@@ -2,6 +2,25 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [2.9.0] - 2026-03-18
+
+### 🧠 Phase 8: Advanced Training Intelligence
+
+#### 🏟️ Automated RLHF (AI Arena)
+- **AI Arena Mode** — Generate 4 distinct AI line variants simultaneously. Pick the best one, and the 3 rejects automatically become DPO preference training pairs.
+- **Arena Match History** — Track all arena votes and view generated DPO pair counts.
+- **New Endpoint** — `POST /api/ai/arena` generates arena variants; `POST /api/training/rlhf/vote` submits votes.
+
+#### 🔄 Continual Learning (Live LoRA Updating)
+- **Auto-Buffer** — Every line you write with a complexity score above the threshold is automatically pushed into a training buffer.
+- **Batch Auto-Train** — When the buffer fills up (default: 50 lines), the system can automatically trigger a re-training run.
+- **Configurable** — Set `min_complexity`, `batch_size`, and `auto_retrain` via the Training Hub or API.
+
+#### 🧽 Concept Erasure (Anti-Cliché)
+- **Banned Word DPO** — Add banned words and the system generates synthetic negative DPO pairs to surgically remove those words from model output.
+- **Two Strategies** — (1) Replace good line endings with banned words to create rejected versions; (2) Flag lines containing banned words as rejected examples.
+- **Preview Mode** — Preview how many erasure pairs would be generated before committing.
+
 ## [2.8.0] - 2026-03-05
 
 ### 🚀 Phase 7: Advanced Training Pipeline

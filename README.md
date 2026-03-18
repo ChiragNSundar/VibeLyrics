@@ -1,4 +1,4 @@
-# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.7.0-blue.svg)
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.9.0-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
@@ -43,6 +43,12 @@
 - **📚 AI Learning Center**: Teach your AI ghostwriter in real-time. Scrape lyrics from the web, upload `.pdf`/`.docx` files, and explore its brain via an interactive neural network force graph. Compare your writing DNA across 6 axes with a radar chart, auto-annotate lyrics, and train the AI on your favorite beats with BPM/key extraction.
 
   ![Learning Center Dashboard](docs/images/learning-center-word-explorer.png)
+
+### 🧠 Phase 8: Training Intelligence (New!)
+
+- **🏟️ AI Arena (Automated RLHF)** — Generate 4 AI variants side-by-side. Pick the best one, and the rejects automatically become DPO preference pairs.
+- **🔄 Continual Learning** — Background buffer captures your best lines and auto-triggers retraining when a batch is ready.
+- **🧽 Concept Erasure** — Surgically remove clichés by generating synthetic negative DPO pairs for banned keywords.
 
 ### 🧪 Advanced Training Pipeline
 
@@ -128,6 +134,8 @@ graph TD
             NLP[NLP Analysis]
             Scraper[Lyrics Scraper]
             Training[Training Generator\n& Auto-Train]
+            Arena[AI Arena / RLHF]
+            Continual[Continual Learning\nManager]
             Cache[In-Memory Cache]
         end
     end
@@ -144,10 +152,11 @@ graph TD
         SQLite[(SQLite DB)]
         Files[File System]
         Export[Training Datasets\nZip/Alpaca]
+        Feedback[DPO/RLHF Logs\nJSON]
     end
 
     User <-->|Interaction| Client
-    Client <-->|REST / SSE| API
+    Client <-->|REST / SSE / Arena| API
     
     API --> Services
     
@@ -157,10 +166,16 @@ graph TD
     Services --> NLP
     Services --> Scraper
     Services --> Training
+    Services --> Arena
+    Services --> Continual
     Services --> Cache
     
     NLP -->|Uses| AI_Service
+    Arena -->|Generates Variants| AI_Service
+    Arena -->|Logs Votes| Feedback
+    Continual -->|Buffers Lines| DB_Layer
     Training -->|Tracks Feedback| DB_Layer
+    Training -->|Uses| Feedback
     Training -->|Generates| Export
     Training -->|Triggers Script| LMStudio
     

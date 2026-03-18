@@ -98,6 +98,20 @@ async def add_line(data: LineCreate, db: AsyncSession = Depends(get_db)):
     await db.flush()
     await db.refresh(line)
 
+    # ── Continual Learning: push high-complexity lines to training buffer ──
+    try:
+        from ..services.training_data import ContinualLearningManager
+        _continual_mgr = ContinualLearningManager()
+        cl_result = _continual_mgr.push_line(
+            text=content,
+            complexity_score=line.complexity_score or 0,
+            session_id=data.session_id,
+        )
+        if cl_result.get("training_triggered"):
+            print(f"[continual] Buffer full — auto-training triggered ({cl_result.get('buffer_size')} lines)")
+    except Exception:
+        pass  # Continual learning is best-effort
+
     # Highlight with context of ALL session lines for proper cross-line detection
     all_lines_result = await db.execute(
         select(LyricLine)
