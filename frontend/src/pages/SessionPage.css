@@ -92,13 +92,18 @@
 
 /* Panel Toggles */
 .panel-toggles {
-    position: absolute;
-    left: var(--spacing-md);
-    top: 50%;
-    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    width: 70px;
+    border-right: 1px solid var(--border-color);
+    background: rgba(10, 8, 20, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 1rem 0;
+    flex-shrink: 0;
     z-index: 10;
 }
 
@@ -144,7 +149,6 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    margin-left: 70px;
 }
 
 .editor-top-bar {
@@ -181,16 +185,17 @@
     }
 
     .panel-toggles {
-        left: var(--spacing-sm);
+        width: 55px;
+        padding: 0.75rem 0;
     }
 
     .panel-toggle {
-        width: 40px;
-        height: 40px;
+        width: 38px;
+        height: 38px;
         font-size: 1rem;
     }
 
-    .editor-container {
-        margin-left: 55px;
+    .side-panel {
+        left: 55px;
     }
 }
