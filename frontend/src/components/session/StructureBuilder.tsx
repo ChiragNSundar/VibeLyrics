@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Layers, Map, CheckCircle2 } from 'lucide-react';
+import { Layers, Map } from 'lucide-react';
 import { aiApi } from '../../services/api';
 import { Button } from '../ui/Button';
 import { useSessionStore } from '../../store/sessionStore';

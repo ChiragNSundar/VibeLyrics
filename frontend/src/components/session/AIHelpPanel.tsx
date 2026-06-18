@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { aiApi, type LyricLine } from '../../services/api';
+import { aiApi } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
 import { Button } from '../ui/Button';
 import { HookGenerator } from './HookGenerator';

@@ -472,6 +472,46 @@ export const toolApi = {
                 is_valid_rhyme: isValid,
             }),
         }),
+
+    extractPhonetics: (word: string, language: string) =>
+        request<{ success: boolean; word: string; vowel_sequence: string; exact_key: string; syllable_count: number }>('/api/rhymes/extract', {
+            method: 'POST',
+            body: JSON.stringify({ word, language }),
+        }),
+
+    registerPhonetics: (data: { word: string; language: string; vowel_sequence: string; exact_key: string; syllable_count: number; is_slang: boolean }) =>
+        request<{ success: boolean; message: string; error?: string }>('/api/rhymes/register', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+};
+
+// Settings APIs
+export const settingsApi = {
+    getSettings: () =>
+        request<{ success: boolean; profile: { favorite_words: string; banned_words: string; slang_preferences: string; default_bpm: number; artist_name?: string } }>('/api/settings/'),
+    
+    updateSettings: (data: { preferred_provider?: string; default_bpm?: number; complexity_level?: string; rhyme_style?: string }) =>
+        request<ApiResponse>('/api/settings/', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+
+    addVocabulary: (word: string, listType: 'favorite' | 'banned' | 'slang') =>
+        request<{ success: boolean; word: string; list_type: string; total: number; error?: string }>('/api/settings/vocabulary', {
+            method: 'POST',
+            body: JSON.stringify({ word, list_type: listType }),
+        }),
+
+    removeVocabulary: (word: string, listType: 'favorite' | 'banned' | 'slang') =>
+        request<ApiResponse>(`/api/settings/vocabulary/${encodeURIComponent(word)}?list_type=${listType}`, {
+            method: 'DELETE',
+        }),
+
+    resetSettings: () =>
+        request<ApiResponse>('/api/settings/reset', {
+            method: 'POST',
+        }),
 };
 
 // AI APIs

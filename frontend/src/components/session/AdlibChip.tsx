@@ -11,7 +11,7 @@ interface AdlibChipProps {
     mood?: string;
 }
 
-export const AdlibChip: React.FC<AdlibChipProps> = ({ sessionId, recentLines, mood }) => {
+export const AdlibChip: React.FC<AdlibChipProps> = ({ sessionId: _sessionId, recentLines, mood }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [adlibs, setAdlibs] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(false);

@@ -112,6 +112,20 @@ class ThesaurusLookup(BaseModel):
     include_synonyms: bool = True
 
 
+class RhymeExtract(BaseModel):
+    word: str = Field(..., min_length=1)
+    language: str = Field(default="en")
+
+
+class PhoneticRegister(BaseModel):
+    word: str = Field(..., min_length=1)
+    language: str = Field(default="en")
+    vowel_sequence: str = Field(..., min_length=1)
+    exact_key: str = Field(..., min_length=1)
+    syllable_count: int = Field(..., ge=1, le=20)
+    is_slang: bool = False
+
+
 # ============ Journal Schemas ============
 
 class JournalCreate(BaseModel):

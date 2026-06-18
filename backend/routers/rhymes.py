@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel
-from ..schemas import RhymeLookup, ThesaurusLookup
+from ..schemas import RhymeLookup, ThesaurusLookup, RhymeExtract, PhoneticRegister
 from ..services.rhyme_detector import RhymeDetector
 from ..database import get_db
 
@@ -153,6 +153,63 @@ async def vote_rhyme(data: RhymeVoteSchema, db: AsyncSession = Depends(get_db)):
         await db.commit()
         _rhyme_detector.clear_cache()
         return {"success": True, "message": "Vote recorded successfully."}
+    except Exception as e:
+        await db.rollback()
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/rhymes/extract", response_model=dict)
+async def extract_word_phonetics(data: RhymeExtract):
+    """Run phonetic vowel extraction on a word (English, Hindi, or Kannada)"""
+    vowel_seq, exact_key, syllable_count = _rhyme_detector.extract_vowels(
+        data.word, data.language
+    )
+    return {
+        "success": True,
+        "word": data.word,
+        "vowel_sequence": vowel_seq,
+        "exact_key": exact_key,
+        "syllable_count": syllable_count
+    }
+
+
+@router.post("/rhymes/register", response_model=dict)
+async def register_word_phonetics(data: PhoneticRegister, db: AsyncSession = Depends(get_db)):
+    """Manually register or override a word in the MultisyllabicWord phonetic database"""
+    from ..models import MultisyllabicWord
+    
+    # Check if entry already exists
+    query = select(MultisyllabicWord).where(
+        MultisyllabicWord.language == data.language,
+        func.lower(MultisyllabicWord.word) == data.word.lower().strip()
+    )
+    res = await db.execute(query)
+    word_entry = res.scalar_one_or_none()
+    
+    if word_entry:
+        word_entry.vowel_sequence = data.vowel_sequence.strip()
+        word_entry.exact_rhyme_key = data.exact_key.strip()
+        word_entry.syllable_count = data.syllable_count
+        word_entry.is_slang = data.is_slang
+    else:
+        word_entry = MultisyllabicWord(
+            word=data.word.strip(),
+            language=data.language,
+            vowel_sequence=data.vowel_sequence.strip(),
+            exact_rhyme_key=data.exact_key.strip(),
+            syllable_count=data.syllable_count,
+            is_slang=data.is_slang,
+            upvotes=1
+        )
+        db.add(word_entry)
+        
+    try:
+        await db.commit()
+        _rhyme_detector.clear_cache()
+        return {
+            "success": True,
+            "message": f"Successfully registered '{data.word}' in {data.language.upper()} dictionary."
+        }
     except Exception as e:
         await db.rollback()
         return {"success": False, "error": str(e)}

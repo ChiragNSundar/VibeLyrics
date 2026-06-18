@@ -18,7 +18,7 @@ export const BeatTimer: React.FC<BeatTimerProps> = ({ bpm }) => {
     const bpmRef = useRef<HTMLDivElement>(null);
     const debouncedApiUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const requestRef = useRef<number>();
+    const requestRef = useRef<number | undefined>(undefined);
     const startTimeRef = useRef<number>(0);
     const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -112,9 +112,7 @@ export const BeatTimer: React.FC<BeatTimerProps> = ({ bpm }) => {
         const beatInBar = totalBeatsElapsed % 4;
         const currentBarNum = Math.floor(totalBeatsElapsed / 4) + 1;
 
-        // Calculate smooth progress through the current beat (0 to 100%)
-        const timeInCurrentBeat = elapsedTime % msPerBeat;
-        const beatProgress = (timeInCurrentBeat / msPerBeat) * 100;
+        // Smooth progress through the current beat (calculated but unused)
 
         // Calculate smooth progress through the current bar (0 to 100%)
         const timeInCurrentBar = elapsedTime % msPerBar;

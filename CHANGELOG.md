@@ -2,6 +2,27 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.1.0] - 2026-06-18
+
+### 🧠 Interactive Seeding Center & Phonetic Sandbox
+
+#### 🚀 Seeding & Learning Cockpit
+- **Interactive Redesign** — Transformed the static "Learning" display page into a dynamic, 4-tab dashboard featuring Vocabulary management, a Phonetic Sandbox, Brain Importer, and Word Explorer.
+- **Relocated Vocabulary & Style Configuration** — Moved Favorite and Banned words out of SettingsPage into the new Cockpit dashboard, adding support for a "Slang" vocabulary category.
+- **Vocabulary & Slang Builder** — Real-time lists displaying Favorite, Banned, and Slang words with forms to easily add words and instant deletion tags.
+
+#### 🎙️ Phonetic Sandbox & SQLite Override Sync
+- **Phonetic Database Overrides** — Enter any word in English, Devanagari (Hindi), or Kannada to extract syllables, vowel sequences, and ending keys.
+- **Manual Adjustments** — Edit the extracted vowel sequence, syllable count, exact rhyme key, and slang status directly from the UI.
+- **Direct Database Sync** — Saving writes the customized override directly into the local SQLite `MultisyllabicWord` table.
+
+#### 📁 Brain Feed & Importer
+- **Document Ingestion** — Pasting raw lyrics or importing documents (.pdf, .txt, .docx) parses text to update AI theme models.
+- **Beat Audio Analyzer** — Drag and drop MP3 or WAV audio beats to instantly extract BPM and Musical Key parameters.
+
+#### 🔍 Offline Word Explorer
+- **Multi-Lookup Utility** — Integrated perfect rhymes, near rhymes, and semantic thesaurus synonyms lookup into a dedicated dashboard tab.
+
 ## [3.0.0] - 2026-06-18
 
 ### 🎤 Offline Doppelreim Engine & Visual Cadence Polish

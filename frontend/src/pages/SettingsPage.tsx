@@ -129,26 +129,6 @@ export const SettingsPage: React.FC = () => {
                 </div>
             </Card>
 
-            {/* Vocabulary */}
-            <Card className="settings-section" glass>
-                <h3>🧠 Vocabulary &amp; Style</h3>
-                <div className="setting-row">
-                    <label>Favorite Words</label>
-                    <p className="setting-sub">Comma-separated words you love to use.</p>
-                    <textarea
-                        className="input textarea-sm"
-                        placeholder="eternal, soul, vibe, nebula..."
-                    />
-                </div>
-                <div className="setting-row">
-                    <label>Banned Words</label>
-                    <p className="setting-sub">Words the AI should avoid.</p>
-                    <textarea
-                        className="input textarea-sm"
-                        placeholder="cliche, baby, yeah..."
-                    />
-                </div>
-            </Card>
 
             {/* Learning */}
             <Card className="settings-section" glass>

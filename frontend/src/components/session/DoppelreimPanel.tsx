@@ -15,7 +15,7 @@ interface DoppelreimPanelProps {
 }
 
 export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
-    sessionId,
+    sessionId: _sessionId,
     initialWord = '',
     onInsert,
 }) => {

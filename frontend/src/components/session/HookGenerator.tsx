@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Check, RefreshCw, Layers } from 'lucide-react';
+import { Sparkles, Check, RefreshCw } from 'lucide-react';
 import { aiApi } from '../../services/api';
 import { Button } from '../ui/Button';
 import { useSessionStore } from '../../store/sessionStore';
@@ -13,7 +13,7 @@ interface HookGeneratorProps {
 }
 
 export const HookGenerator: React.FC<HookGeneratorProps> = ({ sessionId, theme, mood }) => {
-    const { lines, setLines, currentSession } = useSessionStore();
+    const { lines, setLines } = useSessionStore();
     const [isLoading, setIsLoading] = useState(false);
     const [hooks, setHooks] = useState<string[]>([]);
     const [customTheme, setCustomTheme] = useState(theme || '');
