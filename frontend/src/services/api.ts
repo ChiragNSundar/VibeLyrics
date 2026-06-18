@@ -377,6 +377,12 @@ export const sessionApi = {
 
     heartbeat: (id: number) =>
         request<{ success: boolean; total_writing_seconds: number }>(`/api/sessions/${id}/heartbeat`, { method: 'POST' }),
+
+    update: (id: number, data: Partial<CreateSessionData>) =>
+        request<ApiResponse>(`/api/sessions/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
 };
 
 // Line APIs

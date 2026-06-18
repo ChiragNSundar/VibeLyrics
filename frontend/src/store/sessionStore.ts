@@ -28,6 +28,8 @@ interface SessionStore {
     selectedLineId: number | null;
     ghostText: string;
     currentSection: string;
+    activePanel: 'none' | 'rhymewave' | 'aihelp' | 'punchline' | 'wordplay' | 'audio' | 'doppelreim';
+    activeRhymeWord: string | null;
 
     // History for undo/redo
     history: HistoryAction[];
@@ -36,6 +38,7 @@ interface SessionStore {
 
     // Actions
     setSession: (session: Session) => void;
+    updateSessionBpm: (bpm: number) => void;
     setLines: (lines: LyricLine[]) => void;
     addLine: (content: string, section?: string) => Promise<void>;
     updateLine: (lineId: number, content: string) => Promise<void>;
@@ -43,6 +46,8 @@ interface SessionStore {
     setGhostText: (text: string) => void;
     setSelectedLine: (lineId: number | null) => void;
     setCurrentSection: (section: string) => void;
+    setActivePanel: (panel: 'none' | 'rhymewave' | 'aihelp' | 'punchline' | 'wordplay' | 'audio' | 'doppelreim') => void;
+    setActiveRhymeWord: (word: string | null) => void;
 
     // History actions
     pushHistory: (action: HistoryAction) => void;
@@ -62,13 +67,23 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     selectedLineId: null,
     ghostText: '',
     currentSection: 'Verse',
+    activePanel: 'none',
+    activeRhymeWord: null,
     history: [],
     future: [],
     maxHistorySize: 50,
 
     setSession: (session) => set({ currentSession: session }),
 
+    updateSessionBpm: (bpm) => set((state) => 
+        state.currentSession ? { currentSession: { ...state.currentSession, bpm } } : {}
+    ),
+
     setLines: (lines) => set({ lines }),
+
+    setActivePanel: (panel) => set({ activePanel: panel }),
+
+    setActiveRhymeWord: (word) => set({ activeRhymeWord: word }),
 
     addLine: async (content, section = 'Verse') => {
         const { currentSession, lines, pushHistory } = get();
@@ -248,6 +263,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
             selectedLineId: null,
             ghostText: '',
             currentSection: 'Verse',
+            activePanel: 'none',
+            activeRhymeWord: null,
             history: [],
             future: [],
         }),

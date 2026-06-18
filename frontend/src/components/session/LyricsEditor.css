@@ -215,3 +215,68 @@
         opacity: 0.5;
     }
 }
+
+/* ── Cadence Ring progress indicator ── */
+.cadence-ring-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+}
+
+.cadence-ring {
+    transform: rotate(-90deg); /* Start progress at top center */
+    width: 34px;
+    height: 34px;
+}
+
+.cadence-ring circle {
+    fill: none;
+    stroke-width: 3px;
+    transition: stroke-dashoffset 0.35s ease;
+}
+
+.cadence-ring .ring-bg {
+    stroke: rgba(255, 255, 255, 0.08);
+}
+
+/* Color states */
+.cadence-ring-container.under .cadence-ring .ring-progress {
+    stroke: #fbbf24; /* Amber */
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
+}
+
+.cadence-ring-container.good .cadence-ring .ring-progress {
+    stroke: #10b981; /* Emerald/Green */
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+    animation: ring-pulse 1.5s infinite alternate ease-in-out;
+}
+
+.cadence-ring-container.over .cadence-ring .ring-progress {
+    stroke: #f87171; /* Rose/Red */
+    filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.4));
+}
+
+.cadence-count {
+    position: absolute;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ffffff;
+    font-family: var(--font-mono);
+}
+
+.cadence-ring-container.good .cadence-count {
+    color: #34d399;
+}
+
+@keyframes ring-pulse {
+    0% {
+        transform: rotate(-90deg) scale(1.0);
+    }
+    100% {
+        transform: rotate(-90deg) scale(1.05);
+    }
+}

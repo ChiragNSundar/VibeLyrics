@@ -24,10 +24,19 @@ export const SessionPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const sessionId = parseInt(id || '0');
 
-    const { currentSession, setSession, lines, setLines, reset, undo, redo } = useSessionStore();
+    const {
+        currentSession,
+        setSession,
+        lines,
+        setLines,
+        reset,
+        undo,
+        redo,
+        activePanel,
+        setActivePanel
+    } = useSessionStore();
     const { aiProvider } = useSettingsStore(); // global provider from Settings
     const [isLoading, setIsLoading] = useState(true);
-    const [activePanel, setActivePanel] = useState<'none' | 'rhymewave' | 'aihelp' | 'punchline' | 'wordplay' | 'audio' | 'doppelreim'>('none');
 
     useEffect(() => {
         loadSession();

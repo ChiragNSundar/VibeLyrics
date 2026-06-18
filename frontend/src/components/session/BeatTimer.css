@@ -116,3 +116,14 @@
 .beat-marker.active.first {
     box-shadow: 0 0 10px var(--accent-color);
 }
+
+.bpm-display.scrollable {
+    cursor: ns-resize;
+    transition: all 0.2s ease;
+}
+
+.bpm-display.scrollable:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #c084fc;
+    box-shadow: 0 0 8px rgba(192, 132, 252, 0.3);
+}

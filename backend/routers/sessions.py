@@ -171,7 +171,7 @@ async def session_heartbeat(session_id: int, db: AsyncSession = Depends(get_db))
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    now = datetime.now(tz.utc)
+    now = datetime.now(tz.utc).replace(tzinfo=None)
     # If last heartbeat was within 60 seconds, count the interval as writing time
     if session.last_active_at:
         delta = (now - session.last_active_at).total_seconds()

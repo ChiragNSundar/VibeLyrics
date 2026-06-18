@@ -14,11 +14,48 @@ interface LineRowProps {
 }
 
 export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
-    const { lines, setLines } = useSessionStore();
+    const { lines, setLines, setActiveRhymeWord, setActivePanel } = useSessionStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(line.final_version || line.user_input);
     const [isImproving, setIsImproving] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    const handleTextClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+        const target = e.target as HTMLElement;
+        let word = '';
+        
+        // If clicked target is a highlighting span inside the text
+        if (target && target.tagName === 'SPAN' && target !== e.currentTarget) {
+            word = target.textContent || '';
+        } else {
+            // Fallback: use getSelection range to extract clicked word
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const node = range.startContainer;
+                const offset = range.startOffset;
+                if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+                    const text = node.textContent;
+                    let start = offset;
+                    while (start > 0 && /[\w\u0900-\u097F\u0C80-\u0CFF]/.test(text[start - 1])) {
+                        start--;
+                    }
+                    let end = offset;
+                    while (end < text.length && /[\w\u0900-\u097F\u0C80-\u0CFF]/.test(text[end])) {
+                        end++;
+                    }
+                    word = text.slice(start, end);
+                }
+            }
+        }
+        
+        // Clean word from non-alpha characters (keeping Devanagari/Kannada letters)
+        const cleanWord = word.replace(/[^\w\u0900-\u097F\u0C80-\u0CFF]/g, '').trim();
+        if (cleanWord) {
+            setActiveRhymeWord(cleanWord);
+            setActivePanel('doppelreim');
+        }
+    };
 
     const handleEdit = () => {
         setIsEditing(true);
@@ -124,7 +161,9 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                     />
                 ) : (
                     <span
-                        className="line-text"
+                        className="line-text highlightable-word"
+                        onClick={handleTextClick}
+                        style={{ cursor: 'pointer' }}
                         dangerouslySetInnerHTML={{
                             __html: line.highlighted_html || line.final_version || line.user_input,
                         }}

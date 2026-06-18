@@ -151,6 +151,7 @@ async def vote_rhyme(data: RhymeVoteSchema, db: AsyncSession = Depends(get_db)):
         
     try:
         await db.commit()
+        _rhyme_detector.clear_cache()
         return {"success": True, "message": "Vote recorded successfully."}
     except Exception as e:
         await db.rollback()

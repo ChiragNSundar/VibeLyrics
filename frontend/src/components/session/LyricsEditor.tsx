@@ -517,6 +517,22 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
                         />
                         <Autocomplete suggestion={ghostText} inputValue={inputValue} isStreaming={isStreaming} />
                     </div>
+                    {inputValue.trim() && (
+                        <div className={`cadence-ring-container ${syllableStatus}`} title={`Syllables: ${syllableCount} (Target: ${syllableTarget.min}-${syllableTarget.max})`}>
+                            <svg className="cadence-ring" width="28" height="28" viewBox="0 0 32 32">
+                                <circle className="ring-bg" cx="16" cy="16" r="13" />
+                                <circle 
+                                    className="ring-progress" 
+                                    cx="16" 
+                                    cy="16" 
+                                    r="13" 
+                                    strokeDasharray="81.68"
+                                    strokeDashoffset={81.68 - (81.68 * Math.min(syllableCount, syllableTarget.max)) / syllableTarget.max}
+                                />
+                            </svg>
+                            <span className="cadence-count">{syllableCount}</span>
+                        </div>
+                    )}
                     <Button variant="primary" onClick={handleAddLine} disabled={!inputValue.trim()}>
                         Add
                     </Button>

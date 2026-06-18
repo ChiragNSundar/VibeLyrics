@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, Metronome } from 'lucide-react';
+import { useSessionStore } from '../../store/sessionStore';
+import { sessionApi } from '../../services/api';
 import './BeatTimer.css';
 
 interface BeatTimerProps {
@@ -12,9 +14,55 @@ export const BeatTimer: React.FC<BeatTimerProps> = ({ bpm }) => {
     const [currentBar, setCurrentBar] = useState(1);
     const [progress, setProgress] = useState(0); // 0 to 100
 
+    const { currentSession, updateSessionBpm } = useSessionStore();
+    const bpmRef = useRef<HTMLDivElement>(null);
+    const debouncedApiUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const requestRef = useRef<number>();
     const startTimeRef = useRef<number>(0);
     const audioContextRef = useRef<AudioContext | null>(null);
+
+    useEffect(() => {
+        const element = bpmRef.current;
+        if (!element) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            if (!currentSession) return;
+
+            const delta = e.deltaY < 0 ? 1 : -1;
+            const step = e.shiftKey ? 5 : 1;
+            const newBpm = Math.max(20, Math.min(300, bpm + delta * step));
+
+            if (newBpm === bpm) return;
+
+            updateSessionBpm(newBpm);
+
+            if (debouncedApiUpdateRef.current) {
+                clearTimeout(debouncedApiUpdateRef.current);
+            }
+            debouncedApiUpdateRef.current = setTimeout(async () => {
+                try {
+                    await sessionApi.update(currentSession.id, { bpm: newBpm });
+                } catch (err) {
+                    console.error('Failed to sync BPM to backend:', err);
+                }
+            }, 500);
+        };
+
+        element.addEventListener('wheel', handleWheel, { passive: false });
+        return () => {
+            element.removeEventListener('wheel', handleWheel);
+        };
+    }, [bpm, currentSession, updateSessionBpm]);
+
+    useEffect(() => {
+        return () => {
+            if (debouncedApiUpdateRef.current) {
+                clearTimeout(debouncedApiUpdateRef.current);
+            }
+        };
+    }, []);
 
     // Initialize Audio Context for click track
     useEffect(() => {
@@ -136,16 +184,16 @@ export const BeatTimer: React.FC<BeatTimerProps> = ({ bpm }) => {
                 >
                     <Square size={16} />
                 </button>
-                <div className="bpm-display">
+                <div 
+                    ref={bpmRef}
+                    className="bpm-display scrollable"
+                    title="Hover and scroll to change BPM (Shift for fast scroll)"
+                >
                     <Metronome size={14} /> {bpm} BPM
                 </div>
             </div>
 
             <div className="beat-visualizer">
-                <div className="bar-info">
-                    Bar <span className="highlight-text">{currentBar}</span>
-                </div>
-
                 <div className="track-container">
                     <div className="progress-bar" style={{ width: `${progress}%` }}></div>
 

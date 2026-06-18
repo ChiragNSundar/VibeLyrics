@@ -337,3 +337,9 @@
         color: #000;
     }
 }
+
+.line-text.highlightable-word:hover {
+    color: #c084fc;
+    text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
+    transition: all 0.2s ease;
+}

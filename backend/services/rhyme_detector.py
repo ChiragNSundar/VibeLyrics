@@ -5,6 +5,7 @@ Ported from Flask app with CMU dictionary and Indian language support
 import pronouncing
 import re
 from typing import List, Dict, Optional
+from collections import OrderedDict
 from functools import lru_cache
 from sqlalchemy import select, func, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -104,6 +105,12 @@ class RhymeDetector:
     
     def __init__(self):
         self.syllable_counter = SyllableCounter()
+        self._cache = OrderedDict()
+        self._cache_max_size = 500
+
+    def clear_cache(self):
+        """Clear the in-memory lookup cache"""
+        self._cache.clear()
 
     def extract_vowels(self, word: str, language: str) -> tuple:
         """Extract vowel sequence, exact rhyme key, and syllable count based on language"""
@@ -352,13 +359,22 @@ class RhymeDetector:
         if not word:
             return []
             
+        cache_key = (word.lower(), language, mode, allow_slang, max_results)
+        if cache_key in self._cache:
+            self._cache.move_to_end(cache_key)
+            return self._cache[cache_key]
+            
         vowel_seq, exact_key, syllable_count = self.extract_vowels(word, language)
         
         # Self-learning step: add query word if it's missing
         await self.auto_register_word(session, word, language, vowel_seq, exact_key, syllable_count)
         
         if mode == 'multi':
-            return await self.find_combinatorial_rhymes(session, vowel_seq, language, allow_slang, max_results)
+            res = await self.find_combinatorial_rhymes(session, vowel_seq, language, allow_slang, max_results)
+            self._cache[cache_key] = res
+            if len(self._cache) > self._cache_max_size:
+                self._cache.popitem(last=False)
+            return res
             
         query = select(MultisyllabicWord).where(MultisyllabicWord.language == language)
         
@@ -393,7 +409,12 @@ class RhymeDetector:
                 if r["word"].lower() not in existing:
                     results.append(r)
                     
-        return results[:max_results]
+        final_results = results[:max_results]
+        self._cache[cache_key] = final_results
+        if len(self._cache) > self._cache_max_size:
+            self._cache.popitem(last=False)
+            
+        return final_results
 
     async def seed_phonetic_database(self, session: AsyncSession):
         """Seed the multisyllabic dictionary with standard words for English, Hindi, and Kannada"""

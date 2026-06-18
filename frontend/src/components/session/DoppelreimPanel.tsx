@@ -4,6 +4,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { toolApi } from '../../services/api';
 import type { DoppelreimResult } from '../../services/api';
 import { toast } from 'react-hot-toast';
+import { useSessionStore } from '../../store/sessionStore';
 import './DoppelreimPanel.css';
 
 interface DoppelreimPanelProps {
@@ -26,6 +27,8 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [votedItems, setVotedItems] = useState<Record<string, 'up' | 'down'>>({});
     const [showOptions, setShowOptions] = useState(false);
+
+    const { activeRhymeWord, setActiveRhymeWord } = useSessionStore();
 
     const handleSearch = useCallback(async () => {
         const cleanTerm = searchTerm.trim();
@@ -62,6 +65,38 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
             setSearchTerm(initialWord);
         }
     }, [initialWord]);
+
+    useEffect(() => {
+        if (activeRhymeWord) {
+            setSearchTerm(activeRhymeWord);
+            const triggerSearch = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const res = await toolApi.lookupDoppelreim({
+                        word: activeRhymeWord,
+                        language,
+                        mode,
+                        allow_slang: allowSlang,
+                        max_results: 30,
+                    });
+                    if (res.success && res.results) {
+                        setResults(res.results);
+                    } else {
+                        setResults([]);
+                        setError('No rhymes found for this search configuration.');
+                    }
+                } catch (err) {
+                    setError('Failed to connect to offline rhyme engine.');
+                    setResults([]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            triggerSearch();
+            setActiveRhymeWord(null);
+        }
+    }, [activeRhymeWord, language, mode, allowSlang, setActiveRhymeWord]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSearch();
