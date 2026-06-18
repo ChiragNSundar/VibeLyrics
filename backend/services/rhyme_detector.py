@@ -563,14 +563,21 @@ class RhymeDetector:
     def get_rhyme_ending(self, word: str) -> str:
         """Get the phonetic rhyme ending"""
         word = word.lower().strip()
-        word = re.sub(r'[^a-z]', '', word)
-        
-        phones = pronouncing.phones_for_word(word)
-        if phones:
-            # Get rhyme part (from last stressed vowel)
-            return pronouncing.rhyming_part(phones[0])
-        
-        return self._get_ending(word)
+        if any(0x0900 <= ord(c) <= 0x097F for c in word):
+            # Hindi
+            word = re.sub(r'[^\u0900-\u097f]', '', word)
+            return word[-2:] if len(word) >= 2 else word
+        elif any(0x0C80 <= ord(c) <= 0x0CFF for c in word):
+            # Kannada
+            word = re.sub(r'[^\u0c80-\u0cff]', '', word)
+            return word[-2:] if len(word) >= 2 else word
+        else:
+            word = re.sub(r'[^a-z]', '', word)
+            phones = pronouncing.phones_for_word(word)
+            if phones:
+                # Get rhyme part (from last stressed vowel)
+                return pronouncing.rhyming_part(phones[0])
+            return self._get_ending(word)
     
     def find_multi_syllable_rhymes(self, word: str) -> List[str]:
         """Find multi-syllable rhymes"""
@@ -625,11 +632,30 @@ class RhymeDetector:
             words = line.split()
             wm: List[int] = []
             for word in words:
-                clean = re.sub(r'[^a-z]', '', word.lower())
+                # Detect language
+                is_hindi = any(0x0900 <= ord(c) <= 0x097F for c in word)
+                is_kannada = any(0x0C80 <= ord(c) <= 0x0CFF for c in word)
+                
+                if is_hindi:
+                    clean = re.sub(r'[^\u0900-\u097f]', '', word)
+                    lang = 'hi'
+                elif is_kannada:
+                    clean = re.sub(r'[^\u0c80-\u0cff]', '', word)
+                    lang = 'kn'
+                else:
+                    clean = re.sub(r'[^a-z]', '', word.lower())
+                    lang = 'en'
+                    
                 if clean:
-                    phones_list = pronouncing.phones_for_word(clean)
-                    phones = phones_list[0] if phones_list else ''
-                    rp = pronouncing.rhyming_part(phones) if phones else self._get_ending(clean)
+                    if lang == 'en':
+                        phones_list = pronouncing.phones_for_word(clean)
+                        phones = phones_list[0] if phones_list else ''
+                        rp = pronouncing.rhyming_part(phones) if phones else self._get_ending(clean)
+                    else:
+                        vowel_seq, exact_key, _ = self.extract_vowels(clean, lang)
+                        # Space-separated vowels for pronunciation mapping compatibility
+                        phones = vowel_seq.replace('-', ' ')
+                        rp = exact_key
 
                     all_words.append(clean)
                     all_phones.append(phones)
@@ -745,7 +771,19 @@ class RhymeDetector:
         # ── 6. Consonance (shared consonant skeleton) ────────────────
         cons_groups: Dict[str, List[int]] = {}
         for idx in range(n):
-            frame = self._get_consonant_frame(all_phones[idx])
+            clean_word = all_words[idx]
+            is_hindi = any(0x0900 <= ord(c) <= 0x097F for c in clean_word)
+            is_kannada = any(0x0C80 <= ord(c) <= 0x0CFF for c in clean_word)
+            
+            if is_hindi:
+                consonants = [c for c in clean_word if (0x0915 <= ord(c) <= 0x0939) or (0x0958 <= ord(c) <= 0x095F) or c == 'ळ']
+                frame = "_".join(consonants) if len(consonants) >= 2 else ""
+            elif is_kannada:
+                consonants = [c for c in clean_word if (0x0C95 <= ord(c) <= 0x0CB9) or ord(c) == 0x0CDE]
+                frame = "_".join(consonants) if len(consonants) >= 2 else ""
+            else:
+                frame = self._get_consonant_frame(all_phones[idx])
+                
             if frame and len(frame) >= 2:  # at least 2 consonants
                 cons_groups.setdefault(frame, []).append(idx)
 
@@ -863,6 +901,14 @@ class RhymeDetector:
         E.g., 'scars' with rhyming part 'AA1 R Z' → ('sc', 'ars')
               'boat'  with rhyming part 'OW1 T'   → ('b', 'oat')
         """
+        is_hindi = any(0x0900 <= ord(c) <= 0x097F for c in clean)
+        is_kannada = any(0x0C80 <= ord(c) <= 0x0CFF for c in clean)
+        
+        if is_hindi or is_kannada:
+            if len(original) >= 3:
+                return (original[:-2], original[-2:])
+            return ('', original)
+
         if not phones:
             # Fallback: highlight from last vowel
             for k in range(len(original)):
@@ -917,9 +963,29 @@ class RhymeDetector:
 
     def _phoneme_distance(self, rp1: str, rp2: str) -> int:
         """
-        Edit distance between two rhyming parts (phoneme sequences).
+        Edit distance between two rhyming parts (phoneme sequences or Indian character endings).
         Used to detect near/slant rhymes (distance = 1).
         """
+        if any(ord(c) > 127 for c in rp1 + rp2):
+            # Calculate character-level Levenshtein distance for Indian script endings
+            m, n_p = len(rp1), len(rp2)
+            if abs(m - n_p) > 1:
+                return abs(m - n_p)
+            dp = [[0] * (n_p + 1) for _ in range(m + 1)]
+            for i_d in range(m + 1):
+                dp[i_d][0] = i_d
+            for j_d in range(n_p + 1):
+                dp[0][j_d] = j_d
+            for i_d in range(1, m + 1):
+                for j_d in range(1, n_p + 1):
+                    cost = 0 if rp1[i_d - 1] == rp2[j_d - 1] else 1
+                    dp[i_d][j_d] = min(
+                        dp[i_d - 1][j_d] + 1,
+                        dp[i_d][j_d - 1] + 1,
+                        dp[i_d - 1][j_d - 1] + cost
+                    )
+            return dp[m][n_p]
+
         p1 = rp1.split()
         p2 = rp2.split()
         # Strip stress digits for comparison
@@ -955,7 +1021,7 @@ class RhymeDetector:
                 return re.sub(r'\d', '', p)
         # Fallback: first vowel
         for p in phones.split():
-            if p[0] in 'AEIOU':
+            if p[0] in 'AEIOUaeiou':
                 return re.sub(r'\d', '', p)
         return ''
 
@@ -975,9 +1041,10 @@ class RhymeDetector:
 
     def _is_multi_syllable_rhyme(self, phones1: str, phones2: str) -> bool:
         """
-        Check if two words share a multi-syllable rhyme (4+ trailing phonemes match).
+        Check if two words share a multi-syllable rhyme (4+ trailing phonemes match for English, 2+ vowels for Indian scripts).
         E.g., 'education' / 'motivation' share 'EY1 SH AH0 N'.
         """
+        is_indian = any(c.islower() for c in phones1)
         p1 = [re.sub(r'\d', '', p) for p in phones1.split()]
         p2 = [re.sub(r'\d', '', p) for p in phones2.split()]
 
@@ -989,7 +1056,8 @@ class RhymeDetector:
             else:
                 break
 
-        # 4+ matching trailing phonemes = multi-syllable rhyme
+        if is_indian:
+            return match_count >= 2
         return match_count >= 4
 
     def _find_alliterations(self, lines: List[str]) -> List[List[str]]:

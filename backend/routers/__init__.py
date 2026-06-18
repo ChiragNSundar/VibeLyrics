@@ -1,4 +1,4 @@
 """
 Routers package
 """
-from . import sessions, lines, ai, rhymes, journal, stats, user_settings, advanced, training
+from . import sessions, lines, ai, rhymes, journal, stats, user_settings, advanced, training, websocket

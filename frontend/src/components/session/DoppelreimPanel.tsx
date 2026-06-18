@@ -5,6 +5,7 @@ import { toolApi } from '../../services/api';
 import type { DoppelreimResult } from '../../services/api';
 import { toast } from 'react-hot-toast';
 import { useSessionStore } from '../../store/sessionStore';
+import { RhymeMap3D } from './RhymeMap3D';
 import './DoppelreimPanel.css';
 
 interface DoppelreimPanelProps {
@@ -27,6 +28,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [votedItems, setVotedItems] = useState<Record<string, 'up' | 'down'>>({});
     const [showOptions, setShowOptions] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
     const { activeRhymeWord, setActiveRhymeWord } = useSessionStore();
 
@@ -271,6 +273,24 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                 )}
             </AnimatePresence>
 
+            {/* View Mode Toggle */}
+            {results.length > 0 && !loading && !error && (
+                <div className="view-mode-toggle">
+                    <button
+                        className={`mode-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                        onClick={() => setViewMode('list')}
+                    >
+                        List View
+                    </button>
+                    <button
+                        className={`mode-toggle-btn ${viewMode === 'map' ? 'active' : ''}`}
+                        onClick={() => setViewMode('map')}
+                    >
+                        🌐 3D Rhyme Map
+                    </button>
+                </div>
+            )}
+
             {/* Results Section */}
             <div className="results-scroll-area">
                 {loading && (
@@ -287,66 +307,74 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                     </div>
                 )}
 
-                <AnimatePresence>
-                    {!loading &&
-                        results.map((item, index) => {
-                            const voteState = votedItems[item.word.toLowerCase()];
-                            return (
-                                <motion.div
-                                    key={item.word + index}
-                                    className="rhyme-result-card glass-subcard"
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ delay: Math.min(index * 0.04, 0.4) }}
-                                >
-                                    <div
-                                        className="result-main"
-                                        onClick={() => handleInsert(item.word)}
-                                        title="Click to insert / copy"
+                {viewMode === 'map' && results.length > 0 && !loading && !error ? (
+                    <RhymeMap3D
+                        searchWord={searchTerm}
+                        results={results}
+                        onWordClick={handleInsert}
+                    />
+                ) : (
+                    <AnimatePresence>
+                        {!loading &&
+                            results.map((item, index) => {
+                                const voteState = votedItems[item.word.toLowerCase()];
+                                return (
+                                    <motion.div
+                                        key={item.word + index}
+                                        className="rhyme-result-card glass-subcard"
+                                        initial={{ opacity: 0, y: 15 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ delay: Math.min(index * 0.04, 0.4) }}
                                     >
-                                        <div className="result-text">{item.word}</div>
-                                        <div className="result-meta">
-                                            <span className="syl-badge">
-                                                {item.syllable_count} {item.syllable_count === 1 ? 'Syllable' : 'Syllables'}
-                                            </span>
-                                            {item.is_slang && <span className="slang-badge">Slang</span>}
-                                        </div>
-
-                                        {/* Vowel Sequence Badges */}
-                                        <div className="vowel-sequence">
-                                            {item.vowel_sequence.split('-').map((v, i) => (
-                                                <span key={i} className="vowel-badge">
-                                                    {v}
+                                        <div
+                                            className="result-main"
+                                            onClick={() => handleInsert(item.word)}
+                                            title="Click to insert / copy"
+                                        >
+                                            <div className="result-text">{item.word}</div>
+                                            <div className="result-meta">
+                                                <span className="syl-badge">
+                                                    {item.syllable_count} {item.syllable_count === 1 ? 'Syllable' : 'Syllables'}
                                                 </span>
-                                            ))}
-                                        </div>
-                                    </div>
+                                                {item.is_slang && <span className="slang-badge">Slang</span>}
+                                            </div>
 
-                                    {/* Voting & Ranking Weights */}
-                                    <div className="result-voting">
-                                        <button
-                                            className={`vote-btn up ${voteState === 'up' ? 'voted' : ''}`}
-                                            onClick={() => handleVote(item.word, true)}
-                                            title="Rhymes well"
-                                            disabled={!!voteState}
-                                        >
-                                            👍
-                                        </button>
-                                        <span className="vote-count">{item.upvotes}</span>
-                                        <button
-                                            className={`vote-btn down ${voteState === 'down' ? 'voted' : ''}`}
-                                            onClick={() => handleVote(item.word, false)}
-                                            title="Does not rhyme well"
-                                            disabled={!!voteState}
-                                        >
-                                            👎
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                </AnimatePresence>
+                                            {/* Vowel Sequence Badges */}
+                                            <div className="vowel-sequence">
+                                                {item.vowel_sequence.split('-').map((v, i) => (
+                                                    <span key={i} className="vowel-badge">
+                                                        {v}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Voting & Ranking Weights */}
+                                        <div className="result-voting">
+                                            <button
+                                                className={`vote-btn up ${voteState === 'up' ? 'voted' : ''}`}
+                                                onClick={() => handleVote(item.word, true)}
+                                                title="Rhymes well"
+                                                disabled={!!voteState}
+                                            >
+                                                👍
+                                            </button>
+                                            <span className="vote-count">{item.upvotes}</span>
+                                            <button
+                                                className={`vote-btn down ${voteState === 'down' ? 'voted' : ''}`}
+                                                onClick={() => handleVote(item.word, false)}
+                                                title="Does not rhyme well"
+                                                disabled={!!voteState}
+                                            >
+                                                👎
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                    </AnimatePresence>
+                )}
             </div>
         </div>
     );

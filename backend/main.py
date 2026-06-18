@@ -10,7 +10,7 @@ import os
 
 from .config import settings
 from .database import engine, Base
-from .routers import sessions, lines, ai, rhymes, journal, stats, user_settings, advanced, scraper, vocabulary, learning, stats_analytics, training
+from .routers import sessions, lines, ai, rhymes, journal, stats, user_settings, advanced, scraper, vocabulary, learning, stats_analytics, training, websocket
 
 
 @asynccontextmanager
@@ -73,6 +73,7 @@ app.include_router(vocabulary.router, prefix="/api/vocabulary", tags=["Vocabular
 app.include_router(learning.router, prefix="/api", tags=["Learning"])
 app.include_router(stats_analytics.router, prefix="/api", tags=["Analytics"])
 app.include_router(training.router, prefix="/api/training", tags=["Training"])
+app.include_router(websocket.router, prefix="/api", tags=["WebSockets"])
 
 
 @app.get("/")
