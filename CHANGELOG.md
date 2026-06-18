@@ -2,6 +2,29 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.0.0] - 2026-06-18
+
+### 🎤 Offline Doppelreim Engine & Visual Cadence Polish
+
+#### 🎙️ Offline Phonetic Doppelreim Engine
+- **Cross-Lingual Vowel Segmenters** — Implemented three offline rules-based phonetics segmenters for English (CMUDict), Hindi/Devanagari (incorporating schwa-deletion rules), and Kannada (handling vowels and ottaksharas).
+- **Combinatorial Multi-Word Rhymes** — Pairs shorter words together recursively to match complex multi-syllabic targets.
+- **LRU In-Memory Cache** — Added a backend `OrderedDict` cache (up to 500 queries) to make recursive lookups instantaneous. The cache is automatically cleared when users upvote or downvote rhymes to ensure rankings are updated.
+- **Database Schema** — Added `MultisyllabicWord` and `RhymeFeedback` schemas, with automatic background seeding of ~135k English terms and standard Hindi/Kannada vocabularies on startup.
+
+#### 🎨 Doppelreim UI & Layout Overhaul
+- **Collapsible Settings Drawer** — Placed language, mode, and slang toggles inside an animated collapsible drawer triggered by a `SlidersHorizontal` gear icon inside the search row.
+- **Dedicated Sidebar Toolbar** — Converted the left panel icons toolbar from absolute positioning to a static flex column, preventing overlap and blocking of sidebar content when panels are open.
+- **Word Click Highlight Sync** — Clicking any word in the lyrics editor dynamically extracts the word (supporting unicode sets), slides open the Doppelreim sidebar, and loads phonetic matches.
+
+#### 🌊 Cadence Meter & Metronome scroll
+- **Cadence SVG Ring** — Real-time SVG circular progress ring next to the editor input line. Colors turn orange (short), red (long), or pulse emerald green (ideal range met) based on current syllable count.
+- **Scroll-to-Change BPM** — Adjust metronome BPM by aiming and scrolling the mouse wheel on the BPM display. Updates the UI immediately and debounces saving to the DB by 500ms.
+- **Cleaned Visualizer** — Removed the `Bar 1` counter element from the metronome display.
+
+#### 🔧 Platform Dev Simplification
+- **Global Python Execution** — Removed all virtual environment (`.venv`) checks. The launcher (`run.py`) now runs uvicorn and vite dev servers globally on the system python interpreter.
+
 ## [2.9.0] - 2026-03-18
 
 ### 🧠 Phase 8: Advanced Training Intelligence

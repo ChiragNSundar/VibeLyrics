@@ -61,11 +61,11 @@ VibeLyrics continuously learns from the artist's style:
 
 As an AI, you must abide by these rules without exception:
 
-1. **The `run.py` Rule:** The user runs the entire app exclusively through `python run.py`. It manages the `.venv`, pip installs, npm installs, and starts both frontend/backend concurrently. **DO NOT** instruct the user to run `npm run dev` or `uvicorn` manually.
+1. **The `run.py` Rule:** The user runs the entire app exclusively through `python run.py`. It handles pip dependencies globally, installs npm packages, and starts both frontend/backend concurrently. **DO NOT** instruct the user to run `npm run dev` or `uvicorn` manually.
 2. **Do No Harm (Additive Changes):** When asked to add a feature, append it. Do not refactor core engine files unless explicitly asked.
 3. **Absolute Imports over Relative:** In Python, use `from .database import ...` or `from ..services import ...`. In Vite/React, refer to the path clearly.
 4. **No Skeleton Code:** Write the FULL code for a file structure. Avoid dumping `// TODO: Implement logic here` inside classes/functions.
-5. **Linting Awareness (Fake Imports):** The Pyre2 linter struggles to map `run.py`-generated `.venv` paths dynamically. You will see fake lint errors like `Could not find import fastapi...`. **Ignore these.** Do not inject `sys.path.append()` hacks to fix IDE ghosts.
+5. **Linting Awareness (Fake Imports):** The Pyre2 linter may struggle to map global system Python packages dynamically. You will see fake lint errors like `Could not find import fastapi...`. **Ignore these.** Do not inject `sys.path.append()` hacks to fix IDE ghosts.
 6. **Database Schema Changes:** We rely on `Base.metadata.create_all()` on startup and do not use Alembic. If you add a new column or table, you must inform the user to either run a manual SQL `ALTER TABLE` or delete `data/vibelyrics.db` and restart to recreate the schema.
 7. **Quality Assurance:** If building new core features, remember we have `backend/tests/` (Pytest) and frontend tests (Vitest/Playwright). Ensure your code is testable and robust.
 

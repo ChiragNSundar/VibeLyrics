@@ -1,4 +1,4 @@
-# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-2.9.0-blue.svg)
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
@@ -285,8 +285,7 @@ python run.py
 ```
 
 `run.py` handles **everything** automatically:
-- Creates a Python virtual environment (`.venv`)
-- Installs all Python dependencies from `requirements.txt`
+- Installs all Python dependencies globally using system `pip` (runs globally without virtualenv setups)
 - Installs frontend Node.js dependencies (`npm install`)
 - Copies `.env.example` to `.env` if missing
 - Frees occupied ports and starts both servers
@@ -316,8 +315,6 @@ If you prefer running each service separately:
 
 **Terminal 1 — Backend:**
 ```bash
-.venv\Scripts\activate       # Windows
-source .venv/bin/activate    # Mac/Linux
 python -m uvicorn backend.main:app --reload --port 5001
 ```
 

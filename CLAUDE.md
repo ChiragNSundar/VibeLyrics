@@ -13,7 +13,7 @@ This `.md` file provides direct system instructions, rigid coding conventions, a
 The application strictly uses a unified launcher:
 - **Run the Stack:** `python run.py`
 - **Fast Restart:** `python run.py --skip-install`
-- The script manages the `.venv` directory, handles port bindings (Frontend: 5173, Backend: 5001), and syncs requirements.
+- The script handles port bindings (Frontend: 5173, Backend: 5001), runs servers using the system's global Python environment, and syncs requirements.
 - **NEVER** instruct the user to run `npm run dev` or `uvicorn` in separate terminals unless explicitly debugging a crash that `run.py` masks.
 
 ## 💅 3. The React/Tailwind Dictate
@@ -50,7 +50,7 @@ If the user asks you to implement a full feature spanning front and back, obey t
 5. **CRUCIAL:** Create a strictly-typed fetch wrapper inside `frontend/src/services/api.ts`.
 6. Bind the `api.ts` call inside your React component or Zustand store.
 
-## 🐛 6. Ignored Lint Errors (Pyre2 Virtual Environment issues)
-Because `run.py` generates the `.venv` dynamically, IDEs using Pyre2 fail to resolve fundamental import paths (e.g., `fastapi`, `sqlalchemy`, or relative paths like `..services`).
+## 🐛 6. Ignored Lint Errors (Pyre2 Import Resolution issues)
+Because of Python import resolution variations on some environments, IDEs using Pyre2 may fail to resolve fundamental import paths (e.g., `fastapi`, `sqlalchemy`, or relative paths like `..services`).
 - **You will inevitably see hundreds of `Could not find import...` errors in the IDE feedback.**
 - **YOUR DICTATE:** Ignore them entirely. Do not attempt to fix them via `sys.path.append()` or writing stub files. Confidently write functional code and ignore these false flags.
