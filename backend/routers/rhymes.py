@@ -2,9 +2,13 @@
 Rhymes Router
 Rhyme lookups, thesaurus, and multi-syllable rhymes
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from pydantic import BaseModel
 from ..schemas import RhymeLookup, ThesaurusLookup
 from ..services.rhyme_detector import RhymeDetector
+from ..database import get_db
 
 router = APIRouter()
 _rhyme_detector = RhymeDetector()
@@ -84,3 +88,70 @@ async def get_slang_categories():
         "success": True,
         "categories": categories
     }
+
+
+class DoppelreimLookup(BaseModel):
+    word: str
+    language: str = "en"
+    mode: str = "vowel"
+    allow_slang: bool = True
+    max_results: int = 30
+
+
+class RhymeVoteSchema(BaseModel):
+    source_word: str
+    target_word: str
+    is_valid_rhyme: bool
+
+
+@router.post("/rhymes/doppelreim", response_model=dict)
+async def lookup_doppelreim(data: DoppelreimLookup, db: AsyncSession = Depends(get_db)):
+    """Advanced multisyllabic lookup (Classic, Slant, Multi-word)"""
+    results = await _rhyme_detector.find_doppelreim_rhymes(
+        db, data.word, data.language, data.mode, data.allow_slang, data.max_results
+    )
+    return {
+        "success": True,
+        "results": results
+    }
+
+
+@router.post("/rhymes/vote", response_model=dict)
+async def vote_rhyme(data: RhymeVoteSchema, db: AsyncSession = Depends(get_db)):
+    """Submit community voting feedback to rank rhymes"""
+    from ..models import RhymeFeedback, MultisyllabicWord
+    
+    query = select(RhymeFeedback).where(
+        func.lower(RhymeFeedback.source_word) == data.source_word.lower(),
+        func.lower(RhymeFeedback.target_word) == data.target_word.lower()
+    )
+    res = await db.execute(query)
+    fb = res.scalar()
+    
+    if fb:
+        fb.votes_count += 1
+        fb.is_valid_rhyme = data.is_valid_rhyme
+    else:
+        fb = RhymeFeedback(
+            source_word=data.source_word,
+            target_word=data.target_word,
+            is_valid_rhyme=data.is_valid_rhyme,
+            votes_count=1
+        )
+        db.add(fb)
+        
+    diff = 1 if data.is_valid_rhyme else -1
+    up_query = select(MultisyllabicWord).where(
+        func.lower(MultisyllabicWord.word) == data.target_word.lower()
+    )
+    res_w = await db.execute(up_query)
+    words = res_w.scalars().all()
+    for w in words:
+        w.upvotes = max(0, w.upvotes + diff)
+        
+    try:
+        await db.commit()
+        return {"success": True, "message": "Vote recorded successfully."}
+    except Exception as e:
+        await db.rollback()
+        return {"success": False, "error": str(e)}

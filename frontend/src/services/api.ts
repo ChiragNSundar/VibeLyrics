@@ -109,6 +109,27 @@ export interface MultiRhymesResponse {
     results: string[];
 }
 
+export interface DoppelreimLookupData {
+    word: string;
+    language: 'en' | 'hi' | 'kn';
+    mode: 'classic' | 'vowel' | 'multi' | 'inspiration';
+    allow_slang: boolean;
+    max_results?: number;
+}
+
+export interface DoppelreimResult {
+    word: string;
+    syllable_count: number;
+    vowel_sequence: string;
+    upvotes: number;
+    is_slang: boolean;
+}
+
+export interface DoppelreimResponse {
+    success: boolean;
+    results: DoppelreimResult[];
+}
+
 export interface PunchlineScoreResponse {
     success: boolean;
     score: number;
@@ -429,6 +450,22 @@ export const toolApi = {
 
     getMultiRhymes: (word: string) =>
         request<MultiRhymesResponse>(`/api/multi-rhymes/${encodeURIComponent(word)}`),
+
+    lookupDoppelreim: (data: DoppelreimLookupData) =>
+        request<DoppelreimResponse>('/api/rhymes/doppelreim', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+
+    voteRhyme: (sourceWord: string, targetWord: string, isValid: boolean) =>
+        request<ApiResponse>('/api/rhymes/vote', {
+            method: 'POST',
+            body: JSON.stringify({
+                source_word: sourceWord,
+                target_word: targetWord,
+                is_valid_rhyme: isValid,
+            }),
+        }),
 };
 
 // AI APIs

@@ -185,3 +185,49 @@ class UserProfile(Base):
             "total_lines_written": self.total_lines_written,
             "total_corrections": self.total_corrections
         }
+
+
+class MultisyllabicWord(Base):
+    """Offline multisyllabic dictionary with indexed vowel sequences"""
+    __tablename__ = "multisyllabic_words"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    word: Mapped[str] = mapped_column(String(200), index=True)
+    language: Mapped[str] = mapped_column(String(10), index=True)  # 'en', 'hi', 'kn'
+    syllable_count: Mapped[int] = mapped_column(Integer, default=1)
+    vowel_sequence: Mapped[str] = mapped_column(String(200), index=True)  # e.g. "EH-EH-AH" or "a-aa-a"
+    exact_rhyme_key: Mapped[str] = mapped_column(String(200), index=True)  # e.g. "EH-V-AH-L"
+    is_slang: Mapped[bool] = mapped_column(Boolean, default=False)
+    upvotes: Mapped[int] = mapped_column(Integer, default=0)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "word": self.word,
+            "language": self.language,
+            "syllable_count": self.syllable_count,
+            "vowel_sequence": self.vowel_sequence,
+            "exact_rhyme_key": self.exact_rhyme_key,
+            "is_slang": self.is_slang,
+            "upvotes": self.upvotes
+        }
+
+
+class RhymeFeedback(Base):
+    """User voting database to train local rhyme quality weights"""
+    __tablename__ = "rhyme_feedbacks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_word: Mapped[str] = mapped_column(String(200), index=True)
+    target_word: Mapped[str] = mapped_column(String(200), index=True)
+    is_valid_rhyme: Mapped[bool] = mapped_column(Boolean, default=True)
+    votes_count: Mapped[int] = mapped_column(Integer, default=1)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "source_word": self.source_word,
+            "target_word": self.target_word,
+            "is_valid_rhyme": self.is_valid_rhyme,
+            "votes_count": self.votes_count
+        }

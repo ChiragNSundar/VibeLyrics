@@ -13,21 +13,14 @@ import sys
 import os
 import time
 import shutil
-import venv
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 FRONTEND_DIR = ROOT / "frontend"
 REQUIREMENTS = ROOT / "requirements.txt"
-VENV_DIR = ROOT / ".venv"
 
 # OS-specific executable paths
-if os.name == 'nt':
-    VENV_PYTHON = VENV_DIR / "Scripts" / "python.exe"
-    VENV_PIP = VENV_DIR / "Scripts" / "pip.exe"
-else:
-    VENV_PYTHON = VENV_DIR / "bin" / "python"
-    VENV_PIP = VENV_DIR / "bin" / "pip"
+VENV_PYTHON = sys.executable
 
 BACKEND_PORT = 5001
 FRONTEND_PORT = 5173
@@ -51,36 +44,22 @@ def check_env_file():
 
 # ── Dependency helpers ──────────────────────────────────────────────
 
-def setup_venv():
-    """Create a virtual environment if it doesn't exist."""
-    if not VENV_DIR.exists():
-        print("[*] Creating Python virtual environment (.venv)...")
-        venv.create(VENV_DIR, with_pip=True)
-        print("[OK] Virtual environment created.")
-    
-    if not VENV_PYTHON.exists():
-        print(f"[!] Virtual environment corrupted? {VENV_PYTHON} not found.")
-        sys.exit(1)
-
-
 def check_python_deps():
-    """Install Python dependencies into the .venv from requirements.txt."""
+    """Install Python dependencies globally from requirements.txt."""
     if not REQUIREMENTS.exists():
         print("[!] requirements.txt not found — skipping Python deps")
         return
 
-    setup_venv()
-
-    print("[*] Checking Python dependencies...")
+    print("[*] Checking Python dependencies globally...")
     result = subprocess.run(
-        [str(VENV_PIP), "install", "-r", str(REQUIREMENTS), "-q"],
+        [sys.executable, "-m", "pip", "install", "-r", str(REQUIREMENTS), "-q"],
         capture_output=True, text=True
     )
     if result.returncode != 0:
         print(f"[!] pip install failed:\n{result.stderr}")
         print("[!] Continuing anyway — some features may not work")
     else:
-        print("[OK] Python dependencies ready")
+        print("[OK] Python dependencies ready globally")
 
 
 def check_node_deps():
@@ -176,12 +155,7 @@ def main():
     if not skip_install:
         check_python_deps()
         check_node_deps()
-    else:
-        print("[*] Skipping dependency installation (--skip-install)")
-        # Still make sure venv exists if we try to run it
-        if not VENV_PYTHON.exists():
-            print("[!] Virtual environment not found. Please run without --skip-install first.")
-            sys.exit(1)
+        pass
 
     print()
     print(f"  Backend:  http://localhost:{BACKEND_PORT}  (FastAPI + Uvicorn)")
@@ -219,7 +193,7 @@ def main():
         for name, proc in processes:
             if proc.poll() is None:
                 proc.terminate()
-                print(f"  → Stopped {name}")
+                print(f"  -> Stopped {name}")
         # Wait for graceful shutdown
         for name, proc in processes:
             try:

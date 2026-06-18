@@ -13,14 +13,6 @@ export default defineConfig({
         target: 'http://localhost:5001',
         changeOrigin: true,
       },
-      '/session': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
-      '/export': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
       '/socket.io': {
         target: 'http://localhost:5001',
         changeOrigin: true,

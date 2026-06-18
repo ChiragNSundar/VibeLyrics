@@ -6,6 +6,12 @@ import pronouncing
 import re
 from typing import List, Dict, Optional
 from functools import lru_cache
+from sqlalchemy import select, func, insert
+from sqlalchemy.ext.asyncio import AsyncSession
+try:
+    from ..models import MultisyllabicWord, RhymeFeedback
+except (ImportError, ValueError):
+    from backend.models import MultisyllabicWord, RhymeFeedback
 
 
 class SyllableCounter:
@@ -98,6 +104,397 @@ class RhymeDetector:
     
     def __init__(self):
         self.syllable_counter = SyllableCounter()
+
+    def extract_vowels(self, word: str, language: str) -> tuple:
+        """Extract vowel sequence, exact rhyme key, and syllable count based on language"""
+        word = word.strip()
+        if not word:
+            return "", "", 0
+            
+        if language == 'en':
+            return self.extract_english_vowels(word)
+        elif language == 'hi':
+            return self.extract_hindi_vowels(word)
+        elif language == 'kn':
+            return self.extract_kannada_vowels(word)
+        else:
+            # Fallback to English-like vowel groups
+            vowels = re.findall(r'[aeiouy]+', word.lower())
+            vowel_seq = "-".join([v.upper() for v in vowels])
+            exact_key = word[-2:] if len(word) >= 2 else word
+            return vowel_seq, exact_key, max(1, len(vowels))
+
+    def extract_english_vowels(self, word: str) -> tuple:
+        """Extract vowel sequence and exact rhyme key for English using CMUDict"""
+        word_clean = re.sub(r'[^a-z]', '', word.lower())
+        if not word_clean:
+            return "", "", 0
+        
+        phones_list = pronouncing.phones_for_word(word_clean)
+        if not phones_list:
+            vowels = re.findall(r'[aeiouy]+', word_clean)
+            vowel_seq = "-".join([v.upper() for v in vowels])
+            exact_key = word_clean[-2:] if len(word_clean) >= 2 else word_clean
+            return vowel_seq, exact_key, max(1, len(vowels))
+            
+        phones = phones_list[0]
+        vowel_parts = []
+        for p in phones.split():
+            if p[-1].isdigit():
+                vowel_parts.append(p)
+                
+        vowel_seq = "-".join(vowel_parts)
+        exact_key = pronouncing.rhyming_part(phones) or ""
+        syllable_count = pronouncing.syllable_count(phones)
+        
+        return vowel_seq, exact_key, syllable_count
+
+    def extract_hindi_vowels(self, word: str) -> tuple:
+        """Extract vowel sequence and exact rhyme key for Hindi Devanagari script"""
+        vowels = []
+        n = len(word)
+        i = 0
+        
+        # Swara mapping (Independent Vowels)
+        swara_map = {
+            'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ii', 'उ': 'u', 'ऊ': 'uu',
+            'ऋ': 'ri', 'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au'
+        }
+        # Matra mapping (Dependent Vowel Signs)
+        matra_map = {
+            'ा': 'aa', 'ि': 'i', 'ी': 'ii', 'ु': 'u', 'ू': 'uu',
+            'े': 'e', 'ै': 'ai', 'ो': 'o', 'ौ': 'au', 'ृ': 'ri'
+        }
+        
+        while i < n:
+            char = word[i]
+            code = ord(char)
+            
+            if char in swara_map:
+                vowels.append(swara_map[char])
+                i += 1
+            # Check if Devanagari consonant (Standard range 0x0915 to 0x0939, additional glyphs like क़)
+            elif (0x0915 <= code <= 0x0939) or (0x0958 <= code <= 0x095F) or char == 'ळ':
+                next_char = word[i+1] if i + 1 < n else None
+                if next_char and next_char in matra_map:
+                    vowels.append(matra_map[next_char])
+                    i += 2
+                elif next_char == '्':
+                    # Halant kills the inherent vowel
+                    i += 2
+                else:
+                    # Inherent schwa 'a'. Apply schwa deletion rules.
+                    has_schwa = True
+                    
+                    # 1. Final schwa deletion
+                    if i == n - 1 and len(vowels) > 0:
+                        has_schwa = False
+                    # 2. Intermediate schwa deletion (if not first syllable, and followed by consonant + matra)
+                    elif len(vowels) > 0 and i + 2 < n:
+                        next_next_char = word[i+2]
+                        is_next_consonant = (0x0915 <= ord(next_char) <= 0x0939) or (0x0958 <= ord(next_char) <= 0x095F) or next_char == 'ळ'
+                        is_next_next_matra = next_next_char in matra_map
+                        if is_next_consonant and is_next_next_matra:
+                            has_schwa = False
+                            
+                    if has_schwa:
+                        vowels.append('a')
+                    i += 1
+            else:
+                i += 1
+                
+        if not vowels:
+            vowels = ['a']
+            
+        vowel_seq = "-".join(vowels)
+        exact_key = word[-2:] if len(word) >= 2 else word
+        return vowel_seq, exact_key, len(vowels)
+
+    def extract_kannada_vowels(self, word: str) -> tuple:
+        """Extract vowel sequence and exact rhyme key for Kannada script"""
+        vowels = []
+        n = len(word)
+        i = 0
+        
+        swara_map = {
+            'ಅ': 'a', 'ಆ': 'aa', 'ಇ': 'i', 'ಈ': 'ii', 'ಉ': 'u', 'ಊ': 'uu',
+            'ಎ': 'e', 'ಏ': 'ee', 'ಐ': 'ai', 'ಒ': 'o', 'ಓ': 'oo', 'ಔ': 'au', 'ಋ': 'ri'
+        }
+        matra_map = {
+            'ಾ': 'aa', 'i': 'i', 'ೀ': 'ii', 'ು': 'u', 'ೂ': 'uu',
+            'ೆ': 'e', 'ೇ': 'ee', 'ೈ': 'ai', 'ೊ': 'o', 'ೋ': 'oo', 'ೌ': 'au', 'ೃ': 'ri'
+        }
+        # Add support for standard Kannada matra 'ಿ' (which is different from latin 'i')
+        matra_map['ಿ'] = 'i'
+        
+        while i < n:
+            char = word[i]
+            code = ord(char)
+            
+            if char in swara_map:
+                vowels.append(swara_map[char])
+                i += 1
+            # Check if Kannada consonant (Standard range 0x0C95 to 0x0CB9, and ಳ 0x0CDE)
+            elif (0x0C95 <= code <= 0x0CB9) or code == 0x0CDE:
+                next_char = word[i+1] if i + 1 < n else None
+                if next_char and next_char in matra_map:
+                    vowels.append(matra_map[next_char])
+                    i += 2
+                elif next_char == '್':
+                    i += 2
+                else:
+                    vowels.append('a')
+                    i += 1
+            else:
+                i += 1
+                
+        if not vowels:
+            vowels = ['a']
+            
+        vowel_seq = "-".join(vowels)
+        exact_key = word[-2:] if len(word) >= 2 else word
+        return vowel_seq, exact_key, len(vowels)
+
+    async def auto_register_word(
+        self, session: AsyncSession, word: str, language: str, 
+        vowel_seq: str, exact_key: str, syllable_count: int
+    ):
+        """Dynamically add new search terms to the local dictionary to self-learn vocabulary"""
+        word_clean = word.strip()
+        if not word_clean:
+            return
+            
+        query = select(MultisyllabicWord).where(
+            MultisyllabicWord.language == language,
+            func.lower(MultisyllabicWord.word) == word_clean.lower()
+        )
+        res = await session.execute(query)
+        exists = res.scalar()
+        
+        if not exists:
+            new_word = MultisyllabicWord(
+                word=word_clean,
+                language=language,
+                syllable_count=syllable_count,
+                vowel_sequence=vowel_seq,
+                exact_rhyme_key=exact_key,
+                is_slang=False,
+                upvotes=1
+            )
+            session.add(new_word)
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
+
+    async def find_combinatorial_rhymes(
+        self, session: AsyncSession, vowel_seq: str, language: str, 
+        allow_slang: bool = True, max_results: int = 20
+    ) -> List[dict]:
+        """Combinatorial Multi-Word Search: combines shorter words matching parts of the vowel sequence"""
+        vparts = vowel_seq.split("-")
+        n = len(vparts)
+        if n < 2:
+            return []
+            
+        results = []
+        seen = set()
+        
+        # Split target vowel sequence into two back-to-back word templates
+        for k in range(1, n):
+            part_a = "-".join(vparts[:k])
+            part_b = "-".join(vparts[k:])
+            
+            # Match part A
+            query_a = select(MultisyllabicWord).where(
+                MultisyllabicWord.language == language,
+                MultisyllabicWord.vowel_sequence == part_a
+            )
+            if not allow_slang:
+                query_a = query_a.where(MultisyllabicWord.is_slang == False)
+            query_a = query_a.order_by(MultisyllabicWord.upvotes.desc()).limit(15)
+            res_a = await session.execute(query_a)
+            words_a = res_a.scalars().all()
+            
+            # Match part B
+            query_b = select(MultisyllabicWord).where(
+                MultisyllabicWord.language == language,
+                MultisyllabicWord.vowel_sequence == part_b
+            )
+            if not allow_slang:
+                query_b = query_b.where(MultisyllabicWord.is_slang == False)
+            query_b = query_b.order_by(MultisyllabicWord.upvotes.desc()).limit(15)
+            res_b = await session.execute(query_b)
+            words_b = res_b.scalars().all()
+            
+            for wa in words_a:
+                for wb in words_b:
+                    combo = f"{wa.word} {wb.word}"
+                    if combo.lower() not in seen:
+                        seen.add(combo.lower())
+                        results.append({
+                            "word": combo,
+                            "syllable_count": wa.syllable_count + wb.syllable_count,
+                            "vowel_sequence": f"{wa.vowel_sequence}-{wb.vowel_sequence}",
+                            "upvotes": wa.upvotes + wb.upvotes,
+                            "is_slang": wa.is_slang or wb.is_slang
+                        })
+                        
+        results.sort(key=lambda x: x["upvotes"], reverse=True)
+        return results[:max_results]
+
+    async def find_doppelreim_rhymes(
+        self, session: AsyncSession, word: str, language: str = 'en', 
+        mode: str = 'vowel', allow_slang: bool = True, max_results: int = 30
+    ) -> List[dict]:
+        """Main entrypoint for advanced multisyllabic lookup"""
+        word = word.strip()
+        if not word:
+            return []
+            
+        vowel_seq, exact_key, syllable_count = self.extract_vowels(word, language)
+        
+        # Self-learning step: add query word if it's missing
+        await self.auto_register_word(session, word, language, vowel_seq, exact_key, syllable_count)
+        
+        if mode == 'multi':
+            return await self.find_combinatorial_rhymes(session, vowel_seq, language, allow_slang, max_results)
+            
+        query = select(MultisyllabicWord).where(MultisyllabicWord.language == language)
+        
+        if mode == 'classic':
+            query = query.where(MultisyllabicWord.exact_rhyme_key == exact_key)
+        else:  # vowel / slant / inspiration
+            query = query.where(MultisyllabicWord.vowel_sequence == vowel_seq)
+            
+        if not allow_slang:
+            query = query.where(MultisyllabicWord.is_slang == False)
+            
+        query = query.order_by(MultisyllabicWord.upvotes.desc()).limit(max_results)
+        res = await session.execute(query)
+        words = res.scalars().all()
+        
+        results = []
+        for w in words:
+            if w.word.lower() != word.lower():
+                results.append({
+                    "word": w.word,
+                    "syllable_count": w.syllable_count,
+                    "vowel_sequence": w.vowel_sequence,
+                    "upvotes": w.upvotes,
+                    "is_slang": w.is_slang
+                })
+                
+        # Classic fallback to Vowel/Slant when perfect matches are sparse
+        if mode == 'classic' and len(results) < 5:
+            vowel_results = await self.find_doppelreim_rhymes(session, word, language, 'vowel', allow_slang, max_results)
+            existing = {r["word"].lower() for r in results}
+            for r in vowel_results:
+                if r["word"].lower() not in existing:
+                    results.append(r)
+                    
+        return results[:max_results]
+
+    async def seed_phonetic_database(self, session: AsyncSession):
+        """Seed the multisyllabic dictionary with standard words for English, Hindi, and Kannada"""
+        query = select(func.count()).select_from(MultisyllabicWord)
+        res = await session.execute(query)
+        count = res.scalar()
+        if count > 0:
+            print("[INFO] Phonetic database already seeded.")
+            return
+            
+        print("[*] Seeding phonetic database (offline CMUDict & Indian languages)...")
+        
+        words_to_insert = []
+        
+        # 1. English Seeding via CMUDict
+        try:
+            pronouncing.init_cmu()
+            if pronouncing.pronunciations:
+                print(f"[*] Found {len(pronouncing.pronunciations)} English pronunciations. Processing...")
+                seen_words = set()
+                for word, phones in pronouncing.pronunciations:
+                    clean = word.strip().lower()
+                    if not clean or clean in seen_words or not clean.isalpha():
+                        continue
+                    seen_words.add(clean)
+                    
+                    vowel_parts = []
+                    for p in phones.split():
+                        if p[-1].isdigit():
+                            vowel_parts.append(p)
+                    vowel_seq = "-".join(vowel_parts)
+                    exact_key = pronouncing.rhyming_part(phones) or ""
+                    syllable_count = pronouncing.syllable_count(phones)
+                    
+                    words_to_insert.append({
+                        "word": word,
+                        "language": "en",
+                        "syllable_count": syllable_count,
+                        "vowel_sequence": vowel_seq,
+                        "exact_rhyme_key": exact_key,
+                        "is_slang": False,
+                        "upvotes": 5
+                    })
+        except Exception as e:
+            print(f"[!] English seeding failed: {e}")
+            
+        # 2. Hindi Vocabulary Seed
+        hindi_vocab = [
+            "अपना", "सपना", "प्यार", "यार", "दिल", "महान", "खटका", "सबका", "कहना", "रहना", 
+            "जिंदगी", "मौत", "दोस्त", "दुश्मन", "रास्ता", "मंजिल", "आसमान", "धरती", "दुनिया", "इंसान", 
+            "खुदा", "रब", "दुआ", "सलाम", "काम", "नाम", "दाम", "शाम", "सुबह", "रात", 
+            "दिन", "बात", "हात", "साथ", "माथ", "आज", "कल", "पल", "चल", "बल", 
+            "घर", "पर", "दर", "सर", "हर", "कर", "भर", "मर", "डर", "शायर", "कविता", "गाने"
+        ]
+        for hw in hindi_vocab:
+            vseq, ekey, syl = self.extract_hindi_vowels(hw)
+            words_to_insert.append({
+                "word": hw,
+                "language": "hi",
+                "syllable_count": syl,
+                "vowel_sequence": vseq,
+                "exact_rhyme_key": ekey,
+                "is_slang": False,
+                "upvotes": 5
+            })
+            
+        # 3. Kannada Vocabulary Seed
+        kannada_vocab = [
+            "ಬಂಗಾರ", "ಮಸ್ತಕ", "ಪುಸ್ತಕ", "ಕನ್ನಡ", "ಹಾಡು", "ಮಾಡು", "ನೋಡು", "ಹೇಳು", "ಕೇಳು", "ಬರೆಯು", 
+            "ಓದು", "ದುಡ್ಡು", "ಕೊಡು", "ತಗೋ", "ಹೋಗು", "ಬಾ", "ನಮಸ್ಕಾರ", "ಪ್ರೀತಿ", "ಸ್ನೇಹ", "ಜೀವನ", 
+            "ಖುಷಿ", "ದುಃಖ", "ಕನಸು", "ಮನಸು", "ನೆನಪು", "ಕಾಲ", "ಲೋಕ", "ಜನ", "ಮನೆ", "ಕಾಡು", 
+            "ನಾಡು", "ಊರು", "ಕೆರೆ", "ಹೊಳೆ", "ನದಿ", "ಸಮುದ್ರ", "ಬೆಟ್ಟ", "ಗುಡ್ಡ", "ಕಲ್ಲು", "ಮಣ್ಣು", 
+            "ನೀರು", "ಗಾಳಿ", "ಬೆಂಕಿ", "ಆಕಾಶ", "ಭೂಮಿ", "ಸೂರ್ಯ", "ಚಂದ್ರ", "ನಕ್ಷತ್ರ", "ಹಗಲು", "ರಾತ್ರಿ"
+        ]
+        for kw in kannada_vocab:
+            vseq, ekey, syl = self.extract_kannada_vowels(kw)
+            words_to_insert.append({
+                "word": kw,
+                "language": "kn",
+                "syllable_count": syl,
+                "vowel_sequence": vseq,
+                "exact_rhyme_key": ekey,
+                "is_slang": False,
+                "upvotes": 5
+            })
+            
+        # Chunk bulk insertion to keep SQLite transactions light
+        chunk_size = 5000
+        total = len(words_to_insert)
+        print(f"[*] Total {total} words processed for database insertion. Executing bulk insert...")
+        
+        for idx in range(0, total, chunk_size):
+            chunk = words_to_insert[idx : idx + chunk_size]
+            await session.execute(
+                insert(MultisyllabicWord),
+                chunk
+            )
+            print(f"  -> Inserted {min(idx + chunk_size, total)} / {total}")
+            
+        await session.commit()
+        print("[OK] Seeding phonetic database completed successfully.")
     
     @lru_cache(maxsize=1000)
     def find_rhymes(self, word: str, max_results: int = 20) -> List[str]:

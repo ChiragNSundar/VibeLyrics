@@ -163,7 +163,7 @@ async def delete_session(session_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/sessions/{session_id}/heartbeat", response_model=dict)
 async def session_heartbeat(session_id: int, db: AsyncSession = Depends(get_db)):
     """Record a writing heartbeat — client pings every 30s to track writing time."""
-    from datetime import timezone as tz
+    from datetime import datetime, timezone as tz
     result = await db.execute(
         select(LyricSession).where(LyricSession.id == session_id)
     )

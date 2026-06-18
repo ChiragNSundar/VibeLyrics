@@ -16,10 +16,22 @@ from .routers import sessions, lines, ai, rhymes, journal, stats, user_settings,
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
+    import asyncio
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("[OK] Database tables created")
+    
+    # Seed database in background
+    from .database import async_session
+    from .services.rhyme_detector import RhymeDetector
+    
+    async def run_seeder():
+        async with async_session() as session:
+            detector = RhymeDetector()
+            await detector.seed_phonetic_database(session)
+            
+    asyncio.create_task(run_seeder())
     
     yield
     
