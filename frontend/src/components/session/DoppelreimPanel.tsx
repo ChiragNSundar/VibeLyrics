@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SlidersHorizontal } from 'lucide-react';
 import { toolApi } from '../../services/api';
 import type { DoppelreimResult } from '../../services/api';
 import { toast } from 'react-hot-toast';
@@ -24,6 +25,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [votedItems, setVotedItems] = useState<Record<string, 'up' | 'down'>>({});
+    const [showOptions, setShowOptions] = useState(false);
 
     const handleSearch = useCallback(async () => {
         const cleanTerm = searchTerm.trim();
@@ -112,31 +114,6 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                 <span className="subtitle-tag">Offline Phonetics</span>
             </div>
 
-            {/* Language Selector */}
-            <div className="control-group">
-                <label className="group-label">Language</label>
-                <div className="toggle-buttons select-lang">
-                    <button
-                        className={`toggle-btn ${language === 'en' ? 'active' : ''}`}
-                        onClick={() => setLanguage('en')}
-                    >
-                        English
-                    </button>
-                    <button
-                        className={`toggle-btn ${language === 'hi' ? 'active' : ''}`}
-                        onClick={() => setLanguage('hi')}
-                    >
-                        हिंदी
-                    </button>
-                    <button
-                        className={`toggle-btn ${language === 'kn' ? 'active' : ''}`}
-                        onClick={() => setLanguage('kn')}
-                    >
-                        ಕನ್ನಡ
-                    </button>
-                </div>
-            </div>
-
             {/* Search Input Row */}
             <div className="search-input-row">
                 <input
@@ -150,6 +127,14 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                     })`}
                 />
                 <button
+                    type="button"
+                    className={`options-toggle-btn ${showOptions ? 'active' : ''}`}
+                    onClick={() => setShowOptions(!showOptions)}
+                    title="Toggle Search Settings"
+                >
+                    <SlidersHorizontal size={15} />
+                </button>
+                <button
                     className="search-submit-btn hover-glow"
                     onClick={handleSearch}
                     disabled={loading || !searchTerm.trim()}
@@ -162,53 +147,94 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                 </button>
             </div>
 
-            {/* Rhyme Modes */}
-            <div className="control-group">
-                <label className="group-label">Rhyme Style</label>
-                <div className="toggle-buttons grid-modes">
-                    <button
-                        className={`toggle-btn ${mode === 'vowel' ? 'active' : ''}`}
-                        onClick={() => setMode('vowel')}
-                        title="Doppelreim: Vowel sounds only (slant rhyming)"
+            {/* Collapsible Search Options */}
+            <AnimatePresence initial={false}>
+                {showOptions && (
+                    <motion.div
+                        className="doppelreim-options-drawer"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        style={{ overflow: 'hidden' }}
                     >
-                        Slant Vowel
-                    </button>
-                    <button
-                        className={`toggle-btn ${mode === 'classic' ? 'active' : ''}`}
-                        onClick={() => setMode('classic')}
-                        title="Classic: Standard, perfect end-rhymes"
-                    >
-                        Perfect
-                    </button>
-                    <button
-                        className={`toggle-btn ${mode === 'multi' ? 'active' : ''}`}
-                        onClick={() => setMode('multi')}
-                        title="Multi-Word: Pairs shorter words together"
-                    >
-                        Multi-Word
-                    </button>
-                    <button
-                        className={`toggle-btn ${mode === 'inspiration' ? 'active' : ''}`}
-                        onClick={() => setMode('inspiration')}
-                        title="Inspiration: Rich assonance structures"
-                    >
-                        Inspiration
-                    </button>
-                </div>
-            </div>
+                        <div className="drawer-inner" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '0.5rem', paddingTop: '0.25rem' }}>
+                            {/* Language Selector */}
+                            <div className="control-group">
+                                <label className="group-label">Language</label>
+                                <div className="toggle-buttons select-lang">
+                                    <button
+                                        className={`toggle-btn ${language === 'en' ? 'active' : ''}`}
+                                        onClick={() => setLanguage('en')}
+                                    >
+                                        English
+                                    </button>
+                                    <button
+                                        className={`toggle-btn ${language === 'hi' ? 'active' : ''}`}
+                                        onClick={() => setLanguage('hi')}
+                                    >
+                                        हिंदी
+                                    </button>
+                                    <button
+                                        className={`toggle-btn ${language === 'kn' ? 'active' : ''}`}
+                                        onClick={() => setLanguage('kn')}
+                                    >
+                                        ಕನ್ನಡ
+                                    </button>
+                                </div>
+                            </div>
 
-            {/* Slang Filter Toggle */}
-            <div className="filter-row">
-                <span className="filter-label">Include Slang Dictionary</span>
-                <label className="switch">
-                    <input
-                        type="checkbox"
-                        checked={allowSlang}
-                        onChange={(e) => setAllowSlang(e.target.checked)}
-                    />
-                    <span className="slider round"></span>
-                </label>
-            </div>
+                            {/* Rhyme Modes */}
+                            <div className="control-group">
+                                <label className="group-label">Rhyme Style</label>
+                                <div className="toggle-buttons grid-modes">
+                                    <button
+                                        className={`toggle-btn ${mode === 'vowel' ? 'active' : ''}`}
+                                        onClick={() => setMode('vowel')}
+                                        title="Doppelreim: Vowel sounds only (slant rhyming)"
+                                    >
+                                        Slant Vowel
+                                    </button>
+                                    <button
+                                        className={`toggle-btn ${mode === 'classic' ? 'active' : ''}`}
+                                        onClick={() => setMode('classic')}
+                                        title="Classic: Standard, perfect end-rhymes"
+                                    >
+                                        Perfect
+                                    </button>
+                                    <button
+                                        className={`toggle-btn ${mode === 'multi' ? 'active' : ''}`}
+                                        onClick={() => setMode('multi')}
+                                        title="Multi-Word: Pairs shorter words together"
+                                    >
+                                        Multi-Word
+                                    </button>
+                                    <button
+                                        className={`toggle-btn ${mode === 'inspiration' ? 'active' : ''}`}
+                                        onClick={() => setMode('inspiration')}
+                                        title="Inspiration: Rich assonance structures"
+                                    >
+                                        Inspiration
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Slang Filter Toggle */}
+                            <div className="filter-row">
+                                <span className="filter-label">Include Slang Dictionary</span>
+                                <label className="switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={allowSlang}
+                                        onChange={(e) => setAllowSlang(e.target.checked)}
+                                    />
+                                    <span className="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Results Section */}
             <div className="results-scroll-area">
