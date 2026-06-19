@@ -686,6 +686,11 @@ export const learningApi = {
             method: 'POST',
         }),
 
+    forceResetBrain: () =>
+        request<{ success: boolean; message: string }>('/api/learning/force-reset', {
+            method: 'POST',
+        }),
+
     getBrainMap: () =>
         request<{ success: boolean; nodes: Array<{ id: string; val: number; category: string; frequency: number }>; links: Array<{ source: string; target: string; value: number }> }>('/api/learning/brain-map'),
 

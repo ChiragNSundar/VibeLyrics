@@ -175,6 +175,25 @@ async def reset_learning_brain():
     _vocab_manager.reset()
     return {"success": True, "message": "AI Brain has been completely reset to default state."}
 
+
+@router.post("/learning/force-reset")
+async def force_reset_brain(db: AsyncSession = Depends(get_db)):
+    """Wipe all database tables (reset session, lines, cache, overrides, feedbacks) and style/vocabulary files."""
+    _style_extractor.reset()
+    _vocab_manager.reset()
+    
+    from ..database import engine, Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+        
+    from ..services.rhyme_detector import RhymeDetector
+    detector = RhymeDetector()
+    await detector.seed_phonetic_database(db)
+    
+    return {"success": True, "message": "All writing sessions, lines, vocabulary, caches, and phonetic databases have been force reset."}
+
+
 @router.delete("/learning/vocabulary")
 async def delete_vocabulary_word(word: str, list_type: str = "most_used"):
     """

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { aiApi } from '../services/api';
+import { aiApi, learningApi } from '../services/api';
 import { useSettingsStore, type AIProvider } from '../store/settingsStore';
 import './SettingsPage.css';
 
@@ -53,6 +53,27 @@ export const SettingsPage: React.FC = () => {
             toast.success('✅ Settings saved!');
         } catch {
             toast.error('Failed to save settings');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleForceReset = async () => {
+        const confirmReset = window.confirm(
+            "⚠️ WARNING: This will permanently wipe all writing sessions, lines, vocabulary progress, style settings, caches, and database tables. This action CANNOT be undone.\n\nAre you absolutely sure you want to force reset your AI brain?"
+        );
+        if (!confirmReset) return;
+
+        setIsSaving(true);
+        try {
+            const res = await learningApi.forceResetBrain();
+            if (res.success) {
+                toast.success("🧠 AI Brain and all data force reset successfully!");
+            } else {
+                toast.error(res.message || "Failed to force reset AI brain");
+            }
+        } catch (err) {
+            toast.error("Failed to reach backend");
         } finally {
             setIsSaving(false);
         }
@@ -139,6 +160,24 @@ export const SettingsPage: React.FC = () => {
                         VibeLyrics learns from your corrections and preferences to provide
                         better suggestions over time.
                     </p>
+                </div>
+            </Card>
+
+            {/* Danger Zone */}
+            <Card className="settings-section danger-zone" glass>
+                <h3>⚠️ Danger Zone</h3>
+                <div className="danger-zone-content">
+                    <div className="danger-zone-desc">
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            Wipe all writing sessions, custom words, vocabulary growth history, and reset the AI's learned style to default.
+                        </p>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            This will also clear out caches and drop/re-initialize all local SQLite database tables. This cannot be undone.
+                        </p>
+                    </div>
+                    <Button variant="danger" onClick={handleForceReset} disabled={isSaving}>
+                        Force Reset AI Brain
+                    </Button>
                 </div>
             </Card>
 

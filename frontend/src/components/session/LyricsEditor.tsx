@@ -8,6 +8,7 @@ import { useSessionStore } from '../../store/sessionStore';
 import { LineRow } from './LineRow.tsx';
 import { VirtualLineRow } from './VirtualLineRow';
 import { AnalysisStrip } from './AnalysisStrip';
+import { RhymeLegend } from './RhymeLegend';
 import { Button } from '../ui/Button';
 import { VersionHistory } from './VersionHistory';
 import { Autocomplete } from './Autocomplete';
@@ -576,6 +577,7 @@ export const LyricsEditor: React.FC<LyricsEditorProps> = ({ sessionId, lines, bp
                 </div>
 
                 <AnalysisStrip text={inputValue} rhymeScheme={rhymeScheme} />
+                <RhymeLegend />
             </div>
 
             <VersionHistory

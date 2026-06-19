@@ -55,12 +55,6 @@ frontend/.vite/
 *.swo
 
 # Database & Data
-*.db
-*.sqlite3
-data/vibelyrics.db
-data/user_style.json
-data/vocabulary.json
-data/corrections.json
 uploads/
 
 # Backend Logs

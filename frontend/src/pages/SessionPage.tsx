@@ -9,7 +9,6 @@ import { LyricsEditor } from '../components/session/LyricsEditor';
 import { RhymeWavePanel } from '../components/session/RhymeWavePanel.tsx';
 import { AIHelpPanel } from '../components/session/AIHelpPanel.tsx';
 import { PunchlinePanel } from '../components/session/PunchlinePanel';
-import { RhymeLegend } from '../components/session/RhymeLegend';
 import { BeatTimer } from '../components/session/BeatTimer';
 import { WordplayPanel } from '../components/session/WordplayPanel';
 import { DoppelreimPanel } from '../components/session/DoppelreimPanel';
@@ -284,7 +283,6 @@ export const SessionPage: React.FC = () => {
                     </div>
                     <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} rhymeScheme={currentSession.rhyme_scheme} />
                     <DriftIndicator sessionId={sessionId} lineCount={lines.length} />
-                    <RhymeLegend />
                 </div>
             </div>
         </div>
