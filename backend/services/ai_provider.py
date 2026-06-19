@@ -550,6 +550,16 @@ Lyrics:
         if vocab_parts:
             prompt += "\nVOCABULARY CONTEXT:\n" + "\n".join(f"- {v}" for v in vocab_parts) + "\n"
 
+        # ── Kannada Dictionary Context ──
+        dict_context = context.get("dictionary_context", [])
+        if dict_context:
+            dict_entries = []
+            for entry in dict_context:
+                word = entry.get("word", "")
+                definitions = "; ".join(entry.get("definitions", []))
+                dict_entries.append(f"- {word}: {definitions}")
+            prompt += "\nKANNADA DICTIONARY CONTEXT (use these words/definitions to enrich references or rhymes if they fit):\n" + "\n".join(dict_entries) + "\n"
+
         # ── Rhyme target (last word of previous line) ──
         rhyme_target = context.get("rhyme_target", "")
 
@@ -1011,6 +1021,15 @@ Lyrics:
         session = context.get("session", {})
         prompt = f"You are a lyric writing assistant.\n"
         prompt += f"Mood: {session.get('mood', 'Passionate')}, Theme: {session.get('theme', 'Life')}\n"
+        
+        dict_context = context.get("dictionary_context", [])
+        if dict_context:
+            prompt += "Kannada Dictionary Context:\n"
+            for entry in dict_context:
+                word = entry.get("word", "")
+                definitions = "; ".join(entry.get("definitions", []))
+                prompt += f"- {word}: {definitions}\n"
+                
         if lines:
             prompt += "Recent lyrics:\n" + "\n".join(lines[-8:]) + "\n"
         prompt += f"\nWrite the next line. Partial: \"{partial}\"\nOutput ONLY the line."

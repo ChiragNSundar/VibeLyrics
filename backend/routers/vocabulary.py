@@ -95,3 +95,19 @@ async def get_session_vocabulary(session_id: int, db: AsyncSession = Depends(get
         "session_title": session.title,
         **metrics
     }
+
+
+@router.get("/dictionary/search", response_model=dict)
+async def search_dictionary(query: str, limit: int = 10):
+    """
+    Search the local Kannada-English dictionary.
+    Matches the query word (prefix/exact) or matches terms inside the English definition.
+    """
+    from ..services.dictionary_search import get_dictionary_search
+    results = get_dictionary_search().search(query, limit=limit)
+    return {
+        "success": True,
+        "query": query,
+        "results": results
+    }
+

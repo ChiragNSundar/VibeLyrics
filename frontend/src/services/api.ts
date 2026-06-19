@@ -251,6 +251,18 @@ export interface VocabularyAgeResponse {
     };
 }
 
+export interface DictionaryEntry {
+    word: string;
+    definitions: string[];
+    ipa?: string;
+}
+
+export interface DictionarySearchResponse {
+    success: boolean;
+    query: string;
+    results: DictionaryEntry[];
+}
+
 export interface VocabularySessionResponse {
     success: boolean;
     session_id: number;
@@ -650,6 +662,9 @@ export const vocabularyApi = {
 
     getSession: (sessionId: number) =>
         request<VocabularySessionResponse>(`/api/vocabulary/session/${sessionId}`),
+
+    searchDictionary: (query: string, limit?: number) =>
+        request<DictionarySearchResponse>(`/api/vocabulary/dictionary/search?query=${encodeURIComponent(query)}${limit ? `&limit=${limit}` : ''}`),
 };
 
 export const learningApi = {

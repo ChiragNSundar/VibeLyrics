@@ -77,6 +77,18 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         if last_words:
             rhyme_target = last_words[-1].strip(".,!?;:'\"")
 
+    # Extract Kannada-English dictionary context from recent text
+    dictionary_context = []
+    try:
+        from ..services.dictionary_search import get_dictionary_search
+        dict_service = get_dictionary_search()
+        combined_text = " ".join(line_texts[-5:]) + " " + (data.partial_text or "")
+        if session.theme:
+            combined_text += " " + session.theme
+        dictionary_context = dict_service.extract_context_from_text(combined_text, limit=6)
+    except Exception as e:
+        print(f"[AI Router] Error extracting dictionary context: {e}")
+
     # Build context with journal + learning + vocabulary data
     context = {
         "session": session.to_dict(),
@@ -89,6 +101,7 @@ async def suggest_line(data: SuggestRequest, db: AsyncSession = Depends(get_db))
         "correction_insights": _correction_tracker.get_correction_insights(),
         "vocabulary": _vocab_manager.get_vocabulary_context(),
         "rhyme_target": rhyme_target,
+        "dictionary_context": dictionary_context,
     }
 
     # Fetch user's best lines across all sessions (dynamic few-shot)
