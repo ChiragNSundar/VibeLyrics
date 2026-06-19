@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { aiApi } from '../../services/api';
 import { useSessionStore } from '../../store/sessionStore';
@@ -22,7 +23,22 @@ export const AIHelpPanel: React.FC<AIHelpPanelProps> = ({ sessionId, onClose }) 
     const [isPolishing, setIsPolishing] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
 
-    const { currentSession, setLines } = useSessionStore();
+    // Local Polisher state
+    const [localPolishLine, setLocalPolishLine] = useState('');
+    const [localPolishSyl, setLocalPolishSyl] = useState<number | ''>('');
+    const [localPolishMode, setLocalPolishMode] = useState<'cadence' | 'slang'>('cadence');
+    const [localCandidates, setLocalCandidates] = useState<string[]>([]);
+    const [isLocalPolishing, setIsLocalPolishing] = useState(false);
+
+    const { currentSession, setLines, lines, selectedLineId } = useSessionStore();
+
+    // Auto-populate local polish input from the selected line
+    const selectedLine = useMemo(() => {
+        if (selectedLineId) {
+            return lines.find(l => l.id === selectedLineId);
+        }
+        return null;
+    }, [selectedLineId, lines]);
 
     const handleAsk = async () => {
         if (!question.trim()) return;
@@ -89,6 +105,39 @@ export const AIHelpPanel: React.FC<AIHelpPanelProps> = ({ sessionId, onClose }) 
             e.preventDefault();
             handleAsk();
         }
+    };
+
+    // ── Local Polisher Logic ──
+    const handleLocalPolish = async () => {
+        const lineText = localPolishLine.trim() || (selectedLine?.final_version || selectedLine?.user_input || '');
+        if (!lineText) {
+            toast.error('Enter a line or select one from the editor');
+            return;
+        }
+
+        setIsLocalPolishing(true);
+        setLocalCandidates([]);
+
+        try {
+            const targetSyl = localPolishSyl ? Number(localPolishSyl) : undefined;
+            const slangWords = localPolishMode === 'slang' ? [] : []; // backend merges from DB
+            const response = await aiApi.polishLocal(lineText, targetSyl, slangWords);
+            if (response.success && response.candidates.length > 0) {
+                setLocalCandidates(response.candidates);
+                toast.success(`${response.candidates.length} candidate(s) generated`);
+            } else {
+                toast.error('No candidates returned — try a different input');
+            }
+        } catch (error) {
+            toast.error('Local polisher failed');
+        } finally {
+            setIsLocalPolishing(false);
+        }
+    };
+
+    const handleUseLocalLine = (candidate: string) => {
+        navigator.clipboard.writeText(candidate);
+        toast.success(`Copied "${candidate.slice(0, 30)}..." to clipboard`);
     };
 
     return (
@@ -161,6 +210,91 @@ export const AIHelpPanel: React.FC<AIHelpPanelProps> = ({ sessionId, onClose }) 
                         ))}
                     </div>
                     <p className="help-text">Click "✨" on any line to improve it with {improvementType}</p>
+                </div>
+
+                {/* ── Local Polisher Drawer ── */}
+                <div className="ai-section local-polisher-section">
+                    <h4>🎛️ Cadence Polisher</h4>
+                    <p className="help-text">Rewrite a line to fit a target syllable count or inject your slang vocabulary.</p>
+
+                    <div className="local-polish-controls">
+                        <input
+                            type="text"
+                            className="ask-input"
+                            placeholder={selectedLine
+                                ? `Using: "${(selectedLine.final_version || selectedLine.user_input).slice(0, 40)}..."`
+                                : 'Paste or type a lyric line...'
+                            }
+                            value={localPolishLine}
+                            onChange={(e) => setLocalPolishLine(e.target.value)}
+                        />
+
+                        <div className="polish-options-row">
+                            <div className="polish-syl-input">
+                                <label>Target Syl</label>
+                                <input
+                                    type="number"
+                                    min={2}
+                                    max={24}
+                                    value={localPolishSyl}
+                                    onChange={(e) => setLocalPolishSyl(e.target.value ? parseInt(e.target.value) : '')}
+                                    placeholder={selectedLine ? String(selectedLine.syllable_count) : '8'}
+                                />
+                            </div>
+                            <div className="polish-mode-btns">
+                                <button
+                                    className={`chip ${localPolishMode === 'cadence' ? 'active' : ''}`}
+                                    onClick={() => setLocalPolishMode('cadence')}
+                                >
+                                    🎵 Fit Cadence
+                                </button>
+                                <button
+                                    className={`chip ${localPolishMode === 'slang' ? 'active' : ''}`}
+                                    onClick={() => setLocalPolishMode('slang')}
+                                >
+                                    🗣️ Inject Slang
+                                </button>
+                            </div>
+                        </div>
+
+                        <Button
+                            variant="primary"
+                            fullWidth
+                            onClick={handleLocalPolish}
+                            disabled={isLocalPolishing}
+                            style={{ marginTop: '0.5rem' }}
+                        >
+                            {isLocalPolishing ? '⏳ Polishing...' : '🎛️ Generate Alternatives'}
+                        </Button>
+                    </div>
+
+                    {/* Candidates Display */}
+                    <AnimatePresence>
+                        {localCandidates.length > 0 && (
+                            <motion.div
+                                className="local-candidates"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                            >
+                                {localCandidates.map((cand, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        className="candidate-card glass-subcard"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        onClick={() => handleUseLocalLine(cand)}
+                                        title="Click to copy"
+                                    >
+                                        <span className="candidate-index">#{idx + 1}</span>
+                                        <span className="candidate-text">{cand}</span>
+                                        <span className="candidate-action">📋</span>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Ask AI Section */}

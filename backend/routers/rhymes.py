@@ -5,6 +5,7 @@ Rhyme lookups, thesaurus, and multi-syllable rhymes
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from typing import Optional
 from pydantic import BaseModel
 from ..schemas import RhymeLookup, ThesaurusLookup, RhymeExtract, PhoneticRegister
 from ..services.rhyme_detector import RhymeDetector
@@ -96,6 +97,8 @@ class DoppelreimLookup(BaseModel):
     mode: str = "vowel"
     allow_slang: bool = True
     max_results: int = 30
+    target_syllables: Optional[int] = None
+    target_stress: Optional[str] = None
 
 
 class RhymeVoteSchema(BaseModel):
@@ -108,7 +111,8 @@ class RhymeVoteSchema(BaseModel):
 async def lookup_doppelreim(data: DoppelreimLookup, db: AsyncSession = Depends(get_db)):
     """Advanced multisyllabic lookup (Classic, Slant, Multi-word)"""
     results = await _rhyme_detector.find_doppelreim_rhymes(
-        db, data.word, data.language, data.mode, data.allow_slang, data.max_results
+        db, data.word, data.language, data.mode, data.allow_slang, data.max_results,
+        data.target_syllables, data.target_stress
     )
     return {
         "success": True,

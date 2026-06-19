@@ -15,8 +15,10 @@
 - **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading.
 - **Offline Support**: Full functionality offline via Service Workers.
 - **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang).
-- **Multi-Language Rhymes**: Native support for **English, Hindi, and Kannada** phonetic rhymes.
-- **Stress Pattern Detection**: Automatic analysis of rhythm and meter (e.g., `/x/x` for trochaic).
+- **Multi-Language Rhymes**: Native support for **English, Hindi (Hinglish), and Kannada (Kanglish)** phonetic rhymes, with automated Romanization matching.
+- **Stress & Flow Timeline**: Interactive syllable-level stress pattern timeline (`/` and `x` overrides) displayed below active lines for vertical rhythmic alignment.
+- **Flow-Aligned Sorting**: Sorts and ranks rhymes in the Doppelreim engine to match active line stress templates and target syllable counts.
+- **Offline Brain & Local Polisher**: Fit cadence length constraints and inject local slang from the Seeding Center using local/offline LLM prompt configurations.
 - **Export Options**: Export to PDF (styled), TXT, or JSON backup.
 
 ### 🎨 Modern "Dreamy" Design System
@@ -124,6 +126,7 @@ graph TD
     
     subgraph "Backend (FastAPI)"
         API[API Router]
+        WS[WebSocket Router]
         Services[Services Layer]
         DB_Layer[Async DB Session]
         
@@ -157,8 +160,10 @@ graph TD
 
     User <-->|Interaction| Client
     Client <-->|REST / SSE / Arena| API
+    Client <-->|Live WS Suggestions| WS
     
     API --> Services
+    WS --> Services
     
     Services --> Rhyme
     Services --> Audio

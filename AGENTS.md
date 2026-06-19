@@ -55,6 +55,12 @@ VibeLyrics continuously learns from the artist's style:
 ### 3.3 Semantic Analysis & Drift (`services/nlp_analysis.py`)
 - Calculates semantic complexity, text flow, vocabulary age, and "Semantic Drift" (to warn the user if verse 2 loses the topic of verse 1).
 
+### 3.4 Rhythmic Stress Patterning & Local Polishing
+- **Stress Patterns:** Calculates syllable-level stresses for English (lexical CMUDict patterns) and romanized Hindi/Kannada (duration-based vowels: long/stressed `/` vs short/unstressed `x`).
+- **Flow-Aligned Sorting:** Prioritizes and ranks doppelreim matches matching target cadence constraints (BPM, syllable counts, stress envelopes).
+- **Offline Polishing:** Local system prompts wrap LLM queries to rewrite lines under strict syllable constraints and inject user-defined slang from the Seeding Center, ensuring romanized (Hinglish/Kanglish) outputs only.
+
+
 ---
 
 ## 🚨 4. Iron-Clad Development Rules
@@ -83,10 +89,10 @@ backend/
  ├── database.py         # SQLAlchemy AsyncEngine setup
  ├── models/             # ORM declarations (tables structure)
  ├── schemas/            # Pydantic input/output validation models
- ├── routers/            # API endpoints mapping (e.g. ai.py, lines.py, training.py)
+ ├── routers/            # API endpoints mapping (e.g. ai.py, websocket.py, rhymes.py)
  └── services/           # Heavy compute and integrations
-     ├── ai_provider.py  # LLM fallbacks (Gemini -> OpenAI -> Local)
-     ├── rhyme_detector.py # CMU Dict syllable processing
+     ├── ai_provider.py  # LLM fallbacks (Gemini -> OpenAI -> Local/Offline)
+     ├── rhyme_detector.py # CMU Dict syllables, Romanized Hinglish/Kanglish phonetic engines
      ├── nlp_analysis.py # Concept and complexity math
      └── training_data.py# Singletons tracking RLHF, Arena, DPO
 ```
@@ -98,9 +104,9 @@ frontend/
  ├── src/
  │   ├── App.tsx         # Main entry, global UI wrappers
  │   ├── components/     # UI
- │   │   ├── session/    # Editor components, AudioVisualizer, RhymeCompleter
+ │   │   ├── session/    # LineRow (Timeline), BeatTimer, DoppelreimPanel, RhymeMap3D
  │   │   └── stats/      # Charts (Recharts), Dashboards
- │   ├── pages/          # Full screen routable views
+ │   ├── pages/          # Full screen routable views (SessionPage, LearningPage cockpit)
  │   ├── services/       # api.ts (ALL FETCH CALLS GO HERE)
  │   └── store/          # Zustand global state
  │       ├── sessionStore.ts

@@ -117,3 +117,119 @@
 .btn-full {
     width: 100%;
 }
+
+/* ── Local Polisher Drawer ── */
+.local-polisher-section {
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    border-radius: 10px;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, rgba(99, 102, 241, 0.03) 100%);
+}
+
+.local-polish-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.polish-options-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.polish-syl-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.polish-syl-input label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.polish-syl-input input {
+    width: 60px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 0.4rem 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    text-align: center;
+}
+
+.polish-syl-input input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.polish-mode-btns {
+    display: flex;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.polish-mode-btns .chip {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.5rem;
+}
+
+/* Candidate Cards */
+.local-candidates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
+.candidate-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    transition: all 0.2s ease;
+}
+
+.candidate-card:hover {
+    background: rgba(139, 92, 246, 0.08);
+    border-color: rgba(139, 92, 246, 0.2);
+    transform: translateX(3px);
+}
+
+.candidate-index {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: rgba(167, 139, 250, 0.6);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+
+.candidate-text {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.candidate-action {
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.candidate-card:hover .candidate-action {
+    opacity: 1;
+}

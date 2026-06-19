@@ -343,3 +343,89 @@
     text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
     transition: all 0.2s ease;
 }
+
+/* ── Stress & Flow Timeline ── */
+.stress-flow-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.06) 100%);
+    border-radius: 8px;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    backdrop-filter: blur(6px);
+    overflow: hidden;
+}
+
+.timeline-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(167, 139, 250, 0.7);
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+}
+
+.timeline-nodes {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+}
+
+.timeline-node {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.timeline-node.stressed {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(52, 211, 153, 0.15));
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.4);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.2);
+}
+
+.timeline-node.unstressed {
+    background: rgba(148, 163, 184, 0.08);
+    color: rgba(148, 163, 184, 0.5);
+    border-color: rgba(148, 163, 184, 0.15);
+}
+
+.timeline-node.overridden {
+    border-style: dashed;
+    animation: override-pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes override-pulse {
+    from { box-shadow: 0 0 4px rgba(250, 204, 21, 0.3); }
+    to   { box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+}
+
+.timeline-node:hover {
+    transform: scale(1.15);
+    border-color: rgba(167, 139, 250, 0.6);
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+}
+
+/* Make line-content a column so the timeline appears below the text */
+.line-content {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.line-content > .line-text,
+.line-content > .line-edit-input {
+    flex: 1;
+}

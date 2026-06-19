@@ -115,6 +115,8 @@ export interface DoppelreimLookupData {
     mode: 'classic' | 'vowel' | 'multi' | 'inspiration';
     allow_slang: boolean;
     max_results?: number;
+    target_syllables?: number;
+    target_stress?: string;
 }
 
 export interface DoppelreimResult {
@@ -123,6 +125,8 @@ export interface DoppelreimResult {
     vowel_sequence: string;
     upvotes: number;
     is_slang: boolean;
+    stress_pattern?: string;
+    rhythmic_score?: number;
 }
 
 export interface DoppelreimResponse {
@@ -556,6 +560,12 @@ export const aiApi = {
         request<{ success: boolean; lines: LyricLine[]; error?: string }>('/api/ai/apply-polish', {
             method: 'POST',
             body: JSON.stringify({ session_id: sessionId, polished_text: polishedText }),
+        }),
+
+    polishLocal: (line: string, targetSyllables?: number, slangWords: string[] = []) =>
+        request<{ success: boolean; candidates: string[] }>('/api/ai/polish/local', {
+            method: 'POST',
+            body: JSON.stringify({ line, target_syllables: targetSyllables, slang_words: slangWords }),
         }),
 };
 

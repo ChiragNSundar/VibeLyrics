@@ -498,3 +498,79 @@ input:checked + .slider:before {
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
+/* ── Flow-Aligned Sorting ── */
+.flow-aligned-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.flow-aligned-row .filter-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.filter-hint {
+    font-size: 0.65rem;
+    color: rgba(167, 139, 250, 0.6);
+    font-family: var(--font-mono, monospace);
+    letter-spacing: 0.02em;
+}
+
+.flow-aligned-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Rhythmic Score Badge */
+.rhythm-score-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+    font-family: var(--font-mono, monospace);
+}
+
+.rhythm-score-badge.good {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.rhythm-score-badge.weak {
+    background: rgba(248, 113, 113, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+/* Mini Stress Pattern on Result Cards */
+.result-stress-pattern {
+    display: flex;
+    gap: 2px;
+    margin-top: 0.2rem;
+}
+
+.mini-stress {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    border-radius: 3px;
+    font-family: var(--font-mono, monospace);
+}
+
+.mini-stress.str {
+    background: rgba(52, 211, 153, 0.18);
+    color: #34d399;
+}
+
+.mini-stress.unstr {
+    background: rgba(148, 163, 184, 0.08);
+    color: rgba(148, 163, 184, 0.4);
+}

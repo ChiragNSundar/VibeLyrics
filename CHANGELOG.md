@@ -2,6 +2,23 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.2.0] - 2026-06-19
+
+### 🎛️ Advanced Cadence Writing Flow & Offline Brain Upgrades
+
+#### 🎵 Stress & Flow Timeline UI
+- **Interactive Syllable Grid** — Added a real-time stress pattern visualization timeline below active lyric rows, using Framer Motion. Shows stressed (`/` / Guru) and unstressed (`x` / Lagu) syllables.
+- **Manual Overrides** — Users can click on a syllable node to manually toggle/override its stress state, marked with a pulsing gold glow and dashed border.
+
+#### 🧠 Rhythmic Scoring & Flow-Aligned Sorting
+- **Cadence & Stress Matching** — Enhanced the Doppelreim matching algorithm to accept target syllable counts and target stress patterns, prioritizing and ranking rhythmically equivalent matches.
+- **Rhythmic Badges** — Result cards display `rhythmic_score` indicators and inline stress shapes so writers can see flow alignment at a glance.
+
+#### 🤖 Offline Brain & AI Romanization Alignment
+- **Hinglish/Kanglish AI Prompts** — Updated system instructions (`GHOSTWRITER_SYSTEM_INSTRUCTION`) and local polishing prompts across all providers (Gemini, OpenAI, LM Studio) to strictly enforce romanized script (Latin/English characters) for Hindi and Kannada suggestions.
+- **Local Polish Endpoint** — Added `/api/ai/polish/local` (and a matching "Cadence Polisher" drawer in the frontend UI) to perform offline line polishing to fit syllable counts and inject active slang vocabulary.
+- **OpenAI Local Polishing** — Implemented local polishing support in `OpenAIProvider`.
+
 ## [3.1.0] - 2026-06-18
 
 ### 🧠 Interactive Seeding Center & Phonetic Sandbox

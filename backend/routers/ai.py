@@ -4,6 +4,7 @@ AI suggestions, improvements, and Q&A
 """
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from ..database import get_db
@@ -588,4 +589,39 @@ Rules:
         }
     except Exception as e:
         return {"success": False, "error": str(e), "variants": []}
+
+
+class PolishLocalRequest(BaseModel):
+    line: str
+    target_syllables: Optional[int] = None
+    slang_words: list[str] = []
+
+
+@router.post("/ai/polish/local", response_model=dict)
+async def polish_line_local(data: PolishLocalRequest, db: AsyncSession = Depends(get_db)):
+    """Polish a line offline to match cadence constraints and inject slang words"""
+    import json
+    
+    # Fetch User Preferences for Slang Preferences
+    profile_result = await db.execute(select(UserProfile).limit(1))
+    profile = profile_result.scalar_one_or_none()
+    
+    slang_words = list(data.slang_words)
+    if profile and profile.slang_preferences:
+        try:
+            db_slang = json.loads(profile.slang_preferences)
+            if isinstance(db_slang, list):
+                for sw in db_slang:
+                    if sw not in slang_words:
+                        slang_words.append(sw)
+        except Exception:
+            pass
+            
+    provider = get_ai_provider()
+    candidates = await provider.polish_line_local(data.line, data.target_syllables, slang_words)
+    
+    return {
+        "success": True,
+        "candidates": candidates
+    }
 

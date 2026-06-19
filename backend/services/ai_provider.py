@@ -52,6 +52,7 @@ STYLE RULES:
 3. NEVER explain your output. NEVER add quotes, backticks, or labels. Output ONLY the lyric content.
 4. Keep outputs concise — typically one line unless explicitly asked for more.
 5. If the user's style is raw and gritty, be raw and gritty. If it's polished and lyrical, be polished and lyrical.
+6. ROMANIZATION (Hinglish/Kanglish): If writing, generating, or modifying lyrics in Hindi or Kannada (or mixed/slang), you MUST write the output in romanized script (Latin alphabet/English letters like Hinglish/Kanglish). NEVER output native Devanagari (Hindi) script or Kannada script. For example, use 'sapna' instead of 'अपना', and 'bangaara' instead of 'ಬಂಗಾರ'.
 
 ANTI-PATTERNS (never do these):
 - Don't start lines with "I" too often — vary your sentence structure
@@ -122,6 +123,12 @@ class AIProvider(ABC):
     async def improve_lyrics_bulk(self, lyrics: str) -> str:
         """Improve a full set of lyrics into verses and chorus."""
         pass
+
+    async def polish_line_local(
+        self, line: str, target_syllables: Optional[int] = None, slang_words: List[str] = []
+    ) -> List[str]:
+        """Polish a lyric line offline using syllable count and slang words constraints"""
+        return []
 
     async def stream_suggestion_with_context(
         self, session_id: int, partial: str, context: str = ""
@@ -587,6 +594,55 @@ Output ONLY the lyric line."""
 
         return prompt
 
+    async def polish_line_local(
+        self, line: str, target_syllables: Optional[int] = None, slang_words: List[str] = []
+    ) -> List[str]:
+        if not self.api_key:
+            return []
+        
+        sys_instructions = (
+            "You are Vibe, an expert lyric polisher and ghostwriter. "
+            "Your task is to rewrite the user's input lyric line to meet rhythmic and vocabulary constraints. "
+            "Follow these rules strictly:\n"
+        )
+        if target_syllables is not None:
+            sys_instructions += f"- The output line MUST have EXACTLY {target_syllables} syllables.\n"
+        if slang_words:
+            sys_instructions += f"- You should try to naturally incorporate one or more of these slang words: {', '.join(slang_words)}.\n"
+        sys_instructions += (
+            "- If the line or slang words contain Hindi or Kannada vocabulary, you MUST write the output in romanized script (Latin alphabet/English letters like Hinglish/Kanglish). NEVER output native Devanagari (Hindi) or Kannada characters.\n"
+            "- Output ONLY 3 distinct alternative rewritten options, each on a new line.\n"
+            "- Do not include numbering, labels, quotes, or explanations. Just output the raw lines."
+        )
+        
+        genai = self._configure()
+        if not genai:
+            return []
+        try:
+            import re
+            model = genai.GenerativeModel(
+                self._preferred_model or "gemini-2.5-flash-lite",
+                system_instruction=sys_instructions,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.8,
+                    max_output_tokens=150,
+                )
+            )
+            prompt = f"Lyric to improve: \"{line}\"\n\nImproved alternatives:"
+            response = await model.generate_content_async(prompt)
+            raw = response.text.strip() if response.text else ""
+            
+            candidates = []
+            for line_cand in raw.split('\n'):
+                cleaned = line_cand.strip().strip('"').strip("'")
+                cleaned = re.sub(r'^\d+[\.\)\s]+', '', cleaned).strip()
+                if cleaned and cleaned.lower() != line.lower():
+                    candidates.append(cleaned)
+            return candidates[:3]
+        except Exception as e:
+            print(f"[Gemini] polish_line_local error: {e}")
+            return []
+
 
 class OpenAIProvider(AIProvider):
     """OpenAI GPT provider"""
@@ -692,6 +748,54 @@ class OpenAIProvider(AIProvider):
 
     def _build_prompt(self, context: Dict) -> str:
         return f"Write a lyric line: {context.get('partial', '')}"
+
+    async def polish_line_local(
+        self, line: str, target_syllables: Optional[int] = None, slang_words: List[str] = []
+    ) -> List[str]:
+        client = self._get_client()
+        if not client:
+            return []
+            
+        sys_instructions = (
+            "You are Vibe, an expert lyric polisher and ghostwriter. "
+            "Your task is to rewrite the user's input lyric line to meet rhythmic and vocabulary constraints. "
+            "Follow these rules strictly:\n"
+        )
+        if target_syllables is not None:
+            sys_instructions += f"- The output line MUST have EXACTLY {target_syllables} syllables.\n"
+        if slang_words:
+            sys_instructions += f"- You should try to naturally incorporate one or more of these slang words: {', '.join(slang_words)}.\n"
+        sys_instructions += (
+            "- If the line or slang words contain Hindi or Kannada vocabulary, you MUST write the output in romanized script (Latin alphabet/English letters like Hinglish/Kanglish). NEVER output native Devanagari (Hindi) or Kannada characters.\n"
+            "- Output ONLY 3 distinct alternative rewritten options, each on a new line.\n"
+            "- Do not include numbering, labels, quotes, or explanations. Just output the raw lines."
+        )
+        
+        prompt = f"Lyric to improve: \"{line}\"\n\nImproved alternatives:"
+        
+        try:
+            import re
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": sys_instructions},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.8,
+            )
+            raw = response.choices[0].message.content.strip()
+            
+            candidates = []
+            for line_cand in raw.split('\n'):
+                cleaned = line_cand.strip().strip('"').strip("'")
+                cleaned = re.sub(r'^\d+[\.\)\s]+', '', cleaned).strip()
+                if cleaned and cleaned.lower() != line.lower():
+                    candidates.append(cleaned)
+            return candidates[:3]
+        except Exception as e:
+            print(f"[OpenAI] polish_line_local error: {e}")
+            return []
 
 
 class LMStudioProvider(AIProvider):
@@ -806,7 +910,8 @@ class LMStudioProvider(AIProvider):
             # Single user message — Mistral/local LLMs often reject 'system' role
             prompt = (
                 f"[INST] You are a professional rapper. Rewrite this lyric line to improve the {improvement_type}.\n"
-                f"Only output the new lyric line. No explanation, no labels, no quotes.\n\n"
+                f"Only output the new lyric line. No explanation, no labels, no quotes.\n"
+                f"If the line contains Hindi or Kannada vocabulary, you MUST write the output in romanized script (Latin alphabet/English letters like Hinglish/Kanglish). NEVER output native Devanagari (Hindi) or Kannada characters.\n\n"
                 f"Original: {line}\n\n"
                 f"Rewritten: [/INST]"
             )
@@ -910,6 +1015,59 @@ Lyrics:
             prompt += "Recent lyrics:\n" + "\n".join(lines[-8:]) + "\n"
         prompt += f"\nWrite the next line. Partial: \"{partial}\"\nOutput ONLY the line."
         return prompt
+
+    async def polish_line_local(
+        self, line: str, target_syllables: Optional[int] = None, slang_words: List[str] = []
+    ) -> List[str]:
+        """Polish a line using LM Studio to fit a specific syllable count and inject slang words"""
+        client = self._get_client()
+        if not client:
+            return []
+            
+        sys_instructions = (
+            "You are Vibe, an expert lyric polisher and ghostwriter. "
+            "Your task is to rewrite the user's input lyric line to meet rhythmic and vocabulary constraints. "
+            "Follow these rules strictly:\n"
+        )
+        
+        if target_syllables is not None:
+            sys_instructions += f"- The output line MUST have EXACTLY {target_syllables} syllables.\n"
+            
+        if slang_words:
+            sys_instructions += f"- You should try to naturally incorporate one or more of these slang words: {', '.join(slang_words)}.\n"
+            
+        sys_instructions += (
+            "- If the line or slang words contain Hindi or Kannada vocabulary, you MUST write the output in romanized script (Latin alphabet/English letters like Hinglish/Kanglish). NEVER output native Devanagari (Hindi) or Kannada characters.\n"
+            "- Output ONLY 3 distinct alternative rewritten options, each on a new line.\n"
+            "- Do not include numbering, labels, quotes, or explanations. Just output the raw lines."
+        )
+        
+        prompt = f"Lyric to improve: \"{line}\"\n\nImproved alternatives:"
+        
+        try:
+            import re
+            response = await client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": sys_instructions},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.8,
+            )
+            raw = response.choices[0].message.content.strip()
+            
+            candidates = []
+            for line_cand in raw.split('\n'):
+                cleaned = line_cand.strip().strip('"').strip("'")
+                cleaned = re.sub(r'^\d+[\.\)\s]+', '', cleaned).strip()
+                if cleaned and cleaned.lower() != line.lower():
+                    candidates.append(cleaned)
+                    
+            return candidates[:3]
+        except Exception as e:
+            print(f"[LMStudio] polish_line_local error: {e}")
+            return []
 
 
 def get_ai_provider() -> AIProvider:

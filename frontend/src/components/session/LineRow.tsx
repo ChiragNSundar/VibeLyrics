@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import type { LyricLine, AddLineResponse } from '../../services/api';
 import { lineApi } from '../../services/api';
@@ -19,6 +20,10 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
     const [editValue, setEditValue] = useState(line.final_version || line.user_input);
     const [isImproving, setIsImproving] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showTimeline, setShowTimeline] = useState(false);
+
+    // Local stress overrides: user can toggle individual syllable nodes
+    const [stressOverrides, setStressOverrides] = useState<Record<number, string>>({});
 
     const handleTextClick = (e: React.MouseEvent<HTMLSpanElement>) => {
         const target = e.target as HTMLElement;
@@ -79,6 +84,8 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                 );
             }
             setIsEditing(false);
+            // Reset overrides on save since stress pattern may change
+            setStressOverrides({});
             toast.success('Line updated');
         } catch (error) {
             toast.error('Failed to update line');
@@ -141,11 +148,30 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
         }
     };
 
+    // ── Stress & Flow Timeline ──────────────────────────────────
+    const rawPattern = line.stress_pattern || '';
+    // Parse pattern into individual chars (strip spaces)
+    const stressChars = rawPattern.replace(/\s/g, '').split('');
+
+    const getDisplayChar = useCallback((idx: number, original: string) => {
+        return stressOverrides[idx] || original;
+    }, [stressOverrides]);
+
+    const toggleStress = (idx: number) => {
+        const current = getDisplayChar(idx, stressChars[idx] || 'x');
+        const toggled = current === '/' ? 'x' : '/';
+        setStressOverrides(prev => ({ ...prev, [idx]: toggled }));
+    };
+
     // Get heatmap class based on density
     const heatmapClass = line.heatmap_class || '';
 
     return (
-        <div className={`line-row ${heatmapClass}`}>
+        <div
+            className={`line-row ${heatmapClass}`}
+            onMouseEnter={() => setShowTimeline(true)}
+            onMouseLeave={() => setShowTimeline(false)}
+        >
             <span className="line-number">{line.line_number}</span>
 
             <div className="line-content">
@@ -185,9 +211,9 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                             {line.complexity_score >= 60 ? '🔥' : line.complexity_score >= 30 ? '📝' : '💡'}
                         </span>
                     )}
-                    {line.stress_pattern && (
+                    {rawPattern && (
                         <div className="stress-viz" title="Stress pattern">
-                            {line.stress_pattern.split('').map((char, i) => (
+                            {stressChars.map((char, i) => (
                                 <span key={i} className={`stress-dot ${char === '/' ? 'primary' : 'unstressed'}`}>
                                     {char === '/' ? '●' : '○'}
                                 </span>
@@ -195,6 +221,40 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                         </div>
                     )}
                 </div>
+
+                {/* ── Stress & Flow Timeline (appears on hover/focus) ── */}
+                <AnimatePresence>
+                    {showTimeline && stressChars.length > 0 && !isEditing && (
+                        <motion.div
+                            className="stress-flow-timeline"
+                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                            animate={{ opacity: 1, height: 'auto', marginTop: 6 }}
+                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                        >
+                            <span className="timeline-label">Flow</span>
+                            <div className="timeline-nodes">
+                                {stressChars.map((char, idx) => {
+                                    const display = getDisplayChar(idx, char);
+                                    const isStressed = display === '/';
+                                    const isOverridden = stressOverrides[idx] !== undefined;
+                                    return (
+                                        <motion.button
+                                            key={idx}
+                                            className={`timeline-node ${isStressed ? 'stressed' : 'unstressed'} ${isOverridden ? 'overridden' : ''}`}
+                                            onClick={() => toggleStress(idx)}
+                                            title={`Syllable ${idx + 1}: ${isStressed ? 'Stressed (Guru / /)' : 'Unstressed (Lagu / x)'} — click to toggle`}
+                                            whileHover={{ scale: 1.2 }}
+                                            whileTap={{ scale: 0.9 }}
+                                        >
+                                            {display}
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <div className="line-actions">

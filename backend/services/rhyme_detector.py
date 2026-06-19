@@ -103,6 +103,8 @@ class RhymeDetector:
         "negative": ["cap", "fake", "lame", "wack", "trash"],
     }
     
+    romanized_words_map: Dict[str, str] = {}
+    
     def __init__(self):
         self.syllable_counter = SyllableCounter()
         self._cache = OrderedDict()
@@ -113,7 +115,7 @@ class RhymeDetector:
         self._cache.clear()
 
     def extract_vowels(self, word: str, language: str) -> tuple:
-        """Extract vowel sequence, exact rhyme key, and syllable count based on language"""
+        """Extract vowel sequence, exact rhyme key, and syllable count based on language and script type"""
         word = word.strip()
         if not word:
             return "", "", 0
@@ -121,9 +123,15 @@ class RhymeDetector:
         if language == 'en':
             return self.extract_english_vowels(word)
         elif language == 'hi':
-            return self.extract_hindi_vowels(word)
+            if re.search(r'[\u0900-\u097f]', word):
+                return self.extract_hindi_vowels(word)
+            else:
+                return self.extract_romanized_indian_vowels(word, 'hi')
         elif language == 'kn':
-            return self.extract_kannada_vowels(word)
+            if re.search(r'[\u0c80-\u0cff]', word):
+                return self.extract_kannada_vowels(word)
+            else:
+                return self.extract_romanized_indian_vowels(word, 'kn')
         else:
             # Fallback to English-like vowel groups
             vowels = re.findall(r'[aeiouy]+', word.lower())
@@ -262,6 +270,73 @@ class RhymeDetector:
         exact_key = word[-2:] if len(word) >= 2 else word
         return vowel_seq, exact_key, len(vowels)
 
+    def extract_romanized_indian_vowels(self, word: str, language: str) -> tuple:
+        """Extract vowel sequence, exact rhyme key, and syllable count for Romanized Hindi/Kannada"""
+        word_clean = re.sub(r'[^a-z]', '', word.lower())
+        if not word_clean:
+            return "", "", 0
+            
+        vowel_pattern = re.compile(r'(aa|ee|ii|oo|uu|ai|au|ae|ou|a|e|i|o|u|y)')
+        matches = vowel_pattern.findall(word_clean)
+        
+        if not matches:
+            return "a", word_clean[-2:] if len(word_clean) >= 2 else word_clean, 1
+            
+        phonetic_vowels = []
+        for idx, m in enumerate(matches):
+            is_final = (idx == len(matches) - 1)
+            if m in ('aa', 'ae'):
+                phonetic_vowels.append('aa')
+            elif m in ('ee', 'ii'):
+                phonetic_vowels.append('ii' if language == 'hi' else 'ee')
+            elif m in ('oo', 'uu'):
+                phonetic_vowels.append('uu' if language == 'hi' else 'oo')
+            elif m == 'ai':
+                phonetic_vowels.append('ai')
+            elif m in ('au', 'ou'):
+                phonetic_vowels.append('au')
+            elif m == 'a':
+                if is_final and len(matches) > 1:
+                    phonetic_vowels.append('aa')
+                else:
+                    phonetic_vowels.append('a')
+            elif m == 'i':
+                if is_final and len(matches) > 1:
+                    phonetic_vowels.append('ii' if language == 'hi' else 'ee')
+                else:
+                    phonetic_vowels.append('i')
+            elif m == 'u':
+                phonetic_vowels.append('u')
+            elif m == 'e':
+                phonetic_vowels.append('e' if language == 'hi' else 'ee')
+            elif m == 'o':
+                phonetic_vowels.append('o' if language == 'hi' else 'oo')
+            elif m == 'y':
+                phonetic_vowels.append('i')
+            else:
+                phonetic_vowels.append('a')
+                
+        vowel_seq = "-".join(phonetic_vowels)
+        exact_key = word_clean[-2:] if len(word_clean) >= 2 else word_clean
+        return vowel_seq, exact_key, len(phonetic_vowels)
+
+    async def load_romanized_words_map(self, session: AsyncSession):
+        """Load registered Romanized words from database into in-memory map for fast highlight lookups"""
+        try:
+            query = select(MultisyllabicWord).where(MultisyllabicWord.language.in_(['hi', 'kn']))
+            res = await session.execute(query)
+            words = res.scalars().all()
+            
+            count = 0
+            for w in words:
+                w_lower = w.word.strip().lower()
+                if w_lower.isalpha() and all(ord(c) < 128 for c in w_lower):
+                    self.romanized_words_map[w_lower] = w.language
+                    count += 1
+            print(f"[INFO] Loaded {count} Romanized Hindi/Kannada words into memory map.")
+        except Exception as e:
+            print(f"[WARNING] Failed to load romanized words map: {e}")
+
     async def auto_register_word(
         self, session: AsyncSession, word: str, language: str, 
         vowel_seq: str, exact_key: str, syllable_count: int
@@ -291,6 +366,10 @@ class RhymeDetector:
             session.add(new_word)
             try:
                 await session.commit()
+                # Update in-memory map
+                w_lower = word_clean.lower()
+                if w_lower.isalpha() and all(ord(c) < 128 for c in w_lower):
+                    self.romanized_words_map[w_lower] = language
             except Exception:
                 await session.rollback()
 
@@ -350,16 +429,62 @@ class RhymeDetector:
         results.sort(key=lambda x: x["upvotes"], reverse=True)
         return results[:max_results]
 
+    def get_detailed_stress_layout(self, word: str, language: str) -> str:
+        """Get stress pattern (x = unstressed/Lagu, / = stressed/Guru) for a word based on language"""
+        word = word.strip().lower()
+        if not word:
+            return ""
+            
+        if language == 'en':
+            # Use CMUDict stresses
+            word_clean = re.sub(r'[^a-z]', '', word)
+            if not word_clean:
+                return "x"
+            phones_list = pronouncing.phones_for_word(word_clean)
+            if phones_list:
+                stress = pronouncing.stresses(phones_list[0])
+                return stress.replace('1', '/').replace('2', '/').replace('0', 'x')
+            else:
+                # Fallback: guess unstressed for vowel groups
+                vowels = re.findall(r'[aeiouy]+', word_clean)
+                return "x" * max(1, len(vowels))
+                
+        elif language in ('hi', 'kn'):
+            # Hindi/Kannada Swara and Matra extraction is vowel-based
+            vowel_seq, _, _ = self.extract_vowels(word, language)
+            if not vowel_seq:
+                return "x"
+            parts = vowel_seq.split("-")
+            
+            # Map Hindi / Kannada vowels to Lagu/Guru
+            if language == 'hi':
+                long_vowels = {'aa', 'ii', 'uu', 'e', 'ai', 'o', 'au', 'ri'}
+            else: # kn
+                long_vowels = {'aa', 'ii', 'uu', 'ee', 'oo', 'ai', 'au'}
+                
+            layout = []
+            for p in parts:
+                if p.lower() in long_vowels:
+                    layout.append('/')
+                else:
+                    layout.append('x')
+            return "".join(layout)
+            
+        else:
+            vowels = re.findall(r'[aeiouy]+', word)
+            return "x" * max(1, len(vowels))
+
     async def find_doppelreim_rhymes(
         self, session: AsyncSession, word: str, language: str = 'en', 
-        mode: str = 'vowel', allow_slang: bool = True, max_results: int = 30
+        mode: str = 'vowel', allow_slang: bool = True, max_results: int = 30,
+        target_syllables: Optional[int] = None, target_stress: Optional[str] = None
     ) -> List[dict]:
-        """Main entrypoint for advanced multisyllabic lookup"""
+        """Main entrypoint for advanced multisyllabic lookup with rhythmic ranking options"""
         word = word.strip()
         if not word:
             return []
             
-        cache_key = (word.lower(), language, mode, allow_slang, max_results)
+        cache_key = (word.lower(), language, mode, allow_slang, max_results, target_syllables, target_stress)
         if cache_key in self._cache:
             self._cache.move_to_end(cache_key)
             return self._cache[cache_key]
@@ -369,12 +494,39 @@ class RhymeDetector:
         # Self-learning step: add query word if it's missing
         await self.auto_register_word(session, word, language, vowel_seq, exact_key, syllable_count)
         
+        def calculate_rhythmic_score(cand_syllables: int, cand_stress: str) -> float:
+            score = 0.0
+            if target_syllables is not None:
+                diff = abs(cand_syllables - target_syllables)
+                score -= diff * 2.0  # heavy penalty for syllable count difference
+            if target_stress:
+                match_chars = 0
+                clean_target = target_stress.replace(" ", "")
+                clean_cand = cand_stress.replace(" ", "")
+                min_len = min(len(clean_cand), len(clean_target))
+                for idx in range(min_len):
+                    if clean_cand[idx] == clean_target[idx]:
+                        match_chars += 1
+                if min_len > 0:
+                    score += (match_chars / max(len(clean_cand), len(clean_target))) * 3.0
+            return score
+
         if mode == 'multi':
             res = await self.find_combinatorial_rhymes(session, vowel_seq, language, allow_slang, max_results)
-            self._cache[cache_key] = res
+            # Add stress pattern to combinatorial results
+            for r in res:
+                r["stress_pattern"] = self.get_detailed_stress_layout(r["word"], language)
+                if target_syllables is not None or target_stress:
+                    r["rhythmic_score"] = calculate_rhythmic_score(r["syllable_count"], r["stress_pattern"])
+            
+            if target_syllables is not None or target_stress:
+                res.sort(key=lambda x: (x.get("rhythmic_score", 0.0), x["upvotes"]), reverse=True)
+                
+            final_res = res[:max_results]
+            self._cache[cache_key] = final_res
             if len(self._cache) > self._cache_max_size:
                 self._cache.popitem(last=False)
-            return res
+            return final_res
             
         query = select(MultisyllabicWord).where(MultisyllabicWord.language == language)
         
@@ -393,22 +545,35 @@ class RhymeDetector:
         results = []
         for w in words:
             if w.word.lower() != word.lower():
+                cand_stress = self.get_detailed_stress_layout(w.word, language)
                 results.append({
                     "word": w.word,
                     "syllable_count": w.syllable_count,
                     "vowel_sequence": w.vowel_sequence,
+                    "exact_key": w.exact_rhyme_key,
                     "upvotes": w.upvotes,
-                    "is_slang": w.is_slang
+                    "is_slang": w.is_slang,
+                    "stress_pattern": cand_stress
                 })
                 
         # Classic fallback to Vowel/Slant when perfect matches are sparse
         if mode == 'classic' and len(results) < 5:
-            vowel_results = await self.find_doppelreim_rhymes(session, word, language, 'vowel', allow_slang, max_results)
+            vowel_results = await self.find_doppelreim_rhymes(
+                session, word, language, 'vowel', allow_slang, max_results, target_syllables, target_stress
+            )
             existing = {r["word"].lower() for r in results}
             for r in vowel_results:
                 if r["word"].lower() not in existing:
                     results.append(r)
                     
+        # Apply rhythmic score and re-sort if targets are specified
+        if target_syllables is not None or target_stress:
+            for r in results:
+                if "stress_pattern" not in r:
+                    r["stress_pattern"] = self.get_detailed_stress_layout(r["word"], language)
+                r["rhythmic_score"] = calculate_rhythmic_score(r["syllable_count"], r["stress_pattern"])
+            results.sort(key=lambda x: (x.get("rhythmic_score", 0.0), x["upvotes"]), reverse=True)
+            
         final_results = results[:max_results]
         self._cache[cache_key] = final_results
         if len(self._cache) > self._cache_max_size:
@@ -418,6 +583,9 @@ class RhymeDetector:
 
     async def seed_phonetic_database(self, session: AsyncSession):
         """Seed the multisyllabic dictionary with standard words for English, Hindi, and Kannada"""
+        # Always populate the in-memory romanized words map first
+        await self.load_romanized_words_map(session)
+        
         query = select(func.count()).select_from(MultisyllabicWord)
         res = await session.execute(query)
         count = res.scalar()
@@ -491,6 +659,60 @@ class RhymeDetector:
         ]
         for kw in kannada_vocab:
             vseq, ekey, syl = self.extract_kannada_vowels(kw)
+            words_to_insert.append({
+                "word": kw,
+                "language": "kn",
+                "syllable_count": syl,
+                "vowel_sequence": vseq,
+                "exact_rhyme_key": ekey,
+                "is_slang": False,
+                "upvotes": 5
+            })
+        
+        # 4. Romanized Hindi (Hinglish) Vocabulary Seed
+        hinglish_vocab = [
+            "apna", "sapna", "pyaar", "yaar", "dil", "mahaan", "khatka", "sabka", "kehna", "rehna",
+            "zindagi", "maut", "dost", "dushman", "raasta", "manzil", "aasmaan", "dharti", "duniya", "insaan",
+            "khuda", "rab", "dua", "salaam", "kaam", "naam", "daam", "shaam", "subah", "raat",
+            "din", "baat", "haath", "saath", "maath", "aaj", "kal", "pal", "chal", "bal",
+            "ghar", "par", "dar", "sar", "har", "kar", "bhar", "mar", "sharr", "shaayar", "kavita", "gaane",
+            "ishq", "mohabbat", "dard", "khushi", "gham", "aansu", "rona", "hasna", "jeena", "marna",
+            "taqdeer", "kismat", "naseeb", "imtihaan", "safar", "musafir", "raahi", "manzilen",
+            "sitaare", "chaand", "suraj", "badal", "baarish", "paani", "aag", "hawa", "zameen",
+            "pathar", "phool", "kaanta", "dariya", "saagar", "toofaan", "bijli", "dhoop", "chaaya",
+            "sapne", "neend", "jaagna", "sochna", "bolna", "sunna", "dekhna", "milna", "jaana",
+            "aana", "lautna", "bhoolna", "yaad", "waqt", "lamha", "arzoo", "tamanna", "umeed",
+            "hausla", "himmat", "junoon", "firaaq", "judai", "milan", "vaada", "dhoka",
+            "bewafa", "aashiq", "deewana", "majnoon", "laila", "mehfil", "jalsa", "tamaasha",
+            "dhamaka", "shor", "khamoshi", "sukoon", "aman", "jung", "talwaar",
+        ]
+        for hw in hinglish_vocab:
+            vseq, ekey, syl = self.extract_romanized_indian_vowels(hw, 'hi')
+            words_to_insert.append({
+                "word": hw,
+                "language": "hi",
+                "syllable_count": syl,
+                "vowel_sequence": vseq,
+                "exact_rhyme_key": ekey,
+                "is_slang": False,
+                "upvotes": 5
+            })
+            
+        # 5. Romanized Kannada (Kanglish) Vocabulary Seed
+        kanglish_vocab = [
+            "bangaara", "mastaka", "pustaka", "kannada", "haadu", "maadu", "noodu", "helu", "kelu", "bareyu",
+            "oodu", "duddu", "kodu", "tago", "hogu", "baa", "namaskaara", "preethi", "sneha", "jeevana",
+            "khushi", "dukkha", "kanasu", "manasu", "nenapu", "kaala", "loka", "jana", "mane", "kaadu",
+            "naadu", "ooru", "kere", "hole", "nadi", "samudra", "betta", "gudda", "kallu", "mannu",
+            "neeru", "gaali", "benki", "aakaasha", "bhoomi", "soorya", "chandra", "nakshatra", "hagalu", "raathri",
+            "hudugi", "huduga", "amme", "appa", "anna", "akka", "thambi", "thangala",
+            "yenu", "illi", "alli", "hegidiya", "baalige", "hogona", "barona", "ninage", "nanage",
+            "preethse", "onde", "maathadu", "nodidya", "kelide", "gottu", "gottilla",
+            "chennagide", "tumba", "kashta", "santhosa", "devaru", "manushya", "hrudaya",
+            "baaluva", "haakuva", "iruva", "aguva", "baruva", "hogova", "maadona",
+        ]
+        for kw in kanglish_vocab:
+            vseq, ekey, syl = self.extract_romanized_indian_vowels(kw, 'kn')
             words_to_insert.append({
                 "word": kw,
                 "language": "kn",
@@ -644,7 +866,7 @@ class RhymeDetector:
                     lang = 'kn'
                 else:
                     clean = re.sub(r'[^a-z]', '', word.lower())
-                    lang = 'en'
+                    lang = self.romanized_words_map.get(clean, 'en')
                     
                 if clean:
                     if lang == 'en':

@@ -30,7 +30,43 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
     const [showOptions, setShowOptions] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
-    const { activeRhymeWord, setActiveRhymeWord } = useSessionStore();
+    // Flow-Aligned Sorting state
+    const [flowAligned, setFlowAligned] = useState(false);
+    const [targetSyllables, setTargetSyllables] = useState<number | undefined>(undefined);
+    const [targetStress, setTargetStress] = useState<string>('');
+
+    const { activeRhymeWord, setActiveRhymeWord, lines, selectedLineId } = useSessionStore();
+
+    // Derive target cadence from the selected/active line
+    useEffect(() => {
+        if (flowAligned && selectedLineId) {
+            const activeLine = lines.find(l => l.id === selectedLineId);
+            if (activeLine) {
+                setTargetSyllables(activeLine.syllable_count || undefined);
+                setTargetStress(activeLine.stress_pattern || '');
+            }
+        } else if (!flowAligned) {
+            setTargetSyllables(undefined);
+            setTargetStress('');
+        }
+    }, [flowAligned, selectedLineId, lines]);
+
+    const buildLookupPayload = useCallback(() => {
+        const payload: any = {
+            word: searchTerm.trim(),
+            language,
+            mode,
+            allow_slang: allowSlang,
+            max_results: 30,
+        };
+        if (flowAligned && targetSyllables) {
+            payload.target_syllables = targetSyllables;
+        }
+        if (flowAligned && targetStress) {
+            payload.target_stress = targetStress;
+        }
+        return payload;
+    }, [searchTerm, language, mode, allowSlang, flowAligned, targetSyllables, targetStress]);
 
     const handleSearch = useCallback(async () => {
         const cleanTerm = searchTerm.trim();
@@ -39,13 +75,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
         setLoading(true);
         setError(null);
         try {
-            const res = await toolApi.lookupDoppelreim({
-                word: cleanTerm,
-                language,
-                mode,
-                allow_slang: allowSlang,
-                max_results: 30,
-            });
+            const res = await toolApi.lookupDoppelreim(buildLookupPayload());
 
             if (res.success && res.results) {
                 setResults(res.results);
@@ -60,7 +90,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
         } finally {
             setLoading(false);
         }
-    }, [searchTerm, language, mode, allowSlang]);
+    }, [searchTerm, buildLookupPayload]);
 
     useEffect(() => {
         if (initialWord) {
@@ -75,13 +105,20 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                 setLoading(true);
                 setError(null);
                 try {
-                    const res = await toolApi.lookupDoppelreim({
+                    const payload: any = {
                         word: activeRhymeWord,
                         language,
                         mode,
                         allow_slang: allowSlang,
                         max_results: 30,
-                    });
+                    };
+                    if (flowAligned && targetSyllables) {
+                        payload.target_syllables = targetSyllables;
+                    }
+                    if (flowAligned && targetStress) {
+                        payload.target_stress = targetStress;
+                    }
+                    const res = await toolApi.lookupDoppelreim(payload);
                     if (res.success && res.results) {
                         setResults(res.results);
                     } else {
@@ -98,7 +135,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
             triggerSearch();
             setActiveRhymeWord(null);
         }
-    }, [activeRhymeWord, language, mode, allowSlang, setActiveRhymeWord]);
+    }, [activeRhymeWord, language, mode, allowSlang, setActiveRhymeWord, flowAligned, targetSyllables, targetStress]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSearch();
@@ -160,7 +197,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={`Enter a word (e.g., ${
-                        language === 'en' ? 'lyrics' : language === 'hi' ? 'सपना' : 'ಬಂಗಾರ'
+                        language === 'en' ? 'lyrics' : language === 'hi' ? 'sapna' : 'bangaara'
                     })`}
                 />
                 <button
@@ -210,13 +247,13 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                                         className={`toggle-btn ${language === 'hi' ? 'active' : ''}`}
                                         onClick={() => setLanguage('hi')}
                                     >
-                                        हिंदी
+                                        Hinglish
                                     </button>
                                     <button
                                         className={`toggle-btn ${language === 'kn' ? 'active' : ''}`}
                                         onClick={() => setLanguage('kn')}
                                     >
-                                        ಕನ್ನಡ
+                                        Kanglish
                                     </button>
                                 </div>
                             </div>
@@ -264,6 +301,29 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                                         type="checkbox"
                                         checked={allowSlang}
                                         onChange={(e) => setAllowSlang(e.target.checked)}
+                                    />
+                                    <span className="slider round"></span>
+                                </label>
+                            </div>
+
+                            {/* Flow-Aligned Sorting Toggle */}
+                            <div className="filter-row flow-aligned-row">
+                                <div className="filter-label-group">
+                                    <span className="filter-label">🎵 Flow-Aligned Sorting</span>
+                                    <span className="filter-hint">
+                                        {flowAligned
+                                            ? targetSyllables
+                                                ? `Targeting ${targetSyllables} syl · ${targetStress || 'auto'}`
+                                                : 'Select a line to set target'
+                                            : 'Rank by rhythmic match'
+                                        }
+                                    </span>
+                                </div>
+                                <label className="switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={flowAligned}
+                                        onChange={(e) => setFlowAligned(e.target.checked)}
                                     />
                                     <span className="slider round"></span>
                                 </label>
@@ -338,6 +398,11 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                                                     {item.syllable_count} {item.syllable_count === 1 ? 'Syllable' : 'Syllables'}
                                                 </span>
                                                 {item.is_slang && <span className="slang-badge">Slang</span>}
+                                                {flowAligned && item.rhythmic_score !== undefined && (
+                                                    <span className={`rhythm-score-badge ${item.rhythmic_score >= 0 ? 'good' : 'weak'}`}>
+                                                        ♪ {item.rhythmic_score >= 0 ? '+' : ''}{item.rhythmic_score.toFixed(1)}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {/* Vowel Sequence Badges */}
@@ -348,6 +413,17 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                                                     </span>
                                                 ))}
                                             </div>
+
+                                            {/* Stress Pattern Display */}
+                                            {item.stress_pattern && (
+                                                <div className="result-stress-pattern">
+                                                    {item.stress_pattern.replace(/\s/g, '').split('').map((c, i) => (
+                                                        <span key={i} className={`mini-stress ${c === '/' ? 'str' : 'unstr'}`}>
+                                                            {c}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Voting & Ranking Weights */}
@@ -381,3 +457,4 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
 };
 
 export default DoppelreimPanel;
+
