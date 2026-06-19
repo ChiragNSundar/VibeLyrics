@@ -20,9 +20,49 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: 0.5rem 1.5rem;
     border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
+    min-height: 56px;
+}
+
+/* Header Navigation */
+.session-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.2rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.session-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.session-nav-link:hover {
+    color: var(--accent-primary, #60a5fa);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.session-nav-link.active {
+    color: #fff;
+    background: rgba(96, 165, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.session-nav-link .nav-icon {
+    font-size: 0.85rem;
 }
 
 .session-info {
@@ -149,15 +189,37 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative; /* Setup relative positioning for absolute child ComplexityMeter */
 }
 
-.editor-top-bar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    flex-shrink: 0;
+/* Metronome header overrides */
+.session-header .beat-timer-container {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    gap: 0.5rem;
+}
+
+.session-header .beat-timer-container .beat-visualizer {
+    min-width: 80px;
+    max-width: 120px;
+    gap: 0.5rem;
+}
+
+.session-header .beat-timer-container .beat-controls {
+    gap: 0.25rem;
+}
+
+.session-header .beat-timer-container .btn-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.session-header .beat-timer-container .bpm-display {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    margin-left: 0.2rem;
 }
 
 .session-content.with-panel .editor-container {

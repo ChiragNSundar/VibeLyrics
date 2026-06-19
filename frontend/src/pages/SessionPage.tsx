@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
 import { useSessionStore } from '../store/sessionStore';
@@ -19,9 +19,19 @@ import { Button } from '../components/ui/Button';
 import { sessionApi, aiApi } from '../services/api';
 import './SessionPage.css';
 
+const navLinks = [
+    { to: '/', icon: '📝', label: 'Workspace' },
+    { to: '/learning', icon: '🧠', label: 'Learning' },
+    { to: '/ai-brain', icon: '🤖', label: 'AI Brain' },
+    { to: '/journal', icon: '📓', label: 'Journal' },
+    { to: '/stats', icon: '📊', label: 'Stats' },
+    { to: '/settings', icon: '⚙️', label: 'Settings' },
+];
+
 export const SessionPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const sessionId = parseInt(id || '0');
+    const location = useLocation();
 
     const {
         currentSession,
@@ -128,12 +138,25 @@ export const SessionPage: React.FC = () => {
                     </Link>
                     <h1 className="session-title">{currentSession.title}</h1>
                     <div className="session-badges">
-                        <span className="bpm-badge">{currentSession.bpm} BPM</span>
                         {currentSession.mood && <span className="mood-tag">{currentSession.mood}</span>}
                     </div>
                 </div>
 
+                <nav className="session-nav">
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.to}
+                            to={link.to}
+                            className={`session-nav-link ${location.pathname === link.to ? 'active' : ''}`}
+                        >
+                            <span className="nav-icon">{link.icon}</span>
+                            <span className="nav-label">{link.label}</span>
+                        </Link>
+                    ))}
+                </nav>
+
                 <div className="session-actions">
+                    <BeatTimer bpm={currentSession.bpm} />
                     <Link to="/settings" className="provider-badge" title="Change AI provider in Settings">
                         🤖 {aiProvider}
                     </Link>
@@ -275,12 +298,9 @@ export const SessionPage: React.FC = () => {
 
                 {/* Main Editor */}
                 <div className="editor-container">
-                    <div className="editor-top-bar">
-                        <BeatTimer bpm={currentSession.bpm} />
-                        <ComplexityMeter
-                            lines={lines.map(l => l.final_version || l.user_input)}
-                        />
-                    </div>
+                    <ComplexityMeter
+                        lines={lines.map(l => l.final_version || l.user_input)}
+                    />
                     <LyricsEditor sessionId={sessionId} lines={lines} bpm={currentSession.bpm} rhymeScheme={currentSession.rhyme_scheme} />
                     <DriftIndicator sessionId={sessionId} lineCount={lines.length} />
                 </div>

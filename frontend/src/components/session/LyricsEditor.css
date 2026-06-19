@@ -65,8 +65,8 @@
 .lines-container {
     flex: 1;
     overflow-y: auto;
-    padding: var(--spacing-lg);
-    padding-bottom: 100px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-bottom: 80px;
     list-style: none;
 }
 
@@ -82,22 +82,22 @@
 
 /* ── Input Area ───────────────────────────────────────── */
 .input-area {
-    padding: var(--spacing-lg);
+    padding: 0.4rem var(--spacing-md);
     border-top: 1px solid var(--glass-border);
     flex-shrink: 0;
 }
 
 .section-select {
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 0.25rem;
 }
 
 .section-dropdown {
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    padding: 0.4rem 0.75rem;
+    padding: 0.25rem 0.5rem;
     color: var(--text-primary);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     cursor: pointer;
 }
 
@@ -131,9 +131,9 @@
     background: var(--bg-input);
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    padding: 1rem;
+    padding: 0.5rem 0.75rem;
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-family: inherit;
     transition: border-color var(--transition-fast);
 }
@@ -152,8 +152,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: var(--spacing-sm);
-    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
 }
 

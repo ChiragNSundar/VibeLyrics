@@ -49,16 +49,29 @@ const AnimatedRoutes: React.FC = () => {
   );
 };
 
+const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const isSessionPage = location.pathname.startsWith('/session/');
+
+  return (
+    <>
+      {!isSessionPage && <Navbar />}
+      <main className={isSessionPage ? "main-content session-layout" : "main-content"}>
+        {children}
+      </main>
+    </>
+  );
+};
+
 function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Navbar />
-        <main className="main-content">
+        <AppLayout>
           <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
           </Suspense>
-        </main>
+        </AppLayout>
       </Router>
     </ErrorBoundary>
   );

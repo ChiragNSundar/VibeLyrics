@@ -15,12 +15,11 @@ interface LineRowProps {
 }
 
 export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
-    const { lines, setLines, setActiveRhymeWord, setActivePanel } = useSessionStore();
+    const { lines, setLines, setActiveRhymeWord, setActivePanel, selectedLineId, setSelectedLine } = useSessionStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(line.final_version || line.user_input);
     const [isImproving, setIsImproving] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [showTimeline, setShowTimeline] = useState(false);
 
     // Local stress overrides: user can toggle individual syllable nodes
     const [stressOverrides, setStressOverrides] = useState<Record<number, string>>({});
@@ -166,71 +165,83 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
     // Get heatmap class based on density
     const heatmapClass = line.heatmap_class || '';
 
+    const isSelected = selectedLineId === line.id;
+
     return (
         <div
-            className={`line-row ${heatmapClass}`}
-            onMouseEnter={() => setShowTimeline(true)}
-            onMouseLeave={() => setShowTimeline(false)}
+            className={`line-row ${heatmapClass} ${isSelected ? 'selected' : ''}`}
+            onClick={() => {
+                if (!isSelected) {
+                    setSelectedLine(line.id);
+                }
+            }}
         >
             <span className="line-number">{line.line_number}</span>
 
             <div className="line-content">
-                {isEditing ? (
-                    <input
-                        type="text"
-                        className="line-edit-input"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        autoFocus
-                        disabled={isSaving}
-                    />
-                ) : (
-                    <span
-                        className="line-text highlightable-word"
-                        onClick={handleTextClick}
-                        style={{ cursor: 'pointer' }}
-                        dangerouslySetInnerHTML={{
-                            __html: line.highlighted_html || line.final_version || line.user_input,
-                        }}
-                    />
-                )}
-
-                <div className="line-meta">
-                    <span className="syllable-count">{line.syllable_count} syl</span>
-                    {line.has_internal_rhyme && (
-                        <span className="rhyme-badge" title="Has internal rhyme">
-                            🔗
-                        </span>
-                    )}
-                    {line.complexity_score != null && line.complexity_score > 0 && (
+                <div className="line-main-row">
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            className="line-edit-input"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            autoFocus
+                            disabled={isSaving}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    ) : (
                         <span
-                            className={`complexity-badge ${line.complexity_score >= 60 ? 'high' : line.complexity_score >= 30 ? 'mid' : 'low'}`}
-                            title={`Complexity: ${line.complexity_score}/100`}
-                        >
-                            {line.complexity_score >= 60 ? '🔥' : line.complexity_score >= 30 ? '📝' : '💡'}
-                        </span>
+                            className="line-text highlightable-word"
+                            onClick={(e) => {
+                                // Select line but also handle text click if needed
+                                handleTextClick(e);
+                            }}
+                            style={{ cursor: 'pointer' }}
+                            dangerouslySetInnerHTML={{
+                                __html: line.highlighted_html || line.final_version || line.user_input,
+                            }}
+                        />
                     )}
-                    {rawPattern && (
-                        <div className="stress-viz" title="Stress pattern">
-                            {stressChars.map((char, i) => (
-                                <span key={i} className={`stress-dot ${char === '/' ? 'primary' : 'unstressed'}`}>
-                                    {char === '/' ? '●' : '○'}
-                                </span>
-                            ))}
-                        </div>
-                    )}
+
+                    <div className="line-meta">
+                        <span className="syllable-count">{line.syllable_count} syl</span>
+                        {line.has_internal_rhyme && (
+                            <span className="rhyme-badge" title="Has internal rhyme">
+                                🔗
+                            </span>
+                        )}
+                        {line.complexity_score != null && line.complexity_score > 0 && (
+                            <span
+                                className={`complexity-badge ${line.complexity_score >= 60 ? 'high' : line.complexity_score >= 30 ? 'mid' : 'low'}`}
+                                title={`Complexity: ${line.complexity_score}/100`}
+                            >
+                                {line.complexity_score >= 60 ? '🔥' : line.complexity_score >= 30 ? '📝' : '💡'}
+                            </span>
+                        )}
+                        {rawPattern && (
+                            <div className="stress-viz" title="Stress pattern">
+                                {stressChars.map((char, i) => (
+                                    <span key={i} className={`stress-dot ${char === '/' ? 'primary' : 'unstressed'}`}>
+                                        {char === '/' ? '●' : '○'}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* ── Stress & Flow Timeline (appears on hover/focus) ── */}
+                {/* ── Stress & Flow Timeline (appears when selected) ── */}
                 <AnimatePresence>
-                    {showTimeline && stressChars.length > 0 && !isEditing && (
+                    {isSelected && stressChars.length > 0 && !isEditing && (
                         <motion.div
                             className="stress-flow-timeline"
                             initial={{ opacity: 0, height: 0, marginTop: 0 }}
                             animate={{ opacity: 1, height: 'auto', marginTop: 6 }}
                             exit={{ opacity: 0, height: 0, marginTop: 0 }}
                             transition={{ duration: 0.2, ease: 'easeOut' }}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <span className="timeline-label">Flow</span>
                             <div className="timeline-nodes">
@@ -242,7 +253,10 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                                         <motion.button
                                             key={idx}
                                             className={`timeline-node ${isStressed ? 'stressed' : 'unstressed'} ${isOverridden ? 'overridden' : ''}`}
-                                            onClick={() => toggleStress(idx)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleStress(idx);
+                                            }}
                                             title={`Syllable ${idx + 1}: ${isStressed ? 'Stressed (Guru / /)' : 'Unstressed (Lagu / x)'} — click to toggle`}
                                             whileHover={{ scale: 1.2 }}
                                             whileTap={{ scale: 0.9 }}
@@ -257,7 +271,7 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                 </AnimatePresence>
             </div>
 
-            <div className="line-actions">
+            <div className="line-actions" onClick={(e) => e.stopPropagation()}>
                 {isEditing ? (
                     <>
                         <Button variant="icon" onClick={handleSave} title="Save" disabled={isSaving}>

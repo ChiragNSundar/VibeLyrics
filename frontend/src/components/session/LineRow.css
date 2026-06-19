@@ -2,16 +2,23 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    margin-bottom: 0.35rem;
     background: var(--bg-hover);
     border-radius: var(--border-radius-sm);
     transition: all var(--transition-fast);
     border-left: 3px solid transparent;
+    cursor: pointer;
 }
 
 .line-row:hover {
     background: var(--border-color);
+}
+
+.line-row.selected {
+    background: rgba(139, 92, 246, 0.1);
+    border-left-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.15);
 }
 
 /* Heatmap colors */
@@ -42,9 +49,7 @@
 .line-content {
     flex: 1;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--spacing-md);
+    gap: 0;
     min-width: 0;
 }
 
@@ -425,7 +430,10 @@
     align-items: stretch;
 }
 
-.line-content > .line-text,
-.line-content > .line-edit-input {
-    flex: 1;
+.line-main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
 }

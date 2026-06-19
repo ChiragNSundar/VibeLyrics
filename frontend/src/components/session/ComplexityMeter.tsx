@@ -13,6 +13,7 @@ export const ComplexityMeter: React.FC<ComplexityMeterProps> = ({
     debounceMs = 1500,
 }) => {
     const [data, setData] = useState<ComplexityScoreResponse | null>(null);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -56,8 +57,48 @@ export const ComplexityMeter: React.FC<ComplexityMeterProps> = ({
     };
     const gaugeColor = getColor(score);
 
+    if (isCollapsed) {
+        return (
+            <div 
+                className="complexity-meter collapsed" 
+                onClick={() => setIsCollapsed(false)}
+                title="Click to expand complexity analysis"
+                style={{ cursor: 'pointer' }}
+            >
+                <div className="complexity-gauge mini">
+                    <svg viewBox="0 0 90 90">
+                        <circle className="gauge-bg" cx="45" cy="45" r={radius} />
+                        <circle
+                            className="gauge-fill"
+                            cx="45"
+                            cy="45"
+                            r={radius}
+                            stroke={gaugeColor}
+                            strokeDasharray={circumference}
+                            strokeDashoffset={offset}
+                            style={{ '--gauge-color': gaugeColor } as React.CSSProperties}
+                        />
+                    </svg>
+                    <div className="complexity-score-label">
+                        <span className="complexity-score-number">{score}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="complexity-meter">
+        <div className="complexity-meter expanded">
+            <button 
+                className="complexity-collapse-btn" 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsCollapsed(true);
+                }}
+                title="Collapse"
+            >
+                ✕
+            </button>
             <div className="complexity-gauge">
                 <svg viewBox="0 0 90 90">
                     <circle className="gauge-bg" cx="45" cy="45" r={radius} />
