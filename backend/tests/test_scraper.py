@@ -18,6 +18,7 @@ def test_clean_lyrics():
 
 @patch('backend.services.scraper.DDGS')
 def test_search_and_scrape_no_results(mock_ddgs, scraper):
+    scraper.ddgs = mock_ddgs.return_value
     # Mock search returning empty
     mock_ddgs.return_value.text.return_value = []
     
@@ -27,6 +28,7 @@ def test_search_and_scrape_no_results(mock_ddgs, scraper):
 @patch('backend.services.scraper.DDGS')
 @patch('backend.services.scraper.requests.get')
 def test_search_and_scrape_success(mock_get, mock_ddgs, scraper):
+    scraper.ddgs = mock_ddgs.return_value
     # Mock search results
     mock_ddgs.return_value.text.return_value = [
         {"href": "https://www.azlyrics.com/lyrics/artist/song.html"}
@@ -46,6 +48,6 @@ def test_search_and_scrape_success(mock_get, mock_ddgs, scraper):
     mock_get.return_value = mock_response
     
     result = scraper.search_and_scrape("Artist", "Song")
-    if result:
-        assert result['lyrics'] == "La la la\n            Lyrics here"
-        assert result['source'] == "https://www.azlyrics.com/lyrics/artist/song.html"
+    assert result is not None
+    assert result['lyrics'] == "La la la\n            Lyrics here"
+    assert result['source'] == "https://www.azlyrics.com/lyrics/artist/song.html"

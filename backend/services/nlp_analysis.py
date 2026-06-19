@@ -50,8 +50,8 @@ class WordplayEngine:
     async def generate_wordplay(
         self,
         theme: str,
-        recent_lines: List[str] = None,
-        mood: str = None,
+        recent_lines: Optional[List[str]] = None,
+        mood: Optional[str] = None,
         count: int = 5,
     ) -> Dict:
         """Generate contextual wordplay suggestions using AI with static fallback."""
@@ -654,7 +654,7 @@ class SemanticDriftDetector:
 
     def detect_weighted(
         self, lines: List[str], session_theme: str = "",
-        all_session_texts: List[str] = None
+        all_session_texts: Optional[List[str]] = None
     ) -> Dict:
         """
         Detect drift using TF-IDF weighted keywords instead of raw Jaccard.

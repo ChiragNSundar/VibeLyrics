@@ -837,6 +837,7 @@ class TrainingDataGenerator:
 
         # ── 5c. Concept Erasure synthetic DPO pairs ──
         eraser = ConceptEraser()
+        erasure_pairs = []
         # Gather banned words from user profile (passed via generate call or loaded)
         banned_words = kwargs.get("banned_words", [])
         if banned_words:

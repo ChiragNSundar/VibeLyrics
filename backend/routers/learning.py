@@ -176,6 +176,71 @@ async def reset_learning_brain():
     return {"success": True, "message": "AI Brain has been completely reset to default state."}
 
 
+class LineAnalysisRequest(BaseModel):
+    text: str
+
+
+@router.post("/learning/analyze-line", response_model=dict)
+async def analyze_line(req: LineAnalysisRequest):
+    """
+    Real-time analyze a single line for clichés, imagery, and static wordplay context.
+    """
+    import re
+    import random
+    text = req.text.strip()
+    if not text:
+        return {
+            "success": True,
+            "cliches": [],
+            "imagery": {"total_imagery_words": 0, "density": 0, "by_category": {}},
+            "wordplay": []
+        }
+
+    # 1. Cliché and avoided words check
+    from ..services.learning import ClicheDetector
+    detector = ClicheDetector()
+    # Avoided words from vocab manager
+    avoided = _vocab_manager.avoided_words
+    cliches = detector.detect([text], avoided)
+
+    # 2. Imagery/Sensory analysis
+    imagery = _imagery_analyzer.analyze_imagery([text])
+
+    # 3. Dynamic context-based static wordplay sparks
+    wordplay_sparks = []
+    text_lower = text.lower()
+    
+    # Check if any words from WORDPLAY_FRAMES exist in the line
+    from ..services.nlp_analysis import WordplayEngine
+    wp_engine = WordplayEngine()
+    
+    for category, keywords in wp_engine.WORDPLAY_FRAMES.items():
+        # Match keywords as whole words
+        for kw in keywords:
+            pattern = rf"\b{re.escape(kw)}\b"
+            if re.search(pattern, text_lower):
+                # Found a wordplay frame match! Generate templates for it
+                frame_words = wp_engine.WORDPLAY_FRAMES[category]
+                # Pick 2 random words from frame
+                w1, w2 = random.sample(frame_words, min(2, len(frame_words)))
+                for temp in wp_engine.DOUBLE_ENTENDRE_TEMPLATES[:2]:  # return 2 ideas max
+                    wordplay_sparks.append({
+                        "category": category,
+                        "trigger": kw,
+                        "text": temp.format(word1=w1, word2=w2),
+                        "explanation": f"Double-meaning spark playing on '{w1}' & '{w2}' triggered by '{kw}'"
+                    })
+                break  # match one frame max per line to keep it clean
+
+    return {
+        "success": True,
+        "cliches": cliches,
+        "imagery": imagery,
+        "wordplay": wordplay_sparks
+    }
+
+
+
 @router.post("/learning/force-reset")
 async def force_reset_brain(db: AsyncSession = Depends(get_db)):
     """Wipe all database tables (reset session, lines, cache, overrides, feedbacks) and style/vocabulary files."""

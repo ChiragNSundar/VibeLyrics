@@ -67,7 +67,7 @@ class LyricsScraper:
             print(f"Scraping error: {e}")
             return None
 
-    async def scrape_artist_songs_stream(self, artist: str, max_songs: int = 3, era: str = None):
+    async def scrape_artist_songs_stream(self, artist: str, max_songs: int = 3, era: Optional[str] = None):
         """
         Search and scrape multiple songs for a specific artist, optionally filtered by era.
         Yields progress messages and final results for Server-Sent Events (SSE).

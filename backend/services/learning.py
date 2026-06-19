@@ -6,6 +6,7 @@ Learning System Services
 """
 import json
 import os
+import re
 from typing import Dict, List, Set, Optional
 from collections import Counter
 from pathlib import Path
@@ -499,36 +500,415 @@ class CorrectionTracker:
 
 
 class ClicheDetector:
-    """Detect overused hip-hop clichés and cross-reference avoided words."""
+    """Detect overused hip-hop clichés and cross-reference avoided words with creative refactoring."""
 
-    CLICHES = {
-        "money on my mind", "in the fast lane", "stacking paper", "started from the bottom",
-        "make it rain", "running the game", "putting in work", "live my life", "get the money",
-        "ride or die", "only god can judge me", "real talk", "day one", "cold as ice",
-        "spit fire", "streets are watching", "clock is ticking", "chasing dreams", "on my grind",
-        "hustle hard", "no pain no gain", "eye of the tiger", "straight out the", "living the dream",
-        "sky's the limit", "hustle and flow", "pay the price", "stack it to the ceiling",
-        "fake friends", "snakes in the grass", "haters gonna hate", "die rich", "born to win",
-        "kill the game", "talk is cheap", "money talks", "ball till i fall", "get rich or die trying",
-        "ride the wave", "top of the world", "king of the castle", "on the block", "trap house",
-        "living fast", "no cap", "drip too hard", "make it out", "started with a dream",
-        "behind bars", "all about the money", "count my blessings", "stay true", "blood sweat and tears",
-        "road to success", "keep it real", "built to last", "hard knock life", "ain't no love",
-        "another day another dollar", "back in the day", "checks on checks", "racks on racks",
-        "roll the dice", "take a chance", "watch your back", "trust no one", "out of bounds",
-        "make a name", "live and learn", "do or die", "game over", "play your cards",
-        "ace up my sleeve", "out of control", "under pressure", "against the odds", "prove them wrong",
-        "sky is the limit", "lose control", "living large", "city never sleeps", "shining bright",
-        "wake up call", "chasing paper", "cash is king", "paying dues", "breaking the rules",
-        "on the rise", "all in", "double down", "living legend", "out of my mind", "too hot to handle",
-        "staying alive", "on the edge", "skating on thin ice", "burning bridges", "turning the page",
-        "point of no return"
+    CLICHE_DICT = {
+        "money on my mind": {
+            "category": "wealth",
+            "alternatives": ["digits in my focus", "ledger in my cortex", "wealth in my thoughts"]
+        },
+        "ride or die": {
+            "category": "loyalty",
+            "alternatives": ["loyal to the asphalt", "down to the final line", "shielding each other's path"]
+        },
+        "started from the bottom": {
+            "category": "struggle",
+            "alternatives": ["climbed from the concrete", "sprouted from the basement", "ascended from the street levels"]
+        },
+        "make it rain": {
+            "category": "flexing",
+            "alternatives": ["showering the venue", "cascading currency", "dispersing the wealth"]
+        },
+        "spit fire": {
+            "category": "lyrics",
+            "alternatives": ["discharge heat", "ignite the diaphragm", "vent volcanic rhymes"]
+        },
+        "die rich": {
+            "category": "wealth",
+            "alternatives": ["depart in luxury", "exit in gold sheets", "close the final ledger in surplus"]
+        },
+        "cold as ice": {
+            "category": "emotion",
+            "alternatives": ["glacial temperament", "frostbitten touch", "sub-zero flow"]
+        },
+        "streets are watching": {
+            "category": "danger",
+            "alternatives": ["pavement keeps count", "asphalt holds eyes", "concrete observes"]
+        },
+        "clock is ticking": {
+            "category": "time",
+            "alternatives": ["hourglass is draining", "seconds are shaving away", "tempus is pressing"]
+        },
+        "chasing dreams": {
+            "category": "ambition",
+            "alternatives": ["hunting visions", "shadowing ideals", "pursuing the eclipse"]
+        },
+        "on my grind": {
+            "category": "hustle",
+            "alternatives": ["milling the gears", "carving my path", "sanding down the hours"]
+        },
+        "no pain no gain": {
+            "category": "effort",
+            "alternatives": ["scar tissue turns to muscle", "toil seeds the harvest", "struggle pays dividends"]
+        },
+        "sky's the limit": {
+            "category": "limitless",
+            "alternatives": ["troposphere is just the doorway", "orbit is the start line", "boundless trajectory"]
+        },
+        "fake friends": {
+            "category": "loyalty",
+            "alternatives": ["hologram alliances", "synthetic smiles", "cardboard companions"]
+        },
+        "snakes in the grass": {
+            "category": "danger",
+            "alternatives": ["vipers in the lawn", "hidden fangs", "venomous stalks"]
+        },
+        "kill the game": {
+            "category": "triumph",
+            "alternatives": ["dethrone the industry", "flatline the competition", "lay the sector to rest"]
+        },
+        "watch your back": {
+            "category": "danger",
+            "alternatives": ["guard your blindside", "keep your rear view clear", "shield the spine"]
+        },
+        "trust no one": {
+            "category": "loyalty",
+            "alternatives": ["verify every signature", "keep the inner circle zero", "doubt every shadow"]
+        },
+        "game over": {
+            "category": "end",
+            "alternatives": ["curtain drop", "final whistle", "flatline state"]
+        },
+        "out of my mind": {
+            "category": "madness",
+            "alternatives": ["cortex fractured", "thoughts displaced", "sanity unanchored"]
+        },
+        "turning the page": {
+            "category": "change",
+            "alternatives": ["flipping the chapter", "shifting the narrative", "unrolling new parchment"]
+        },
+        "point of no return": {
+            "category": "inevitable",
+            "alternatives": ["event horizon reached", "bridges fully burned", "rubicon crossed"]
+        },
+        "in the fast lane": {
+            "category": "lifestyle",
+            "alternatives": ["rapid velocity pace", "accelerated lane", "high-tempo cruise"]
+        },
+        "stacking paper": {
+            "category": "wealth",
+            "alternatives": ["piling up dividends", "storing the revenue", "scaling the currency"]
+        },
+        "running the game": {
+            "category": "triumph",
+            "alternatives": ["piloting the industry", "directing the playbook", "governing the field"]
+        },
+        "putting in work": {
+            "category": "effort",
+            "alternatives": ["investing the sweat", "logging heavy shifts", "shaping the craftsmanship"]
+        },
+        "live my life": {
+            "category": "lifestyle",
+            "alternatives": ["write my own rules", "carve my path", "navigate my timeline"]
+        },
+        "get the money": {
+            "category": "wealth",
+            "alternatives": ["secure the asset", "pocket the dividend", "intercept the revenue"]
+        },
+        "only god can judge me": {
+            "category": "attitude",
+            "alternatives": ["immune to human juries", "accountable to the cosmos", "standing before the high bench"]
+        },
+        "real talk": {
+            "category": "attitude",
+            "alternatives": ["unvarnished truth", "naked vocabulary", "candid report"]
+        },
+        "day one": {
+            "category": "loyalty",
+            "alternatives": ["since the foundation", "since page single-digit", "original roster"]
+        },
+        "hustle hard": {
+            "category": "hustle",
+            "alternatives": ["grind relentlessly", "labouring heavy hours", "chafing at the wheel"]
+        },
+        "living the dream": {
+            "category": "lifestyle",
+            "alternatives": ["manifesting visions", "floating in reality", "dwelling in my aspiration"]
+        },
+        "hustle and flow": {
+            "category": "lyrics",
+            "alternatives": ["rhythm and labor", "sweat and cadence", "workmanship and delivery"]
+        },
+        "pay the price": {
+            "category": "effort",
+            "alternatives": ["bear the invoice", "settle the toll", "absorb the cost"]
+        },
+        "stack it to the ceiling": {
+            "category": "wealth",
+            "alternatives": ["pile it roof-high", "climb the mountain of paper", "vertical revenue"]
+        },
+        "haters gonna hate": {
+            "category": "attitude",
+            "alternatives": ["detractors stay active", "cynics keep talking", "critics run their course"]
+        },
+        "born to win": {
+            "category": "triumph",
+            "alternatives": ["victory pre-programmed", "destined for the crown", "predetermined champion"]
+        },
+        "talk is cheap": {
+            "category": "attitude",
+            "alternatives": ["words are draft paper", "speech carries no tax", "claims cost nothing"]
+        },
+        "money talks": {
+            "category": "wealth",
+            "alternatives": ["capital speaks volumes", "currency decides the vote", "cash commands attention"]
+        },
+        "ball till i fall": {
+            "category": "lifestyle",
+            "alternatives": ["flex until the curtain", "run the court until fatigue", "limitless flex"]
+        },
+        "get rich or die trying": {
+            "category": "ambition",
+            "alternatives": ["wealth or final breath", "abundance or flatline", "ledger full or heartbeat zero"]
+        },
+        "ride the wave": {
+            "category": "lifestyle",
+            "alternatives": ["cruise the crest", "navigate the momentum", "glide the surge"]
+        },
+        "top of the world": {
+            "category": "triumph",
+            "alternatives": ["zenith perspective", "roof of the globe", "highest elevation"]
+        },
+        "king of the castle": {
+            "category": "triumph",
+            "alternatives": ["sovereign of the sector", "monarch on the peak", "crown holder"]
+        },
+        "on the block": {
+            "category": "danger",
+            "alternatives": ["corners of the concrete", "under the grid", "asphalt outpost"]
+        },
+        "trap house": {
+            "category": "danger",
+            "alternatives": ["clandestine depot", "operations hub", "the concrete cabin"]
+        },
+        "living fast": {
+            "category": "lifestyle",
+            "alternatives": ["rapid pace", "high-velocity days", "quickening the timeline"]
+        },
+        "no cap": {
+            "category": "attitude",
+            "alternatives": ["unvarnished truth", "no fabrication", "sincere facts"]
+        },
+        "drip too hard": {
+            "category": "flexing",
+            "alternatives": ["excessive aesthetic", "overflowing style", "visual overload"]
+        },
+        "make it out": {
+            "category": "struggle",
+            "alternatives": ["breach the boundary", "cross the border wall", "escape the gravitational pull"]
+        },
+        "started with a dream": {
+            "category": "ambition",
+            "alternatives": ["sparked from a vision", "originated as a thought", "seeded in a dreamscape"]
+        },
+        "behind bars": {
+            "category": "danger",
+            "alternatives": ["inside the steel cage", "confined to coordinates", "iron shadows"]
+        },
+        "all about the money": {
+            "category": "wealth",
+            "alternatives": ["digit-centric", "exclusively cash-oriented", "currency-focused"]
+        },
+        "count my blessings": {
+            "category": "attitude",
+            "alternatives": ["tally the positives", "log the fortunes", "audit my gifts"]
+        },
+        "stay true": {
+            "category": "loyalty",
+            "alternatives": ["maintain loyalty", "preserve the origin", "anchor your character"]
+        },
+        "blood sweat and tears": {
+            "category": "effort",
+            "alternatives": ["vital fluids and labor", "exertion of life", "salty sweat and toil"]
+        },
+        "road to success": {
+            "category": "ambition",
+            "alternatives": ["pathway of achievement", "highway to the crown", "corridor of triumph"]
+        },
+        "keep it real": {
+            "category": "attitude",
+            "alternatives": ["stay transparent", "refuse the synthetic", "project the raw copy"]
+        },
+        "built to last": {
+            "category": "triumph",
+            "alternatives": ["engineered for endurance", "framed for the decades", "indestructible design"]
+        },
+        "hard knock life": {
+            "category": "struggle",
+            "alternatives": ["pathway of friction", "abrasive chronology", "difficult environment"]
+        },
+        "ain't no love": {
+            "category": "danger",
+            "alternatives": ["affection is zero", "zero warmth on the street", "absence of care"]
+        },
+        "another day another dollar": {
+            "category": "lifestyle",
+            "alternatives": ["routine shift for currency", "iterating the grind", "daily cycle of income"]
+        },
+        "back in the day": {
+            "category": "time",
+            "alternatives": ["chapters ago", "in the archival years", "history pages back"]
+        },
+        "checks on checks": {
+            "category": "wealth",
+            "alternatives": ["stacked accounts", "ledger confirmations", "recurrent payrolls"]
+        },
+        "racks on racks": {
+            "category": "wealth",
+            "alternatives": ["stacks of thousands", "cash towers", "boundless vaults"]
+        },
+        "roll the dice": {
+            "category": "danger",
+            "alternatives": ["toss the cubes", "court the probability", "trigger the gamble"]
+        },
+        "take a chance": {
+            "category": "ambition",
+            "alternatives": ["embrace the hazard", "leap the chasm", "gamble on the outcomes"]
+        },
+        "watch your back": {
+            "category": "danger",
+            "alternatives": ["guard the blindspot", "frequent the rear mirror", "secure the spine"]
+        },
+        "trust no one": {
+            "category": "loyalty",
+            "alternatives": ["verify all signatures", "suspicious of shadows", "keep coordinates private"]
+        },
+        "out of bounds": {
+            "category": "danger",
+            "alternatives": ["breaching lines", "outside safety grids", "transgressing parameters"]
+        },
+        "make a name": {
+            "category": "ambition",
+            "alternatives": ["engrave your moniker", "carve the nameplate", "stamp your presence"]
+        },
+        "live and learn": {
+            "category": "lifestyle",
+            "alternatives": ["survive to download lessons", "experience converts to wisdom", "logging the errors"]
+        },
+        "do or die": {
+            "category": "effort",
+            "alternatives": ["triumph or flatline", "execution or extinction", "all-in stakes"]
+        },
+        "play your cards": {
+            "category": "attitude",
+            "alternatives": ["manage the hand", "strategize the draw", "deploy the assets"]
+        },
+        "ace up my sleeve": {
+            "category": "triumph",
+            "alternatives": ["hidden trump card", "concealed leverage", "secret resource"]
+        },
+        "out of control": {
+            "category": "madness",
+            "alternatives": ["steering disconnected", "beyond guidance system", "unbounded chaos"]
+        },
+        "under pressure": {
+            "category": "struggle",
+            "alternatives": ["encased in tension", "bearing the weight load", "atmospheric crush"]
+        },
+        "against the odds": {
+            "category": "struggle",
+            "alternatives": ["defying probabilities", "facing skewed distributions", "refusing the baseline math"]
+        },
+        "prove them wrong": {
+            "category": "ambition",
+            "alternatives": ["refute their projections", "dethrone their assumptions", "dismantle the skepticism"]
+        },
+        "lose control": {
+            "category": "madness",
+            "alternatives": ["slip the anchor", "dethrone the steering wheel", "unbridle the energy"]
+        },
+        "living large": {
+            "category": "lifestyle",
+            "alternatives": ["dwelling in scale", "expansive habits", "oversized prints"]
+        },
+        "city never sleeps": {
+            "category": "city",
+            "alternatives": ["twenty-four hour concrete", "insomniac streets", "skyline never dims"]
+        },
+        "shining bright": {
+            "category": "flexing",
+            "alternatives": ["emitting high lumens", "dazzling visual space", "radiating glare"]
+        },
+        "wake up call": {
+            "category": "time",
+            "alternatives": ["alarm in the system", "clarifying signal", "jolt of awareness"]
+        },
+        "chasing paper": {
+            "category": "wealth",
+            "alternatives": ["hunting currency", "shadowing the check", "pursuing the banknote"]
+        },
+        "cash is king": {
+            "category": "wealth",
+            "alternatives": ["liquidity governs all", "dollar holds the scepter", "currency reigns"]
+        },
+        "paying dues": {
+            "category": "effort",
+            "alternatives": ["settling back-taxes", "covering the entrance fee", "purchasing credibility"]
+        },
+        "breaking the rules": {
+            "category": "danger",
+            "alternatives": ["shattering codices", "transgressing standard scripts", "violating parameters"]
+        },
+        "on the rise": {
+            "category": "ambition",
+            "alternatives": ["gaining altitude", "climbing coordinates", "upward draft"]
+        },
+        "all in": {
+            "category": "attitude",
+            "alternatives": ["total exposure", "one hundred percent committed", "unreserved stake"]
+        },
+        "double down": {
+            "category": "attitude",
+            "alternatives": ["multiply the wager", "re-exposing stakes", "strengthening commitments"]
+        },
+        "living legend": {
+            "category": "triumph",
+            "alternatives": ["mythology in real time", "breathing monument", "immortalized while active"]
+        },
+        "too hot to handle": {
+            "category": "danger",
+            "alternatives": ["thermal overload", "unmanageable heat", "scorching levels"]
+        },
+        "staying alive": {
+            "category": "struggle",
+            "alternatives": ["maintaining pulse rate", "clinging to timeline", "preserving biology"]
+        },
+        "on the edge": {
+            "category": "danger",
+            "alternatives": ["perched on the precipice", "borderline state", "brinkmanship"]
+        },
+        "skating on thin ice": {
+            "category": "danger",
+            "alternatives": ["gliding fragile surfaces", "testing the thickness", "risking structural failure"]
+        },
+        "burning bridges": {
+            "category": "change",
+            "alternatives": ["demolishing pathways behind", "severing exit corridors", "combusting routes"]
+        },
+        "turning the page": {
+            "category": "change",
+            "alternatives": ["flipping the chapter", "shifting the narrative", "unrolling new parchment"]
+        },
+        "point of no return": {
+            "category": "inevitable",
+            "alternatives": ["event horizon reached", "bridges fully burned", "rubicon crossed"]
+        }
     }
 
-    def detect(self, lines: List[str], avoided_words: Set[str] = None) -> List[Dict]:
+    def detect(self, lines: List[str], avoided_words: Optional[Set[str]] = None) -> List[Dict]:
         """
         Scan lines for overused clichés and words that should be avoided.
-        Returns list of detections with severity.
+        Returns list of detections with alternatives and categories.
         """
         detections = []
         avoided_words = avoided_words or set()
@@ -539,11 +919,13 @@ class ClicheDetector:
                 continue
 
             # 1. Check direct clichés
-            for cliche in self.CLICHES:
+            for cliche, details in self.CLICHE_DICT.items():
                 if cliche in line_clean:
                     detections.append({
                         "line_index": idx,
                         "phrase": cliche,
+                        "category": details["category"],
+                        "alternatives": details["alternatives"],
                         "severity": "high",
                         "reason": "Overused hip-hop cliché"
                     })
@@ -555,8 +937,11 @@ class ClicheDetector:
                     detections.append({
                         "line_index": idx,
                         "phrase": w,
+                        "category": "avoided",
+                        "alternatives": [],
                         "severity": "medium",
                         "reason": "Avoided word list"
                     })
 
         return detections
+

@@ -141,8 +141,8 @@ class PunchlineEngine:
         return starters
     
     async def generate_ai_punchlines(
-        self, theme: str, lines: List[str] = None,
-        mood: str = None, count: int = 5
+        self, theme: str, lines: Optional[List[str]] = None,
+        mood: Optional[str] = None, count: int = 5
     ) -> Dict:
         """Generate punchlines using AI provider"""
         from .ai_provider import get_ai_provider
@@ -261,7 +261,7 @@ class MetaphorGenerator:
         return starter + " like a boss, never taking a loss"
     
     async def generate_ai_metaphors(
-        self, concept: str, context: List[str] = None, count: int = 5
+        self, concept: str, context: Optional[List[str]] = None, count: int = 5
     ) -> Dict:
         """Generate metaphors using AI"""
         from .ai_provider import get_ai_provider
@@ -310,7 +310,7 @@ Return ONLY the metaphors, one per line, no numbering."""
             }
     
     async def generate_ai_similes(
-        self, word: str, context: List[str] = None, count: int = 5
+        self, word: str, context: Optional[List[str]] = None, count: int = 5
     ) -> Dict:
         """Generate similes using AI"""
         from .ai_provider import get_ai_provider
@@ -468,7 +468,7 @@ class ImageryAnalyzer:
             "total_imagery_words": total,
             "density": round(density, 3),
             "by_category": counts,
-            "dominant_sense": max(counts, key=counts.get) if total > 0 else None
+            "dominant_sense": max(counts, key=lambda k: counts[k]) if total > 0 else None
         }
 
     def get_balance_radar(self, lines: List[str]) -> Dict:

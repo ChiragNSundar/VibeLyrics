@@ -351,8 +351,8 @@ class AdlibGenerator:
         return suggestions[:10]
     
     def generate_contextual_adlibs(
-        self, line: str, mood: str = None,
-        artist_style: str = None, recent_lines: List[str] = None
+        self, line: str, mood: Optional[str] = None,
+        artist_style: Optional[str] = None, recent_lines: Optional[List[str]] = None
     ) -> Dict:
         """
         Generate context-aware adlib suggestions based on mood, artist style,
@@ -412,8 +412,8 @@ class AdlibGenerator:
         }
     
     async def generate_ai_adlibs(
-        self, line: str, mood: str = None,
-        artist_style: str = None, recent_lines: List[str] = None
+        self, line: str, mood: Optional[str] = None,
+        artist_style: Optional[str] = None, recent_lines: Optional[List[str]] = None
     ) -> Dict:
         """Generate adlibs using AI for maximum creativity"""
         from .ai_provider import get_ai_provider

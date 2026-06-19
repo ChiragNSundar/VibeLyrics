@@ -198,7 +198,11 @@ class RhymeDetector:
                     # 2. Intermediate schwa deletion (if not first syllable, and followed by consonant + matra)
                     elif len(vowels) > 0 and i + 2 < n:
                         next_next_char = word[i+2]
-                        is_next_consonant = (0x0915 <= ord(next_char) <= 0x0939) or (0x0958 <= ord(next_char) <= 0x095F) or next_char == 'ळ'
+                        is_next_consonant = next_char is not None and (
+                            (0x0915 <= ord(next_char) <= 0x0939) or
+                            (0x0958 <= ord(next_char) <= 0x095F) or
+                            next_char == 'ळ'
+                        )
                         is_next_next_matra = next_next_char in matra_map
                         if is_next_consonant and is_next_next_matra:
                             has_schwa = False
@@ -579,7 +583,7 @@ class RhymeDetector:
         
         query = select(func.count()).select_from(MultisyllabicWord)
         res = await session.execute(query)
-        count = res.scalar()
+        count = res.scalar() or 0
         if count > 0:
             print("[INFO] Phonetic database already seeded.")
             return
@@ -626,7 +630,9 @@ class RhymeDetector:
             "जिंदगी", "मौत", "दोस्त", "दुश्मन", "रास्ता", "मंजिल", "आसमान", "धरती", "दुनिया", "इंसान", 
             "खुदा", "रब", "दुआ", "सलाम", "काम", "नाम", "दाम", "शाम", "सुबह", "रात", 
             "दिन", "बात", "हात", "साथ", "माथ", "आज", "कल", "पल", "चल", "बल", 
-            "घर", "पर", "दर", "सर", "हर", "कर", "भर", "मर", "डर", "शायर", "कविता", "गाने"
+            "घर", "पर", "दर", "सर", "हर", "कर", "भर", "मर", "डर", "शायर", "कविता", "गाने",
+            "प्यारी", "सच्चा", "झूठा", "धोखा", "कामयाबी", "मेहनत", "कोशिश", "मंज़िल", "सफ़र", "राही",
+            "नसीब", "तकदीर", "हौसला", "हिम्मत", "जुनून", "सच्चाई", "अपनो", "सपनो", "यारी", "दोस्ती"
         ]
         for hw in hindi_vocab:
             vseq, ekey, syl = self.extract_hindi_vowels(hw)
@@ -646,7 +652,9 @@ class RhymeDetector:
             "ಓದು", "ದುಡ್ಡು", "ಕೊಡು", "ತಗೋ", "ಹೋಗು", "ಬಾ", "ನಮಸ್ಕಾರ", "ಪ್ರೀತಿ", "ಸ್ನೇಹ", "ಜೀವನ", 
             "ಖುಷಿ", "ದುಃಖ", "ಕನಸು", "ಮನಸು", "ನೆನಪು", "ಕಾಲ", "ಲೋಕ", "ಜನ", "ಮನೆ", "ಕಾಡು", 
             "ನಾಡು", "ಊರು", "ಕೆರೆ", "ಹೊಳೆ", "ನದಿ", "ಸಮುದ್ರ", "ಬೆಟ್ಟ", "ಗುಡ್ಡ", "ಕಲ್ಲು", "ಮಣ್ಣು", 
-            "ನೀರು", "ಗಾಳಿ", "ಬೆಂಕಿ", "ಆಕಾಶ", "ಭೂಮಿ", "ಸೂರ್ಯ", "ಚಂದ್ರ", "ನಕ್ಷತ್ರ", "ಹಗಲು", "ರಾತ್ರಿ"
+            "ನೀರು", "ಗಾಳಿ", "ಬೆಂಕಿ", "ಆಕಾಶ", "ಭೂಮಿ", "ಸೂರ್ಯ", "ಚಂದ್ರ", "ನಕ್ಷತ್ರ", "ಹಗಲು", "ರಾತ್ರಿ",
+            "ಪ್ರೀತಿಯ", "ಸತ್ಯ", "ಸುಳ್ಳು", "ಮೋಸ", "ಗೆಲುವು", "ಶ್ರಮ", "ಪ್ರಯತ್ನ", "ದಾರಿ", "ಪಯಣ", "ಗುರಿ",
+            "ಹಣೆಬರಹ", "ಧೈರ್ಯ", "ಉತ್ಸಾಹ", "ನನ್ನವರು", "ನಿನ್ನವರು", "ನಮ್ಮವರು", "ಸ್ನೇಹಿತ", "ಬಾಳು", "ಸಾವು"
         ]
         for kw in kannada_vocab:
             vseq, ekey, syl = self.extract_kannada_vowels(kw)
@@ -676,6 +684,14 @@ class RhymeDetector:
             "hausla", "himmat", "junoon", "firaaq", "judai", "milan", "vaada", "dhoka",
             "bewafa", "aashiq", "deewana", "majnoon", "laila", "mehfil", "jalsa", "tamaasha",
             "dhamaka", "shor", "khamoshi", "sukoon", "aman", "jung", "talwaar",
+            # Expanded Hinglish vocabulary (50 new words)
+            "apne", "sapno", "yaara", "pyaara", "dosti", "asli", "nakli", "dhokebaaz",
+            "shana", "dedh-shana", "bhai", "bhaijaan", "pateli", "rap", "hiphop", "flow",
+            "machaenge", "dhamaal", "vibe", "scene", "hard", "boht-hard", "public", "bawa",
+            "khauf", "darr", "gully", "sadak", "paisa", "kamana", "udaana", "kharcha",
+            "fame", "naam-o-nishan", "koshish", "kamyabi", "haunsla", "jazba", "mehnat",
+            "junooni", "manzil-e-maqsood", "safar-nama", "raah", "manzilein", "kadam", "manaa",
+            "darza", "hukumat", "raaj", "badshah", "wazir", "shatranj", "chaal", "maat"
         ]
         for hw in hinglish_vocab:
             vseq, ekey, syl = self.extract_romanized_indian_vowels(hw, 'hi')
@@ -701,6 +717,14 @@ class RhymeDetector:
             "preethse", "onde", "maathadu", "nodidya", "kelide", "gottu", "gottilla",
             "chennagide", "tumba", "kashta", "santhosa", "devaru", "manushya", "hrudaya",
             "baaluva", "haakuva", "iruva", "aguva", "baruva", "hogova", "maadona",
+            # Expanded Kanglish vocabulary (50 new words)
+            "macha", "bro", "guru", "sisya", "magane", "hudugru", "hudugiru", "bejaan",
+            "tumba-chennagide", "sakath", "kirik", "dhool", "dhamaka", "kannadiga", "karnataka",
+            "namdu", "nimdu", "namma", "nimma", "naavu", "neevu", "yella", "sari", "helpa",
+            "kelsa", "dundu", "kasu", "paisa", "raja", "mantri", "aata", "oota", "neeru",
+            "sneha-bandha", "prema-kavya", "hrudaya-bhaava", "manase", "kanase", "baduku",
+            "savu", "jana-gana", "loka-bandhu", "oora-devru", "kaada-bettu", "hadu-hadu",
+            "bari-bari", "nod-nod", "kel-kel", "hog-hog", "baa-baa"
         ]
         for kw in kanglish_vocab:
             vseq, ekey, syl = self.extract_romanized_indian_vowels(kw, 'kn')
@@ -713,7 +737,58 @@ class RhymeDetector:
                 "is_slang": False,
                 "upvotes": 5
             })
-            
+
+        # 6. English Slang Seeding (37 hip-hop terms)
+        english_slang = [
+            ("flex", "EH", "EH-K-S", 1),
+            ("drip", "IH", "IH-P", 1),
+            ("cap", "AE", "AE-P", 1),
+            ("opps", "AA", "AA-P-S", 1),
+            ("finna", "IH-AH", "AH", 2),
+            ("whip", "IH", "IH-P", 1),
+            ("guap", "AA", "AA-P", 1),
+            ("clout", "AW", "AW-T", 1),
+            ("fam", "AE", "AE-M", 1),
+            ("squad", "AA", "AA-D", 1),
+            ("stan", "AE", "AE-N", 1),
+            ("sauce", "AO", "AO-S", 1),
+            ("vibe", "AY", "AY-B", 1),
+            ("hustle", "AH-AH", "AH-L", 2),
+            ("grind", "AY", "AY-N-D", 1),
+            ("flows", "OW", "OW-Z", 1),
+            ("rhymes", "AY", "AY-M-Z", 1),
+            ("beats", "IY", "IY-T-S", 1),
+            ("spit", "IH", "IH-T", 1),
+            ("bars", "AA", "AA-R-Z", 1),
+            ("homie", "OW-IY", "IY", 2),
+            ("dope", "OW", "OW-P", 1),
+            ("lit", "IH", "IH-T", 1),
+            ("fire", "AY-ER", "AY-ER", 2),
+            ("crunk", "AH", "AH-NG-K", 1),
+            ("banger", "AE-ER", "ER", 2),
+            ("steez", "IY", "IY-Z", 1),
+            ("ghost", "OW", "OW-S-T", 1),
+            ("shook", "UH-K", "UH-K", 1),
+            ("bounce", "AW", "AW-N-S", 1),
+            ("hustler", "AH-ER", "ER", 2),
+            ("trippin", "IH-IH", "IH-N", 2),
+            ("ballin", "AO-IH", "IH-N", 2),
+            ("savage", "AE-IH", "IH-JH", 2),
+            ("salty", "AO-IY", "IY", 2),
+            ("boujee", "UW-IY", "IY", 2),
+            ("homies", "OW-IY-Z", "IY-Z", 2)
+        ]
+        for word, vseq, ekey, syl in english_slang:
+            words_to_insert.append({
+                "word": word,
+                "language": "en",
+                "syllable_count": syl,
+                "vowel_sequence": vseq,
+                "exact_rhyme_key": ekey,
+                "is_slang": True,
+                "upvotes": 10
+            })
+
         # Chunk bulk insertion to keep SQLite transactions light
         chunk_size = 5000
         total = len(words_to_insert)

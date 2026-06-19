@@ -7,7 +7,6 @@ Reference Lyrics Management
 import os
 import re
 from typing import List, Dict, Optional
-from pathlib import Path
 
 
 class FolderManager:

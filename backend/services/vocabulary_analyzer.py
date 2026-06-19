@@ -5,7 +5,7 @@ Vocabulary Analyzer Service
 - Vocabulary evolution over time (Vocabulary Age)
 """
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 from .syllable_utils import count_syllables as _shared_count_syllables
 
@@ -22,7 +22,7 @@ class VocabularyAnalyzer:
         (float('inf'), "Graduate+"),
     ]
     
-    def analyze_session(self, lines: List[str], session_created_at: str = None) -> Dict:
+    def analyze_session(self, lines: List[str], session_created_at: Optional[str] = None) -> Dict:
         """
         Analyze vocabulary metrics for a single session's lines.
         Returns complexity metrics including Flesch-Kincaid grade level.
@@ -173,7 +173,7 @@ class VocabularyAnalyzer:
             return max(1, len([s for s in sentences if s.strip()]))
         return max(1, len(lines))
     
-    def _empty_metrics(self, date: str = None) -> Dict:
+    def _empty_metrics(self, date: Optional[str] = None) -> Dict:
         """Return empty metrics structure"""
         return {
             "total_words": 0,

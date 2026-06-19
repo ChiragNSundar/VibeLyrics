@@ -691,6 +691,34 @@ export const learningApi = {
             method: 'POST',
         }),
 
+    analyzeLine: (text: string) =>
+        request<{
+            success: boolean;
+            cliches: Array<{
+                line_index: number;
+                phrase: string;
+                category: string;
+                alternatives: string[];
+                severity: string;
+                reason: string;
+            }>;
+            imagery: {
+                total_imagery_words: number;
+                density: number;
+                by_category: Record<string, number>;
+                dominant_sense: string | null;
+            };
+            wordplay: Array<{
+                category: string;
+                trigger: string;
+                text: string;
+                explanation: string;
+            }>;
+        }>('/api/learning/analyze-line', {
+            method: 'POST',
+            body: JSON.stringify({ text }),
+        }),
+
     getBrainMap: () =>
         request<{ success: boolean; nodes: Array<{ id: string; val: number; category: string; frequency: number }>; links: Array<{ source: string; target: string; value: number }> }>('/api/learning/brain-map'),
 
