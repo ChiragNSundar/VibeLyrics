@@ -29,6 +29,7 @@ When modifying or creating React files:
 - **TypeScript Strictness:** Never use `any` unless absolutely forced by a rigid third-party library. Declare strict `interface`s for all props. Avoid prop-drilling more than 2 levels deep.
 - Local UI state (like dropdown open/close) should use `useState`.
 5. **Sanitization Rules:** The `Lines.tsx` component handles raw HTML from the backend RhymeEngine via `dangerouslySetInnerHTML`. Treat this specific implementation with extreme care.
+6. **Word Selection Carets & Highlights:** For word clicks and hovers in lyric lines, do not rely on `window.getSelection()`. Use native `.word-hover` element target attributes (`data-start` and `data-end`) and walk boundaries inside the parent's `textContent` to extract the full unified word (resolving split highlight segments).
 
 ## ⚙️ 4. The FastAPI/SQLAlchemy Dictate
 When modifying or creating backend Python files:

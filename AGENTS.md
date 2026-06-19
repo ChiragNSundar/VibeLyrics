@@ -59,6 +59,7 @@ VibeLyrics continuously learns from the artist's style:
 - **Stress Patterns:** Calculates syllable-level stresses for English (lexical CMUDict patterns) and romanized Hindi/Kannada (duration-based vowels: long/stressed `/` vs short/unstressed `x`).
 - **Flow-Aligned Sorting:** Prioritizes and ranks doppelreim matches matching target cadence constraints (BPM, syllable counts, stress envelopes).
 - **Offline Polishing:** Local system prompts wrap LLM queries to rewrite lines under strict syllable constraints and inject user-defined slang from the Seeding Center, ensuring romanized (Hinglish/Kanglish) outputs only.
+- **Kannada Dictionary Database:** Seeded database of **31,020** entries matching Romanized Kannada (Kanglish) terms to English translations. Contains exact vowel sequences, stress patternings, and syllable counts. Used to augment LLM suggestion prompts and power the doppelreim dictionary tab.
 
 
 ---

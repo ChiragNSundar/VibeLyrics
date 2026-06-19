@@ -1,57 +1,107 @@
-.complexity-meter {
+.complexity-meter-container {
+    position: relative;
+    margin-left: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.complexity-meter-trigger {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.complexity-meter-trigger:hover {
+    background: rgba(15, 23, 42, 0.85);
+    transform: scale(1.05);
+    border-color: var(--accent-primary, #8b5cf6);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.35);
+}
+
+.complexity-gauge.mini {
+    position: relative;
+    width: 32px;
+    height: 32px;
+}
+
+.complexity-gauge.mini svg {
+    transform: rotate(-90deg);
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+
+.complexity-gauge.mini .gauge-bg {
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.1);
+    stroke-width: 8;
+}
+
+.complexity-gauge.mini .gauge-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        stroke 0.4s ease;
+    filter: drop-shadow(0 0 4px var(--gauge-color, #60a5fa));
+}
+
+.complexity-gauge.mini .complexity-score-label {
     position: absolute;
-    right: 20px;
-    top: 20px;
-    z-index: 30;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    line-height: 1;
+}
+
+.complexity-gauge.mini .complexity-score-number {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    font-variant-numeric: tabular-nums;
+}
+
+.complexity-dropdown-card {
+    position: absolute;
+    top: 46px;
+    right: -20px;
+    z-index: 100;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 0.5rem;
     padding: 0.75rem;
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    border-radius: 14px;
-    min-width: 140px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    width: 150px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 
-.complexity-meter.collapsed {
-    min-width: unset;
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    border-radius: 50%;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    background: rgba(15, 23, 42, 0.8);
-}
-
-.complexity-meter.collapsed:hover {
-    background: rgba(15, 23, 42, 0.95);
-    transform: scale(1.05);
-    border-color: var(--accent-primary, #60a5fa);
-    box-shadow: 0 0 12px rgba(96, 165, 250, 0.3);
-}
-
-.complexity-meter.collapsed .complexity-gauge.mini {
-    width: 36px;
-    height: 36px;
+.complexity-header-info {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    margin-right: 14px;
 }
 
-.complexity-meter.collapsed .complexity-gauge.mini svg {
-    width: 36px;
-    height: 36px;
-}
-
-.complexity-meter.collapsed .complexity-score-number {
-    font-size: 0.9rem;
+.complexity-card-title {
+    font-size: 0.65rem;
     font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .complexity-collapse-btn {
@@ -62,9 +112,9 @@
     border: none;
     color: #64748b;
     cursor: pointer;
-    font-size: 0.75rem;
-    width: 18px;
-    height: 18px;
+    font-size: 0.65rem;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,87 +128,30 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
-.complexity-gauge {
-    position: relative;
-    width: 90px;
-    height: 90px;
-}
-
-.complexity-gauge svg {
-    transform: rotate(-90deg);
-    width: 90px;
-    height: 90px;
-}
-
-.complexity-gauge .gauge-bg {
-    fill: none;
-    stroke: rgba(148, 163, 184, 0.15);
-    stroke-width: 6;
-}
-
-.complexity-gauge .gauge-fill {
-    fill: none;
-    stroke-width: 6;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        stroke 0.4s ease;
-    filter: drop-shadow(0 0 6px var(--gauge-color, #60a5fa));
-}
-
-.complexity-score-label {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-}
-
-.complexity-score-number {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #f1f5f9;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-}
-
-.complexity-score-max {
-    font-size: 0.6rem;
-    color: #64748b;
-    display: block;
-}
-
 .complexity-grade-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
+    font-size: 0.6rem;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.2rem 0.55rem;
-    border-radius: 6px;
-    background: rgba(96, 165, 250, 0.15);
-    color: #93c5fd;
-}
-
-.complexity-details {
-    font-size: 0.7rem;
-    color: #94a3b8;
-    text-align: center;
-    line-height: 1.3;
-    max-width: 140px;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
 }
 
 .complexity-dimensions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.25rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
     width: 100%;
-    margin-top: 0.25rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.15);
+    padding-top: 0.4rem;
 }
 
 .complexity-dim {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     color: #94a3b8;
 }
 

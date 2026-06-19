@@ -1,4 +1,4 @@
-# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 
@@ -10,13 +10,13 @@
 
   ![Session Creation Modal](docs/images/session-creation.png)
 
-- **Left-Side Split Panels**: New intuitive layout with floating toggles for **RhymeWave** (rhyme dictionary) and **AI Help**.
+- **Left-Side Split Panels**: New intuitive layout with floating toggles for **RhymeWave** (rhyme dictionary), **AI Help**, and the **Kannada-English Dictionary**.
 - **Real-Time AI Streaming**: Ghost text streams in instantly as you type (like ChatGPT).
 - **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading.
 - **Offline Support**: Full functionality offline via Service Workers.
 - **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang).
-- **Multi-Language Rhymes**: Native support for **English, Hindi (Hinglish), and Kannada (Kanglish)** phonetic rhymes, with automated Romanization matching.
-- **Stress & Flow Timeline**: Interactive syllable-level stress pattern timeline (`/` and `x` overrides) displayed below active lines for vertical rhythmic alignment.
+- **Multi-Language Rhymes**: Native support for **English, Hindi (Hinglish), and Kannada (Kanglish)** phonetic rhymes, integrated with a seeded database of **31,020** entries from a Kannada-to-English dictionary for automated translation, insertion, and vocabulary-aware LLM suggestions.
+- **Stress & Flow Timeline**: Interactive syllable-level stress pattern timeline (`/` and `x` overrides) displayed below active lines, collapsible on clicking empty spaces in lyric lines.
 - **Flow-Aligned Sorting**: Sorts and ranks rhymes in the Doppelreim engine to match active line stress templates and target syllable counts.
 - **Offline Brain & Local Polisher**: Fit cadence length constraints and inject local slang from the Seeding Center using local/offline LLM prompt configurations.
 - **Export Options**: Export to PDF (styled), TXT, or JSON backup.
@@ -63,11 +63,9 @@
 
 ### 🧠 Advanced NLP & Wordplay
 
-- **Wordplay Engine**: Instantly generates double entendres, puns, and punchlines based on your song's theme.
-  
-  ![Wordplay Engine](docs/images/punchlines-panel.png)
-
-- **Semantic Drift Detection**: Warns you if your verse starts wandering off-topic from your opening lines.
+- **Wordplay Engine** — New side panel that generates dual-meaning bars, puns, and metaphorical twists tailored to your song's theme and mood.
+- **Complexity Meter** — Real-time minimizable circular gauge (0-100) next to the metronome in the header that expands on click into a dropdown card to analyze rhyme density, multi-syllabics, assonance, and vocabulary.
+- **Semantic Drift Indicator** — Visual pulsing bar below the editor that warns you if your verse starts drifting off-topic compared to the opening lines.
 - **Interactive 3D Theme Network**: Visualize your recurring lyrical themes as a 3D neural network graph spanning all your sessions.
 - **Beat Analysis**: Drag-and-drop audio uploads automatically extract BPM, musical key, song sections, and suggest optimal syllables-per-bar.
 

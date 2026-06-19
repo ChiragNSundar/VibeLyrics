@@ -2,6 +2,27 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.4.0] - 2026-06-19
+
+### 📖 Kannada Dictionary, Header Spacing Optimization & Caret Highlight Polish
+
+#### 📚 Kannada-to-English Dictionary
+- **Ingestion Pipeline** — Seeded a local database of **31,020** entries from the local Kannada-to-English PDF dictionary context with exact vowel sequences, stress, and syllable indexes.
+- **SFT dataset builder** — Compiled Alpaca SFT JSON datasets for Kannada vocabulary fine-tuning.
+- **Unified Dictionary Search Drawer** — Added a dictionary tab to the Doppelreim sidebar to search Kannada terms, copy definitions, insert words into active lines, and switch instantly to Kanglish rhyme search.
+- **LLM Context Augmentation** — Automatically includes local dictionary definitions in Gemini/LM-Studio suggestions.
+
+#### 🎨 Visual Layout & Spacing Efficiency
+- **Global Navbar Hiding** — Conditionally collapses primary navbar on active session routes, saving 60px vertical height.
+- **Single-Row Session Header** — Unified metronome and title onto a single row, and moved the Metronome to a centered `.session-metronome` block.
+- **Collapsible Header Complexity Meter** — Relocated Complexity Meter next to the metronome as a mini clickable gauge circle, resolving absolute-positioned overlaps and letting users expand stats in a dropdown on click.
+- **Compact Horizontal Blocks** — Layout elements in lyric lines are aligned horizontally inside a sleeker, compacted layout.
+
+#### 🎙️ Caret Highlighting & Word Click Sync
+- **Unified Sub-Word Calculations** — Clicking/hovering on split-highlights (like `m` and `uchkond`) dynamically walks boundaries in the line text to capture the full word `muchkond` cleanly.
+- **Select-Deselect empty space clicks** — Whitespace clicks bubble to the parent row to toggle stress pattern timelines, while text-clicks selectively trigger doppelreim searches.
+- **Dashed Perfect Rhymes** — Perfect rhymes now render with dashed colored borders and semi-transparent backgrounds to match the mockup layout, eliminating solid bright yellow block overlaps.
+
 ## [3.3.0] - 2026-06-19
 
 ### 🧠 Local Brain Mega-Upgrade & Multi-Language Enhancements

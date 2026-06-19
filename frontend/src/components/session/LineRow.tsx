@@ -14,6 +14,60 @@ interface LineRowProps {
     onOpenHistory?: () => void;
 }
 
+function wrapTextNodesInSpans(html: string): string {
+    if (typeof window === 'undefined') return html;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+    const container = doc.body.firstChild;
+    if (!container) return html;
+
+    let currentOffset = 0;
+
+    const walk = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent || '';
+            const regex = /([\w\u0900-\u097F\u0C80-\u0CFF]+)/g;
+            
+            if (regex.test(text)) {
+                const fragment = doc.createDocumentFragment();
+                let lastIndex = 0;
+                regex.lastIndex = 0;
+                let match;
+                while ((match = regex.exec(text)) !== null) {
+                    if (match.index > lastIndex) {
+                        fragment.appendChild(doc.createTextNode(text.slice(lastIndex, match.index)));
+                    }
+                    const span = doc.createElement('span');
+                    span.className = 'word-hover';
+                    span.textContent = match[0];
+                    
+                    const startOffset = currentOffset + match.index;
+                    const endOffset = currentOffset + regex.lastIndex;
+                    span.setAttribute('data-start', String(startOffset));
+                    span.setAttribute('data-end', String(endOffset));
+                    
+                    fragment.appendChild(span);
+                    lastIndex = regex.lastIndex;
+                }
+                if (lastIndex < text.length) {
+                    fragment.appendChild(doc.createTextNode(text.slice(lastIndex)));
+                }
+                
+                if (node.parentNode) {
+                    node.parentNode.replaceChild(fragment, node);
+                }
+            }
+            currentOffset += text.length;
+        } else {
+            const children = Array.from(node.childNodes);
+            children.forEach(walk);
+        }
+    };
+
+    walk(container);
+    return (container as HTMLElement).innerHTML;
+}
+
 export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
     const { lines, setLines, setActiveRhymeWord, setActivePanel, selectedLineId, setSelectedLine } = useSessionStore();
     const [isEditing, setIsEditing] = useState(false);
@@ -25,40 +79,78 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
     const [stressOverrides, setStressOverrides] = useState<Record<number, string>>({});
 
     const handleTextClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+        const parent = e.currentTarget;
         const target = e.target as HTMLElement;
-        let word = '';
+        const wordHover = target.closest('.word-hover') as HTMLElement;
         
-        // If clicked target is a highlighting span inside the text
-        if (target && target.tagName === 'SPAN' && target !== e.currentTarget) {
-            word = target.textContent || '';
-        } else {
-            // Fallback: use getSelection range to extract clicked word
-            const selection = window.getSelection();
-            if (selection && selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const node = range.startContainer;
-                const offset = range.startOffset;
-                if (node.nodeType === Node.TEXT_NODE && node.textContent) {
-                    const text = node.textContent;
-                    let start = offset;
-                    while (start > 0 && /[\w\u0900-\u097F\u0C80-\u0CFF]/.test(text[start - 1])) {
-                        start--;
-                    }
-                    let end = offset;
-                    while (end < text.length && /[\w\u0900-\u097F\u0C80-\u0CFF]/.test(text[end])) {
-                        end++;
-                    }
-                    word = text.slice(start, end);
+        if (wordHover) {
+            const startAttr = wordHover.getAttribute('data-start');
+            const endAttr = wordHover.getAttribute('data-end');
+            if (startAttr && endAttr) {
+                const targetStart = parseInt(startAttr);
+                const targetEnd = parseInt(endAttr);
+                
+                const text = parent.textContent || '';
+                const isWordChar = (char: string) => /[\w\u0900-\u097F\u0C80-\u0CFF]/.test(char);
+                
+                let wordStart = targetStart;
+                while (wordStart > 0 && isWordChar(text[wordStart - 1])) {
+                    wordStart--;
+                }
+                let wordEnd = targetEnd;
+                while (wordEnd < text.length && isWordChar(text[wordEnd])) {
+                    wordEnd++;
+                }
+                
+                const word = text.slice(wordStart, wordEnd);
+                const cleanWord = word.replace(/[^\w\u0900-\u097F\u0C80-\u0CFF]/g, '').trim();
+                if (cleanWord) {
+                    setActiveRhymeWord(cleanWord);
+                    setActivePanel('doppelreim');
                 }
             }
         }
+    };
+
+    const handleTextMouseMove = (e: React.MouseEvent<HTMLSpanElement>) => {
+        const parent = e.currentTarget;
+        const target = e.target as HTMLElement;
+        const wordHover = target.closest('.word-hover') as HTMLElement;
         
-        // Clean word from non-alpha characters (keeping Devanagari/Kannada letters)
-        const cleanWord = word.replace(/[^\w\u0900-\u097F\u0C80-\u0CFF]/g, '').trim();
-        if (cleanWord) {
-            setActiveRhymeWord(cleanWord);
-            setActivePanel('doppelreim');
+        parent.querySelectorAll('.word-hover').forEach(el => el.classList.remove('hovered'));
+        
+        if (wordHover) {
+            const startAttr = wordHover.getAttribute('data-start');
+            const endAttr = wordHover.getAttribute('data-end');
+            if (startAttr && endAttr) {
+                const targetStart = parseInt(startAttr);
+                const targetEnd = parseInt(endAttr);
+                
+                const text = parent.textContent || '';
+                const isWordChar = (char: string) => /[\w\u0900-\u097F\u0C80-\u0CFF]/.test(char);
+                
+                let wordStart = targetStart;
+                while (wordStart > 0 && isWordChar(text[wordStart - 1])) {
+                    wordStart--;
+                }
+                let wordEnd = targetEnd;
+                while (wordEnd < text.length && isWordChar(text[wordEnd])) {
+                    wordEnd++;
+                }
+                
+                parent.querySelectorAll('.word-hover').forEach(el => {
+                    const elStart = parseInt(el.getAttribute('data-start') || '0');
+                    const elEnd = parseInt(el.getAttribute('data-end') || '0');
+                    if (elStart >= wordStart && elEnd <= wordEnd) {
+                        el.classList.add('hovered');
+                    }
+                });
+            }
         }
+    };
+
+    const handleTextMouseLeave = (e: React.MouseEvent<HTMLSpanElement>) => {
+        e.currentTarget.querySelectorAll('.word-hover').forEach(el => el.classList.remove('hovered'));
     };
 
     const handleEdit = () => {
@@ -171,7 +263,9 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
         <div
             className={`line-row ${heatmapClass} ${isSelected ? 'selected' : ''}`}
             onClick={() => {
-                if (!isSelected) {
+                if (isSelected) {
+                    setSelectedLine(null);
+                } else {
                     setSelectedLine(line.id);
                 }
             }}
@@ -195,12 +289,17 @@ export const LineRow: React.FC<LineRowProps> = ({ line, onOpenHistory }) => {
                         <span
                             className="line-text highlightable-word"
                             onClick={(e) => {
-                                // Select line but also handle text click if needed
-                                handleTextClick(e);
+                                const target = e.target as HTMLElement;
+                                if (target.closest('.word-hover')) {
+                                    e.stopPropagation();
+                                    handleTextClick(e);
+                                }
                             }}
+                            onMouseMove={handleTextMouseMove}
+                            onMouseLeave={handleTextMouseLeave}
                             style={{ cursor: 'pointer' }}
                             dangerouslySetInnerHTML={{
-                                __html: line.highlighted_html || line.final_version || line.user_input,
+                                __html: wrapTextNodesInSpans(line.highlighted_html || line.final_version || line.user_input),
                             }}
                         />
                     )}
