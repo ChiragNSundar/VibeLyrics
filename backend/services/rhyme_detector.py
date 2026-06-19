@@ -6,6 +6,7 @@ import pronouncing
 import re
 from typing import List, Dict, Optional
 from collections import OrderedDict
+from .syllable_utils import count_syllables as _shared_count_syllables
 from functools import lru_cache
 from sqlalchemy import select, func, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,24 +20,14 @@ class SyllableCounter:
     """Count syllables in text"""
     
     def count(self, text: str) -> int:
-        """Count syllables in text"""
+        """Count syllables in text (delegates to shared utility)"""
         words = text.lower().split()
         total = 0
-        
         for word in words:
             word = re.sub(r'[^a-z]', '', word)
             if not word:
                 continue
-            
-            # Try CMU dictionary first
-            phones = pronouncing.phones_for_word(word)
-            if phones:
-                total += pronouncing.syllable_count(phones[0])
-            else:
-                # Fallback: count vowel groups
-                vowels = re.findall(r'[aeiouy]+', word)
-                total += max(1, len(vowels))
-        
+            total += _shared_count_syllables(word)
         return total
 
     def get_stress_pattern(self, text: str) -> str:
@@ -957,7 +948,7 @@ class RhymeDetector:
                 if rp1 in perfect_groups and rp2 in perfect_groups:
                     continue
                 dist = self._phoneme_distance(rp1, rp2)
-                if dist == 1:
+                if dist <= 1.0:
                     already_near_paired.add(pair_key)
                     combined = sound_groups[rp1] + sound_groups[rp2]
                     # Require cross-line
@@ -1183,27 +1174,28 @@ class RhymeDetector:
 
         return (original[:split_pos], original[split_pos:])
 
-    def _phoneme_distance(self, rp1: str, rp2: str) -> int:
+    def _phoneme_distance(self, rp1: str, rp2: str) -> float:
         """
-        Edit distance between two rhyming parts (phoneme sequences or Indian character endings).
-        Used to detect near/slant rhymes (distance = 1).
+        Weighted edit distance between two rhyming parts.
+        Vowel substitutions cost 0.5 (closer slant rhyme), consonant substitutions cost 1.0.
+        Used to detect near/slant rhymes (distance <= 1).
         """
         if any(ord(c) > 127 for c in rp1 + rp2):
-            # Calculate character-level Levenshtein distance for Indian script endings
+            # Character-level Levenshtein for Indian script endings
             m, n_p = len(rp1), len(rp2)
             if abs(m - n_p) > 1:
                 return abs(m - n_p)
-            dp = [[0] * (n_p + 1) for _ in range(m + 1)]
+            dp = [[0.0] * (n_p + 1) for _ in range(m + 1)]
             for i_d in range(m + 1):
-                dp[i_d][0] = i_d
+                dp[i_d][0] = float(i_d)
             for j_d in range(n_p + 1):
-                dp[0][j_d] = j_d
+                dp[0][j_d] = float(j_d)
             for i_d in range(1, m + 1):
                 for j_d in range(1, n_p + 1):
-                    cost = 0 if rp1[i_d - 1] == rp2[j_d - 1] else 1
+                    cost = 0.0 if rp1[i_d - 1] == rp2[j_d - 1] else 1.0
                     dp[i_d][j_d] = min(
-                        dp[i_d - 1][j_d] + 1,
-                        dp[i_d][j_d - 1] + 1,
+                        dp[i_d - 1][j_d] + 1.0,
+                        dp[i_d][j_d - 1] + 1.0,
                         dp[i_d - 1][j_d - 1] + cost
                     )
             return dp[m][n_p]
@@ -1211,25 +1203,42 @@ class RhymeDetector:
         p1 = rp1.split()
         p2 = rp2.split()
         # Strip stress digits for comparison
-        p1 = [re.sub(r'\d', '', p) for p in p1]
-        p2 = [re.sub(r'\d', '', p) for p in p2]
+        p1_clean = [re.sub(r'\d', '', p) for p in p1]
+        p2_clean = [re.sub(r'\d', '', p) for p in p2]
 
-        m, n_p = len(p1), len(p2)
-        if abs(m - n_p) > 1:
-            return abs(m - n_p)
+        m, n_p = len(p1_clean), len(p2_clean)
+        if abs(m - n_p) > 2:
+            return float(abs(m - n_p))
 
-        # Simple Levenshtein
-        dp = [[0] * (n_p + 1) for _ in range(m + 1)]
+        _VOWELS = {'AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY',
+                    'IH', 'IY', 'OW', 'OY', 'UH', 'UW'}
+
+        def _sub_cost(a: str, b: str) -> float:
+            if a == b:
+                return 0.0
+            a_is_vowel = a in _VOWELS
+            b_is_vowel = b in _VOWELS
+            # Vowel↔Vowel swap = close slant (0.5)
+            if a_is_vowel and b_is_vowel:
+                return 0.5
+            # Consonant↔Consonant swap = moderate (1.0)
+            if not a_is_vowel and not b_is_vowel:
+                return 1.0
+            # Vowel↔Consonant swap = far (1.5)
+            return 1.5
+
+        # Weighted Levenshtein
+        dp = [[0.0] * (n_p + 1) for _ in range(m + 1)]
         for i_d in range(m + 1):
-            dp[i_d][0] = i_d
+            dp[i_d][0] = float(i_d)
         for j_d in range(n_p + 1):
-            dp[0][j_d] = j_d
+            dp[0][j_d] = float(j_d)
         for i_d in range(1, m + 1):
             for j_d in range(1, n_p + 1):
-                cost = 0 if p1[i_d - 1] == p2[j_d - 1] else 1
+                cost = _sub_cost(p1_clean[i_d - 1], p2_clean[j_d - 1])
                 dp[i_d][j_d] = min(
-                    dp[i_d - 1][j_d] + 1,
-                    dp[i_d][j_d - 1] + 1,
+                    dp[i_d - 1][j_d] + 1.0,
+                    dp[i_d][j_d - 1] + 1.0,
                     dp[i_d - 1][j_d - 1] + cost
                 )
         return dp[m][n_p]
@@ -1322,22 +1331,29 @@ class RhymeDetector:
         return False
     
     def get_density_heatmap(self, lines: List[str]) -> List[Dict]:
-        """Calculate rhyme density for heatmap"""
+        """Calculate rhyme density for heatmap — returns 0-100 score + specific pair callouts."""
         result = []
         
         for line in lines:
             words = line.split()
             rhyme_count = 0
+            rhyme_pairs = []
             
             for i, word in enumerate(words):
-                for j, other in enumerate(words):
-                    if i != j:
-                        e1 = self.get_rhyme_ending(word)
-                        e2 = self.get_rhyme_ending(other)
-                        if self._endings_rhyme(e1, e2):
+                for j in range(i + 1, len(words)):
+                    other = words[j]
+                    e1 = self.get_rhyme_ending(word)
+                    e2 = self.get_rhyme_ending(other)
+                    if e1 and e2 and self._endings_rhyme(e1, e2):
+                        clean_w = re.sub(r'[^a-zA-Z]', '', word.lower())
+                        clean_o = re.sub(r'[^a-zA-Z]', '', other.lower())
+                        if clean_w != clean_o:
                             rhyme_count += 1
+                            rhyme_pairs.append({"word_a": word, "word_b": other, "ending": e1})
             
             density = rhyme_count / max(1, len(words))
+            # Scale to 0-100: 0 pairs = 0, 4+ pairs = 100
+            score = min(100, int((rhyme_count / 4.0) * 100))
             
             if density > 0.5:
                 color = "high"
@@ -1346,7 +1362,13 @@ class RhymeDetector:
             else:
                 color = "low"
             
-            result.append({"density": density, "color": color})
+            result.append({
+                "density": density,
+                "color": color,
+                "score": score,
+                "rhyme_pairs": rhyme_pairs,
+                "pair_count": rhyme_count
+            })
         
         return result
     
@@ -1454,3 +1476,233 @@ class RhymeDetector:
                 seen[end] = current_char
                 current_char = chr(ord(current_char) + 1)
         return "".join(scheme)
+
+    # ── 1b: On-the-fly Compound Phrase Rhyming ─────────────────────────
+
+    def find_onthefly_phrase_rhymes(
+        self, word: str, language: str = 'en', max_results: int = 20
+    ) -> List[Dict]:
+        """
+        Generate 2-word phrase rhymes on-the-fly by splitting CMUDict phoneme tails.
+        E.g., 'orange' → 'door hinge', 'purple' → 'hurt full'.
+        No database required — works purely from CMUDict pronunciations.
+        """
+        if language != 'en':
+            return []  # CMUDict is English-only
+
+        word_clean = re.sub(r'[^a-z]', '', word.lower())
+        if not word_clean:
+            return []
+
+        phones_list = pronouncing.phones_for_word(word_clean)
+        if not phones_list:
+            return []
+
+        target_phones = phones_list[0].split()
+        target_len = len(target_phones)
+        if target_len < 3:
+            return []
+
+        results = []
+        seen = set()
+
+        # Try splitting target phoneme sequence at each position
+        for split_pos in range(2, target_len - 1):
+            part_a_phones = target_phones[:split_pos]
+            part_b_phones = target_phones[split_pos:]
+
+            part_a_str = " ".join(part_a_phones)
+            part_b_str = " ".join(part_b_phones)
+
+            # Find words matching each part (strip stress for comparison)
+            part_a_stripped = " ".join(re.sub(r'\d', '', p) for p in part_a_phones)
+            part_b_stripped = " ".join(re.sub(r'\d', '', p) for p in part_b_phones)
+
+            matches_a = self._find_words_by_phones(part_a_stripped, limit=8)
+            matches_b = self._find_words_by_phones(part_b_stripped, limit=8)
+
+            for wa in matches_a:
+                for wb in matches_b:
+                    if wa == wb or wa == word_clean or wb == word_clean:
+                        continue
+                    combo = f"{wa} {wb}"
+                    if combo not in seen:
+                        seen.add(combo)
+                        results.append({
+                            "phrase": combo,
+                            "type": "compound",
+                            "split_at": split_pos,
+                            "word_count": 2
+                        })
+
+        results = results[:max_results]
+        return results
+
+    def _find_words_by_phones(self, target_stripped: str, limit: int = 8) -> List[str]:
+        """Find CMUDict words whose phoneme sequence (stress-stripped) matches target."""
+        matches = []
+        try:
+            if not pronouncing.pronunciations:
+                pronouncing.init_cmu()
+            for entry_word, entry_phones in pronouncing.pronunciations:
+                if len(matches) >= limit:
+                    break
+                clean_entry = entry_word.strip().lower()
+                if not clean_entry.isalpha() or len(clean_entry) < 2:
+                    continue
+                stripped = " ".join(re.sub(r'\d', '', p) for p in entry_phones.split())
+                if stripped == target_stripped:
+                    matches.append(clean_entry)
+        except Exception:
+            pass
+        return matches
+
+    # ── 1d: Cross-Language Rhyme Matching ──────────────────────────────
+
+    # IPA-like normalization bridge for cross-language rhyme comparison
+    _CMU_TO_IPA = {
+        'AA': 'aː', 'AE': 'æ', 'AH': 'ʌ', 'AO': 'ɔː', 'AW': 'aʊ', 'AY': 'aɪ',
+        'EH': 'ɛ', 'ER': 'ɝ', 'EY': 'eɪ', 'IH': 'ɪ', 'IY': 'iː',
+        'OW': 'oʊ', 'OY': 'ɔɪ', 'UH': 'ʊ', 'UW': 'uː',
+    }
+    _INDIAN_TO_IPA = {
+        'a': 'ʌ', 'aa': 'aː', 'i': 'ɪ', 'ii': 'iː', 'u': 'ʊ', 'uu': 'uː',
+        'e': 'ɛ', 'ee': 'eɪ', 'ai': 'aɪ', 'o': 'oʊ', 'oo': 'oʊ', 'au': 'aʊ',
+        'ri': 'ɝ',
+    }
+
+    def _normalize_to_ipa_key(self, vowel_seq: str, language: str) -> str:
+        """Convert vowel sequence to IPA-like key for cross-language comparison."""
+        if not vowel_seq:
+            return ""
+
+        parts = vowel_seq.split("-")
+        ipa_parts = []
+
+        if language == 'en':
+            for p in parts:
+                clean = re.sub(r'\d', '', p)
+                ipa_parts.append(self._CMU_TO_IPA.get(clean, clean.lower()))
+        else:  # hi, kn
+            for p in parts:
+                ipa_parts.append(self._INDIAN_TO_IPA.get(p.lower(), p.lower()))
+
+        return "-".join(ipa_parts)
+
+    async def find_cross_language_rhymes(
+        self, session: 'AsyncSession', word: str,
+        source_lang: str = 'en', target_lang: str = 'hi',
+        max_results: int = 20
+    ) -> List[Dict]:
+        """
+        Find rhymes across languages using IPA-bridge normalization.
+        E.g., English 'fire' (AY-ER → aɪ-ɝ) matches Hinglish 'shaayar' (aa-a → aː-ʌ).
+        """
+        # Get source word's vowel sequence and normalize
+        src_vowels, _, src_syls = self.extract_vowels(word, source_lang)
+        src_ipa = self._normalize_to_ipa_key(src_vowels, source_lang)
+
+        if not src_ipa:
+            return []
+
+        # Query target language words from DB
+        query = select(MultisyllabicWord).where(
+            MultisyllabicWord.language == target_lang
+        ).limit(500)
+        res = await session.execute(query)
+        target_words = res.scalars().all()
+
+        results = []
+        for tw in target_words:
+            tw_ipa = self._normalize_to_ipa_key(tw.vowel_sequence, target_lang)
+            if not tw_ipa:
+                continue
+
+            # Compare IPA keys — exact match or close match
+            if tw_ipa == src_ipa:
+                match_type = "exact_cross"
+                score = 100
+            elif self._ipa_distance(src_ipa, tw_ipa) <= 1:
+                match_type = "near_cross"
+                score = 75
+            else:
+                continue
+
+            results.append({
+                "word": tw.word,
+                "language": tw.language,
+                "source_ipa": src_ipa,
+                "target_ipa": tw_ipa,
+                "match_type": match_type,
+                "score": score,
+                "syllable_count": tw.syllable_count,
+            })
+
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:max_results]
+
+    def _ipa_distance(self, ipa1: str, ipa2: str) -> int:
+        """Simple Levenshtein on IPA segments."""
+        p1 = ipa1.split("-")
+        p2 = ipa2.split("-")
+        m, n = len(p1), len(p2)
+        if abs(m - n) > 1:
+            return abs(m - n)
+        dp = [[0] * (n + 1) for _ in range(m + 1)]
+        for i in range(m + 1):
+            dp[i][0] = i
+        for j in range(n + 1):
+            dp[0][j] = j
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                cost = 0 if p1[i - 1] == p2[j - 1] else 1
+                dp[i][j] = min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost)
+        return dp[m][n]
+
+    # ── 6c: Phonetic Autocomplete ─────────────────────────────────────
+
+    async def autocomplete_rhyme(
+        self, session: 'AsyncSession', partial_word: str,
+        prev_line_ending: str, language: str = 'en', max_results: int = 10
+    ) -> List[Dict]:
+        """
+        Suggest words that start with `partial_word` AND rhyme with `prev_line_ending`.
+        Uses vowel-sequence prefix query against MultisyllabicWord table.
+        """
+        if not partial_word or not prev_line_ending:
+            return []
+
+        # Get rhyme target
+        target_vowels, target_key, _ = self.extract_vowels(prev_line_ending, language)
+        if not target_vowels:
+            return []
+
+        partial_clean = partial_word.lower().strip()
+
+        # Query words starting with partial AND matching vowel sequence
+        from sqlalchemy import or_
+
+        query = select(MultisyllabicWord).where(
+            MultisyllabicWord.language == language,
+            func.lower(MultisyllabicWord.word).startswith(partial_clean),
+            or_(
+                MultisyllabicWord.vowel_sequence == target_vowels,
+                MultisyllabicWord.exact_rhyme_key == target_key
+            )
+        ).order_by(MultisyllabicWord.upvotes.desc()).limit(max_results)
+
+        res = await session.execute(query)
+        words = res.scalars().all()
+
+        results = []
+        for w in words:
+            if w.word.lower() != prev_line_ending.lower():
+                results.append({
+                    "word": w.word,
+                    "syllable_count": w.syllable_count,
+                    "vowel_sequence": w.vowel_sequence,
+                    "match_type": "exact" if w.exact_rhyme_key == target_key else "vowel",
+                })
+
+        return results
+

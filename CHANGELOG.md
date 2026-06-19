@@ -2,6 +2,32 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.3.0] - 2026-06-19
+
+### 🧠 Local Brain Mega-Upgrade & Multi-Language Enhancements
+
+#### 🎙️ Rhyme Engine & Phonetics
+- **Consonance-Weighted Slant Rhymes** — Custom phoneme edit distance weights vowel substitution at 0.5 (closer slant) vs 1.0 for consonants.
+- **On-the-Fly Phrase Rhymes** — Dynamic compound phrase matching (e.g. *orange* -> *door hinge*) from CMUDict.
+- **Cross-Language Matching** — IPA-bridge vowel alignment across English (CMUDict) and Hinglish/Kanglish (Indian romanizations).
+- **Detailed Density Heatmap** — Return numeric 0-100 score per line with specific rhyming word pair highlights.
+- **Phonetic Autocomplete** — Autocomplete suggestions using prefix searches synced with target vowel sequences.
+
+#### 📈 Advanced Semantic Drift & Complexity
+- **Multi-Algorithm Semantic Drift** — Added sliding window drift, TF-IDF weighted keywords, and section-aware anchoring.
+- **Enhanced Complexity Scoring** — Added homophone/double entendre detection and rhyme scheme complexity bonuses.
+
+#### 🎓 Style Learning & Brain Map
+- **N-gram Pattern Extraction** — Track favorite bigrams and trigrams in the writing style profile.
+- **Cliché Detector** — Scans lyrics against a corpus of ~100 hip-hop clichés and user-defined avoided words.
+- **Vocabulary Staleness Alert** — Highlights stagnating vocabulary growth across sessions.
+- **Brain Map Community Clustering** — Lightweight label propagation dynamically groups co-occurring words.
+
+#### ⚡ Persistent Caching & Version History
+- **Persistent Caching** — SQLite-backed `CacheEntry` storage with automatic in-memory fallback.
+- **Session Diffing Summary** — Aggregates per-line revisions, content updates, and character deltas.
+- **Expanded Imagery Radar** — Expanded lexicon (215+ sensory words) and balance radar scores per sense.
+
 ## [3.2.0] - 2026-06-19
 
 ### 🎛️ Advanced Cadence Writing Flow & Offline Brain Upgrades

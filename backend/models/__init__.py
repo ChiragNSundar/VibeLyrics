@@ -231,3 +231,23 @@ class RhymeFeedback(Base):
             "is_valid_rhyme": self.is_valid_rhyme,
             "votes_count": self.votes_count
         }
+
+
+class CacheEntry(Base):
+    """Database-backed cache table for expensive computations"""
+    __tablename__ = "cache_entries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(250), unique=True, index=True)
+    value: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "key": self.key,
+            "value": self.value,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None
+        }
+
+

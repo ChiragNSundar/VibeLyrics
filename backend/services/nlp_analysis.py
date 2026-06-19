@@ -16,6 +16,8 @@ try:
 except ImportError:
     pronouncing = None
 
+from .syllable_utils import count_syllables as _shared_count_syllables
+
 
 # ── Wordplay Engine ─────────────────────────────────────────────────
 
@@ -167,6 +169,7 @@ class RhymeComplexityScorer:
     def score(self, lines: List[str]) -> Dict:
         """
         Return a 0–100 complexity score with dimensional breakdown.
+        Includes homophone detection and rhyme scheme sophistication.
         """
         if not lines or not any(l.strip() for l in lines):
             return {
@@ -178,6 +181,8 @@ class RhymeComplexityScorer:
                     "assonance": 0,
                     "consonance": 0,
                     "vocabulary": 0,
+                    "homophone": 0,
+                    "scheme_sophistication": 0,
                 },
                 "details": "No lines to analyze.",
             }
@@ -187,14 +192,18 @@ class RhymeComplexityScorer:
         asson_score = self._assonance_density(lines)
         conson_score = self._consonance_density(lines)
         vocab_score = self._vocabulary_richness(lines)
+        homo_score = self._homophone_score(lines)
+        scheme_score = self._scheme_complexity_score(lines)
 
-        # Weighted combination
+        # Rebalanced weighted combination (7 dimensions)
         overall = (
-            internal_score * 0.30
-            + multi_score * 0.25
-            + asson_score * 0.15
-            + conson_score * 0.10
-            + vocab_score * 0.20
+            internal_score * 0.22
+            + multi_score * 0.20
+            + asson_score * 0.12
+            + conson_score * 0.08
+            + vocab_score * 0.15
+            + homo_score * 0.10
+            + scheme_score * 0.13
         )
         overall = min(100, max(0, round(overall)))
 
@@ -209,6 +218,8 @@ class RhymeComplexityScorer:
                 "assonance": round(asson_score),
                 "consonance": round(conson_score),
                 "vocabulary": round(vocab_score),
+                "homophone": round(homo_score),
+                "scheme_sophistication": round(scheme_score),
             },
             "details": self._details_text(overall, grade),
         }
@@ -332,24 +343,94 @@ class RhymeComplexityScorer:
     # ── utilities ───
 
     def _count_syllables(self, word: str) -> int:
-        """Estimate syllable count."""
-        word = word.lower().strip("'")
-        if pronouncing:
-            phones_list = pronouncing.phones_for_word(word)
-            if phones_list:
-                return pronouncing.syllable_count(phones_list[0])
-        # Fallback heuristic
-        vowels = "aeiouy"
-        count = 0
-        prev_vowel = False
-        for ch in word:
-            is_vowel = ch in vowels
-            if is_vowel and not prev_vowel:
-                count += 1
-            prev_vowel = is_vowel
-        if word.endswith("e") and count > 1:
-            count -= 1
-        return max(1, count)
+        """Estimate syllable count (delegates to shared utility)."""
+        return _shared_count_syllables(word)
+
+    # ── 4a: Homophone / Entendre Detection ───
+
+    def _homophone_score(self, lines: List[str]) -> float:
+        """
+        Detect words sharing identical phonemes but different spellings within a verse.
+        Potential double-entendre / wordplay indicator. Scaled 0–100.
+        """
+        if not pronouncing:
+            return 0
+        # Build phoneme → set(words) map
+        phone_map: Dict[str, set] = {}
+        for line in lines:
+            words = re.findall(r"[a-zA-Z']+", line)
+            for w in words:
+                clean = w.lower().strip("'")
+                if len(clean) < 3:
+                    continue
+                phones_list = pronouncing.phones_for_word(clean)
+                if phones_list:
+                    # Strip stress for comparison
+                    key = re.sub(r'\d', '', phones_list[0])
+                    if key not in phone_map:
+                        phone_map[key] = set()
+                    phone_map[key].add(clean)
+
+        # Count homophone groups (same sound, different spelling)
+        homo_groups = sum(1 for spellings in phone_map.values() if len(spellings) >= 2)
+        # Scale: 0 groups = 0, 5+ groups = 100
+        return min(100, (homo_groups / 5.0) * 100)
+
+    # ── 4b: Rhyme Scheme Complexity ───
+
+    def _scheme_complexity_score(self, lines: List[str]) -> float:
+        """
+        Score the sophistication of the rhyme scheme.
+        ABAB/ABBA → high, AABB → medium, AAAA/free → low.
+        """
+        if not pronouncing or len(lines) < 4:
+            return 30  # Default for short verses
+
+        # Get end-word rhyme parts for last 4+ lines
+        endings = []
+        for line in lines:
+            words = line.split()
+            if words:
+                last_word = re.sub(r'[^a-z]', '', words[-1].lower())
+                phones_list = pronouncing.phones_for_word(last_word) if last_word else []
+                if phones_list:
+                    endings.append(pronouncing.rhyming_part(phones_list[0]))
+                else:
+                    endings.append(last_word[-2:] if len(last_word) >= 2 else last_word)
+            else:
+                endings.append("")
+
+        # Analyze last 4 lines
+        target = endings[-4:]
+        # Build scheme pattern
+        scheme = []
+        seen = {}
+        current = 'A'
+        for end in target:
+            if not end:
+                scheme.append('X')
+                continue
+            found = None
+            for known, char in seen.items():
+                if end == known:
+                    found = char
+                    break
+            if found:
+                scheme.append(found)
+            else:
+                scheme.append(current)
+                seen[end] = current
+                current = chr(ord(current) + 1) if current < 'Z' else 'Z'
+
+        pattern = "".join(scheme)
+
+        # Score by sophistication
+        scores = {
+            "ABAB": 95, "ABBA": 90, "ABCB": 80,
+            "AABB": 60, "AAAA": 40, "ABAC": 70,
+            "ABCD": 50,  # no rhyme = moderate
+        }
+        return scores.get(pattern, 55)  # Default for unusual patterns
 
     def _grade(self, score: int) -> str:
         if score >= 85:
@@ -469,6 +550,233 @@ class SemanticDriftDetector:
         """Extract meaningful keywords from text."""
         words = re.findall(r"[a-zA-Z']+", text.lower())
         return {w for w in words if w not in self.STOP_WORDS and len(w) > 2}
+
+    # ── 3a: Sliding Window Drift ───
+
+    def detect_windowed(
+        self, lines: List[str], session_theme: str = "", window_size: int = 4
+    ) -> Dict:
+        """
+        Sliding window drift detection — returns drift score at every window position.
+        Enables mid-verse drift detection (e.g., lines 5-8 might drift while 9-12 recover).
+        """
+        clean_lines = [l.strip() for l in lines if l.strip()]
+        if len(clean_lines) < window_size * 2:
+            return {
+                "windows": [],
+                "max_drift": 0.0,
+                "max_drift_position": 0,
+                "overall_status": "stable",
+            }
+
+        # Anchor: first window + session theme
+        anchor_text = " ".join(clean_lines[:window_size])
+        if session_theme:
+            anchor_text += " " + session_theme
+        anchor_kw = self._extract_keywords(anchor_text)
+
+        windows = []
+        max_drift = 0.0
+        max_pos = 0
+
+        for i in range(window_size, len(clean_lines) - window_size + 1):
+            window_text = " ".join(clean_lines[i:i + window_size])
+            window_kw = self._extract_keywords(window_text)
+
+            if not anchor_kw or not window_kw:
+                drift = 0.0
+            else:
+                intersection = anchor_kw & window_kw
+                union = anchor_kw | window_kw
+                similarity = len(intersection) / len(union) if union else 1.0
+                drift = round(1.0 - similarity, 3)
+
+            if drift > max_drift:
+                max_drift = drift
+                max_pos = i
+
+            status = "stable" if drift < 0.4 else ("drifting" if drift < 0.65 else "off-topic")
+            windows.append({
+                "start_line": i,
+                "end_line": i + window_size - 1,
+                "drift_score": drift,
+                "status": status,
+            })
+
+        overall = "stable"
+        if max_drift >= 0.65:
+            overall = "off-topic"
+        elif max_drift >= 0.4:
+            overall = "drifting"
+
+        return {
+            "windows": windows,
+            "max_drift": max_drift,
+            "max_drift_position": max_pos,
+            "overall_status": overall,
+        }
+
+    # ── 3b: TF-IDF Weighted Keywords ───
+
+    def _compute_tfidf_weights(self, all_session_texts: List[str]) -> Dict[str, float]:
+        """
+        Compute IDF weights from multiple session texts.
+        Rare thematic words get higher weight.
+        """
+        doc_freq: Dict[str, int] = {}
+        n_docs = max(1, len(all_session_texts))
+
+        for text in all_session_texts:
+            unique_words = self._extract_keywords(text)
+            for w in unique_words:
+                doc_freq[w] = doc_freq.get(w, 0) + 1
+
+        idf: Dict[str, float] = {}
+        for word, df in doc_freq.items():
+            import math as _math
+            idf[word] = _math.log(n_docs / df) + 1.0
+
+        return idf
+
+    def _extract_weighted_keywords(self, text: str, idf_weights: Dict[str, float]) -> Dict[str, float]:
+        """Extract keywords with TF-IDF weighting."""
+        words = re.findall(r"[a-zA-Z']+", text.lower())
+        meaningful = [w for w in words if w not in self.STOP_WORDS and len(w) > 2]
+        tf: Dict[str, int] = {}
+        for w in meaningful:
+            tf[w] = tf.get(w, 0) + 1
+
+        weighted: Dict[str, float] = {}
+        for w, count in tf.items():
+            weighted[w] = count * idf_weights.get(w, 1.0)
+
+        return weighted
+
+    def detect_weighted(
+        self, lines: List[str], session_theme: str = "",
+        all_session_texts: List[str] = None
+    ) -> Dict:
+        """
+        Detect drift using TF-IDF weighted keywords instead of raw Jaccard.
+        Rare thematic words contribute more to the drift calculation.
+        """
+        clean_lines = [l.strip() for l in lines if l.strip()]
+        if len(clean_lines) < 6:
+            return self.detect(lines, session_theme)
+
+        # Compute IDF from session history (or just current text)
+        corpus = all_session_texts or [" ".join(clean_lines)]
+        idf = self._compute_tfidf_weights(corpus)
+
+        anchor_text = " ".join(clean_lines[:4])
+        if session_theme:
+            anchor_text += " " + session_theme
+        recent_text = " ".join(clean_lines[-4:])
+
+        anchor_w = self._extract_weighted_keywords(anchor_text, idf)
+        recent_w = self._extract_weighted_keywords(recent_text, idf)
+
+        if not anchor_w or not recent_w:
+            return self.detect(lines, session_theme)
+
+        # Weighted cosine similarity
+        all_keys = set(anchor_w.keys()) | set(recent_w.keys())
+        dot = sum(anchor_w.get(k, 0) * recent_w.get(k, 0) for k in all_keys)
+        mag_a = sum(v**2 for v in anchor_w.values()) ** 0.5
+        mag_b = sum(v**2 for v in recent_w.values()) ** 0.5
+
+        similarity = dot / (mag_a * mag_b) if mag_a > 0 and mag_b > 0 else 0.0
+        drift = round(1.0 - similarity, 3)
+
+        status = "stable" if drift < 0.4 else ("drifting" if drift < 0.65 else "off-topic")
+        warning = ""
+        if status == "drifting":
+            top_anchor = sorted(anchor_w.keys(), key=lambda k: anchor_w[k], reverse=True)[:5]
+            warning = f"Weighted drift detected. Core theme words: {', '.join(top_anchor)}"
+        elif status == "off-topic":
+            top_anchor = sorted(anchor_w.keys(), key=lambda k: anchor_w[k], reverse=True)[:5]
+            warning = f"Heavy weighted drift! Your core theme words are missing: {', '.join(top_anchor)}"
+
+        return {
+            "drift_score": drift,
+            "status": status,
+            "warning": warning,
+            "method": "tfidf_weighted",
+            "anchor_keywords": sorted(anchor_w.keys(), key=lambda k: anchor_w[k], reverse=True)[:10],
+            "recent_keywords": sorted(recent_w.keys(), key=lambda k: recent_w[k], reverse=True)[:10],
+        }
+
+    # ── 3c: Section-Aware Anchoring ───
+
+    def detect_sectioned(
+        self, lines_with_sections: List[Dict], session_theme: str = ""
+    ) -> Dict:
+        """
+        Section-aware drift detection. Each section is anchored independently.
+        
+        lines_with_sections: List of {"text": str, "section": str} dicts.
+        """
+        # Group lines by section
+        sections: Dict[str, List[str]] = {}
+        for item in lines_with_sections:
+            sec = item.get("section", "Verse")
+            text = item.get("text", "").strip()
+            if text:
+                if sec not in sections:
+                    sections[sec] = []
+                sections[sec].append(text)
+
+        if not sections:
+            return {"sections": {}, "overall_status": "stable"}
+
+        results: Dict[str, Dict] = {}
+        worst_status = "stable"
+
+        for sec_name, sec_lines in sections.items():
+            if len(sec_lines) < 4:
+                results[sec_name] = {
+                    "drift_score": 0.0,
+                    "status": "stable",
+                    "line_count": len(sec_lines),
+                }
+                continue
+
+            # Anchor = first 2 lines of this section
+            anchor_text = " ".join(sec_lines[:2])
+            if session_theme:
+                anchor_text += " " + session_theme
+            recent_text = " ".join(sec_lines[-2:])
+
+            anchor_kw = self._extract_keywords(anchor_text)
+            recent_kw = self._extract_keywords(recent_text)
+
+            if not anchor_kw or not recent_kw:
+                drift = 0.0
+            else:
+                intersection = anchor_kw & recent_kw
+                union = anchor_kw | recent_kw
+                similarity = len(intersection) / len(union) if union else 1.0
+                drift = round(1.0 - similarity, 3)
+
+            status = "stable" if drift < 0.4 else ("drifting" if drift < 0.65 else "off-topic")
+
+            if status == "off-topic":
+                worst_status = "off-topic"
+            elif status == "drifting" and worst_status != "off-topic":
+                worst_status = "drifting"
+
+            results[sec_name] = {
+                "drift_score": drift,
+                "status": status,
+                "line_count": len(sec_lines),
+                "anchor_keywords": sorted(anchor_kw)[:5],
+                "recent_keywords": sorted(recent_kw)[:5],
+            }
+
+        return {
+            "sections": results,
+            "overall_status": worst_status,
+        }
 
 
 # ── Theme Clusterer (for 3D Neural Network) ────────────────────────

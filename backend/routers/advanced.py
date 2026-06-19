@@ -575,9 +575,13 @@ async def score_rhyme_complexity(data: ComplexityScoreRequest):
     return {"success": True, **result}
 
 
+class ImageryRadarRequest(BaseModel):
+    lines: List[str] = Field(..., min_length=1)
+
+
 @router.post("/nlp/semantic-drift", response_model=dict)
 async def detect_semantic_drift(data: SemanticDriftRequest, db: AsyncSession = Depends(get_db)):
-    """Detect thematic drift between early and recent lyrics in a session"""
+    """Detect thematic drift using standard, weighted, windowed, and section-aware algorithms"""
     result = await db.execute(
         select(LyricLine)
         .where(LyricLine.session_id == data.session_id)
@@ -589,6 +593,7 @@ async def detect_semantic_drift(data: SemanticDriftRequest, db: AsyncSession = D
         raise HTTPException(status_code=404, detail="Session not found or empty")
 
     text_lines = [l.final_version or l.user_input for l in lines]
+    lines_with_sections = [{"text": l.final_version or l.user_input, "section": l.section} for l in lines]
 
     # Get session theme
     session_result = await db.execute(
@@ -597,8 +602,26 @@ async def detect_semantic_drift(data: SemanticDriftRequest, db: AsyncSession = D
     session = session_result.scalar_one_or_none()
     session_theme = session.theme if session and session.theme else ""
 
-    drift_result = drift_detector.detect(text_lines, session_theme)
-    return {"success": True, **drift_result}
+    # Calculate all drift types
+    drift_std = drift_detector.detect(text_lines, session_theme)
+    drift_w = drift_detector.detect_weighted(text_lines, session_theme)
+    drift_wind = drift_detector.detect_windowed(text_lines, session_theme)
+    drift_sec = drift_detector.detect_sectioned(lines_with_sections, session_theme)
+
+    return {
+        "success": True,
+        "standard": drift_std,
+        "weighted": drift_w,
+        "windowed": drift_wind,
+        "sectioned": drift_sec
+    }
+
+
+@router.post("/imagery/radar", response_model=dict)
+async def get_imagery_radar(data: ImageryRadarRequest):
+    """Get imagery balance radar data including 0-100 scores per sense, balance score, and callouts"""
+    result = imagery_analyzer.get_balance_radar(data.lines)
+    return {"success": True, **result}
 
 
 @router.get("/nlp/theme-network", response_model=dict)

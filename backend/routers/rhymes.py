@@ -5,7 +5,7 @@ Rhyme lookups, thesaurus, and multi-syllable rhymes
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel
 from ..schemas import RhymeLookup, ThesaurusLookup, RhymeExtract, PhoneticRegister
 from ..services.rhyme_detector import RhymeDetector
@@ -217,3 +217,69 @@ async def register_word_phonetics(data: PhoneticRegister, db: AsyncSession = Dep
     except Exception as e:
         await db.rollback()
         return {"success": False, "error": str(e)}
+
+
+class PhraseRhymeLookup(BaseModel):
+    word: str
+    language: str = "en"
+    max_results: int = 20
+
+
+class CrossLanguageLookup(BaseModel):
+    word: str
+    source_lang: str = "en"
+    target_lang: str = "hi"
+    max_results: int = 20
+
+
+class DensityLookup(BaseModel):
+    lines: List[str]
+
+
+@router.post("/rhymes/phrase-rhyme", response_model=dict)
+async def phrase_rhyme(data: PhraseRhymeLookup):
+    """Generate on-the-fly compound phrase rhymes (e.g. 'orange' -> 'door hinge')"""
+    results = _rhyme_detector.find_onthefly_phrase_rhymes(
+        data.word, data.language, data.max_results
+    )
+    return {
+        "success": True,
+        "results": results
+    }
+
+
+@router.post("/rhymes/cross-language", response_model=dict)
+async def cross_language_rhyme(data: CrossLanguageLookup, db: AsyncSession = Depends(get_db)):
+    """Look up rhymes across languages using IPA-bridge matching"""
+    results = await _rhyme_detector.find_cross_language_rhymes(
+        db, data.word, data.source_lang, data.target_lang, data.max_results
+    )
+    return {
+        "success": True,
+        "results": results
+    }
+
+
+@router.post("/rhymes/density-detailed", response_model=dict)
+async def density_detailed(data: DensityLookup):
+    """Calculate detailed rhyme density heatmap with 0-100 scores and pair callouts"""
+    heatmap = _rhyme_detector.get_density_heatmap(data.lines)
+    return {
+        "success": True,
+        "heatmap": heatmap
+    }
+
+
+@router.get("/rhymes/autocomplete", response_model=dict)
+async def autocomplete_rhymes(
+    partial: str, prev_ending: str, language: str = "en", limit: int = 10, db: AsyncSession = Depends(get_db)
+):
+    """Suggest words starting with 'partial' that rhyme with 'prev_ending'"""
+    results = await _rhyme_detector.autocomplete_rhyme(
+        db, partial, prev_ending, language, limit
+    )
+    return {
+        "success": True,
+        "results": results
+    }
+

@@ -34,6 +34,7 @@ class StyleExtractor:
         return {
             "vocabulary": {
                 "favorite_words": [],
+                "favorite_phrases": [],
                 "avoided_words": [],
                 "slang_preference": "moderate"
             },
@@ -62,6 +63,16 @@ class StyleExtractor:
         self.style_data = self._get_default_style()
         self.save_style()
     
+    def _extract_ngrams(self, lines: List[str], n: int) -> List[str]:
+        """Extract word n-grams from lines."""
+        ngrams = []
+        for line in lines:
+            words = [w.lower().strip(".,!?;:'\"") for w in line.split() if w.strip(".,!?;:'\"")]
+            if len(words) >= n:
+                for i in range(len(words) - n + 1):
+                    ngrams.append(" ".join(words[i:i+n]))
+        return ngrams
+
     def analyze_lines(self, lines: List[str]) -> Dict:
         """Analyze lines to extract style patterns"""
         if not lines:
@@ -69,11 +80,17 @@ class StyleExtractor:
         
         words = []
         for line in lines:
-            words.extend(line.lower().split())
+            words.extend(w.lower().strip(".,!?;:'\"") for w in line.split() if w.strip(".,!?;:'\""))
         
         # Word frequency
         word_freq = Counter(words)
         common_words = word_freq.most_common(10)
+        
+        # Bigrams & Trigrams
+        bigrams = self._extract_ngrams(lines, 2)
+        trigrams = self._extract_ngrams(lines, 3)
+        common_bigrams = [phrase for phrase, count in Counter(bigrams).most_common(5)]
+        common_trigrams = [phrase for phrase, count in Counter(trigrams).most_common(5)]
         
         # Average line length
         avg_length = sum(len(line.split()) for line in lines) / len(lines)
@@ -82,12 +99,16 @@ class StyleExtractor:
             "common_words": [w for w, c in common_words],
             "avg_line_length": round(avg_length, 1),
             "total_lines": len(lines),
-            "unique_words": len(set(words))
+            "unique_words": len(set(words)),
+            "common_bigrams": common_bigrams,
+            "common_trigrams": common_trigrams
         }
     
     def learn_from_session(self, lines: List[str]):
         """Update style from a writing session"""
         analysis = self.analyze_lines(lines)
+        if not analysis:
+            return
         
         # Update average line length
         current_avg = self.style_data["structure"]["avg_line_length"]
@@ -106,6 +127,13 @@ class StyleExtractor:
                     fav.append(word)
                     self.style_data["vocabulary"]["favorite_words"] = fav[-50:]
         
+        # Track common phrases (bigrams/trigrams) as potential favorites
+        fav_phrases = self.style_data["vocabulary"].setdefault("favorite_phrases", [])
+        for phrase in analysis.get("common_bigrams", []) + analysis.get("common_trigrams", []):
+            if phrase not in fav_phrases:
+                fav_phrases.append(phrase)
+        self.style_data["vocabulary"]["favorite_phrases"] = fav_phrases[-30:]
+
         self.save_style()
 
     def learn_from_journal(self, journal_entries: List[Dict]):
@@ -287,6 +315,75 @@ class VocabularyManager:
         with open(co_file, 'w') as f:
             json.dump(co_data, f)
 
+    def cluster_brain_map(self, brain_data: Dict) -> Dict:
+        """
+        Run label propagation on the nodes and links to identify community clusters.
+        Modifies and returns brain_data with 'cluster_id' and 'cluster_label' on each node.
+        """
+        nodes = brain_data.get("nodes", [])
+        links = brain_data.get("links", [])
+        
+        if not nodes:
+            return brain_data
+            
+        # 1. Initialize labels: each node has its own label (its ID)
+        labels = {node["id"]: node["id"] for node in nodes}
+        node_freqs = {node["id"]: node.get("frequency", 1) for node in nodes}
+        
+        # Build adjacency list
+        adj = {node["id"]: [] for node in nodes}
+        for link in links:
+            src = link["source"]
+            tgt = link["target"]
+            val = link.get("value", 1)
+            if src in adj and tgt in adj:
+                adj[src].append((tgt, val))
+                adj[tgt].append((src, val))
+                
+        # 2. Run label propagation (5 iterations)
+        import random
+        for _ in range(5):
+            shuffled_nodes = list(labels.keys())
+            random.shuffle(shuffled_nodes)
+            for node_id in shuffled_nodes:
+                neighbors = adj[node_id]
+                if not neighbors:
+                    continue
+                label_weights = {}
+                for neighbor_id, weight in neighbors:
+                    neigh_label = labels[neighbor_id]
+                    label_weights[neigh_label] = label_weights.get(neigh_label, 0) + weight
+                if label_weights:
+                    max_weight = max(label_weights.values())
+                    best_labels = [lbl for lbl, w in label_weights.items() if w == max_weight]
+                    if labels[node_id] in best_labels:
+                        labels[node_id] = labels[node_id]
+                    else:
+                        labels[node_id] = random.choice(best_labels)
+                        
+        # 3. Assign cluster IDs and labels
+        clusters = {}
+        for node_id, label in labels.items():
+            if label not in clusters:
+                clusters[label] = []
+            clusters[label].append(node_id)
+            
+        label_to_cluster_id = {}
+        cluster_labels = {}
+        for idx, (label, member_ids) in enumerate(clusters.items()):
+            label_to_cluster_id[label] = idx
+            best_node = max(member_ids, key=lambda nid: node_freqs.get(nid, 0))
+            cluster_labels[label] = best_node.upper()
+            
+        # 4. Update the nodes in brain_data
+        for node in nodes:
+            node_id = node["id"]
+            node_label = labels[node_id]
+            node["cluster_id"] = label_to_cluster_id[node_label]
+            node["cluster_label"] = cluster_labels[node_label]
+            
+        return brain_data
+
     def get_brain_map_data(self) -> Dict:
         """Generate nodes and links for the interactive brain map force graph."""
         nodes = []
@@ -330,7 +427,8 @@ class VocabularyManager:
             except Exception:
                 pass
 
-        return {"nodes": nodes, "links": links}
+        data = {"nodes": nodes, "links": links}
+        return self.cluster_brain_map(data)
     
     def get_vocabulary_context(self) -> Dict:
         """Get vocabulary context for AI prompts"""
@@ -398,3 +496,67 @@ class CorrectionTracker:
             "avg_change": round(avg_change, 1),
             "tends_to": "lengthen" if avg_change > 0 else "shorten"
         }
+
+
+class ClicheDetector:
+    """Detect overused hip-hop clichés and cross-reference avoided words."""
+
+    CLICHES = {
+        "money on my mind", "in the fast lane", "stacking paper", "started from the bottom",
+        "make it rain", "running the game", "putting in work", "live my life", "get the money",
+        "ride or die", "only god can judge me", "real talk", "day one", "cold as ice",
+        "spit fire", "streets are watching", "clock is ticking", "chasing dreams", "on my grind",
+        "hustle hard", "no pain no gain", "eye of the tiger", "straight out the", "living the dream",
+        "sky's the limit", "hustle and flow", "pay the price", "stack it to the ceiling",
+        "fake friends", "snakes in the grass", "haters gonna hate", "die rich", "born to win",
+        "kill the game", "talk is cheap", "money talks", "ball till i fall", "get rich or die trying",
+        "ride the wave", "top of the world", "king of the castle", "on the block", "trap house",
+        "living fast", "no cap", "drip too hard", "make it out", "started with a dream",
+        "behind bars", "all about the money", "count my blessings", "stay true", "blood sweat and tears",
+        "road to success", "keep it real", "built to last", "hard knock life", "ain't no love",
+        "another day another dollar", "back in the day", "checks on checks", "racks on racks",
+        "roll the dice", "take a chance", "watch your back", "trust no one", "out of bounds",
+        "make a name", "live and learn", "do or die", "game over", "play your cards",
+        "ace up my sleeve", "out of control", "under pressure", "against the odds", "prove them wrong",
+        "sky is the limit", "lose control", "living large", "city never sleeps", "shining bright",
+        "wake up call", "chasing paper", "cash is king", "paying dues", "breaking the rules",
+        "on the rise", "all in", "double down", "living legend", "out of my mind", "too hot to handle",
+        "staying alive", "on the edge", "skating on thin ice", "burning bridges", "turning the page",
+        "point of no return"
+    }
+
+    def detect(self, lines: List[str], avoided_words: Set[str] = None) -> List[Dict]:
+        """
+        Scan lines for overused clichés and words that should be avoided.
+        Returns list of detections with severity.
+        """
+        detections = []
+        avoided_words = avoided_words or set()
+
+        for idx, line in enumerate(lines):
+            line_clean = line.lower().strip()
+            if not line_clean:
+                continue
+
+            # 1. Check direct clichés
+            for cliche in self.CLICHES:
+                if cliche in line_clean:
+                    detections.append({
+                        "line_index": idx,
+                        "phrase": cliche,
+                        "severity": "high",
+                        "reason": "Overused hip-hop cliché"
+                    })
+
+            # 2. Check avoided words
+            words = re.findall(r"[a-z']+", line_clean)
+            for w in words:
+                if w in avoided_words:
+                    detections.append({
+                        "line_index": idx,
+                        "phrase": w,
+                        "severity": "medium",
+                        "reason": "Avoided word list"
+                    })
+
+        return detections

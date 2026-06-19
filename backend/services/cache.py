@@ -109,3 +109,84 @@ def invalidate_cache(pattern: str = "*"):
 async def close_redis():
     """No-op — kept for backward compatibility."""
     pass
+
+
+class PersistentCache:
+    """Persistent DB-backed cache using CacheEntry model."""
+    
+    @staticmethod
+    async def get(key: str) -> Optional[Any]:
+        from datetime import datetime, timezone
+        from sqlalchemy import select
+        from backend.database import async_session
+        from backend.models import CacheEntry
+
+        try:
+            async with async_session() as session:
+                query = select(CacheEntry).where(CacheEntry.key == key)
+                res = await session.execute(query)
+                entry = res.scalars().first()
+                if entry:
+                    now = datetime.now(timezone.utc)
+                    if entry.expires_at.tzinfo is None:
+                        now = now.replace(tzinfo=None)
+                    if now > entry.expires_at:
+                        await session.delete(entry)
+                        await session.commit()
+                        return None
+                    return json.loads(entry.value)
+        except Exception:
+            # Fallback to in-memory cache if DB is not available
+            return _cache_get(key)
+        return None
+
+    @staticmethod
+    async def set(key: str, value: Any, ttl: int):
+        from datetime import datetime, timezone, timedelta
+        from sqlalchemy import select
+        from backend.database import async_session
+        from backend.models import CacheEntry
+
+        serialized = json.dumps(value)
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(seconds=ttl)
+        
+        try:
+            async with async_session() as session:
+                if expires_at.tzinfo is not None:
+                    expires_at = expires_at.replace(tzinfo=None)
+                
+                query = select(CacheEntry).where(CacheEntry.key == key)
+                res = await session.execute(query)
+                entry = res.scalars().first()
+                if entry:
+                    entry.value = serialized
+                    entry.expires_at = expires_at
+                else:
+                    entry = CacheEntry(key=key, value=serialized, expires_at=expires_at)
+                    session.add(entry)
+                await session.commit()
+        except Exception:
+            # Fallback to in-memory cache if DB is not available
+            _cache_set(key, value, ttl)
+
+
+def persistent_cached(ttl: int = 3600, prefix: str = "vibelyrics"):
+    """
+    Decorator for caching function results in persistent CacheEntry table.
+    Falls back to in-memory caching if database fails.
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            key = f"{prefix}:{func.__name__}:{cache_key(*args, **kwargs)}"
+            cached_value = await PersistentCache.get(key)
+            if cached_value is not None:
+                return cached_value
+            result = await func(*args, **kwargs)
+            if result is not None:
+                await PersistentCache.set(key, result, ttl)
+            return result
+        return wrapper
+    return decorator
+

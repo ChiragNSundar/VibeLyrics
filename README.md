@@ -1,4 +1,4 @@
-# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)
+# VibeLyrics 🎤 ![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)
 
 **VibeLyrics** is a professional-grade hip-hop lyric writing assistant and analysis suite. It combines a distraction-free writing environment with advanced algorithmic analysis, AI styling, and full production tools to help artists craft complex rhymes and flows.
 

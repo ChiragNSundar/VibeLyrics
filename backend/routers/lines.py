@@ -389,3 +389,50 @@ async def restore_line_version(line_id: int, version_id: int, db: AsyncSession =
 
     return {"success": True, "line": line.to_dict()}
 
+
+@router.get("/lines/session/{session_id}/diff-summary", response_model=dict)
+async def get_session_diff_summary(session_id: int, db: AsyncSession = Depends(get_db)):
+    """Get version history / diff summary for all lines in a session"""
+    result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == session_id)
+        .order_by(LyricLine.line_number)
+    )
+    lines = result.scalars().all()
+    
+    summary = []
+    for line in lines:
+        v_result = await db.execute(
+            select(LineVersion)
+            .where(LineVersion.line_id == line.id)
+            .order_by(LineVersion.version_number)
+        )
+        versions = v_result.scalars().all()
+        
+        latest_content = line.final_version or line.user_input or ""
+        
+        if versions:
+            first_content = versions[0].content or ""
+            total_revisions = len(versions)
+        else:
+            first_content = line.user_input or ""
+            total_revisions = 1
+            
+        char_delta = len(latest_content) - len(first_content)
+        
+        summary.append({
+            "line_id": line.id,
+            "line_number": line.line_number,
+            "total_revisions": total_revisions,
+            "first_version": first_content,
+            "latest_version": latest_content,
+            "character_delta": char_delta
+        })
+        
+    return {
+        "success": True,
+        "session_id": session_id,
+        "summary": summary
+    }
+
+

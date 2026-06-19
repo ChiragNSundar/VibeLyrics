@@ -1,10 +1,13 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File, Form, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import json
 import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
+from ..database import get_db
 from ..services.scraper import LyricsScraper
 from ..services.learning import StyleExtractor, VocabularyManager
 from ..services.advanced_analysis import ComplexityScorer, PunchlineEngine, ImageryAnalyzer
@@ -359,3 +362,64 @@ async def upload_audio_for_analysis(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Audio analysis failed: {str(e)}")
+
+
+@router.get("/learning/cliche-check/{session_id}", response_model=dict)
+async def check_cliche(session_id: int, db: AsyncSession = Depends(get_db)):
+    """Check a session's lines for overused clichés and avoided words"""
+    from ..models import LyricLine
+    from ..services.learning import ClicheDetector
+    
+    result = await db.execute(
+        select(LyricLine)
+        .where(LyricLine.session_id == session_id)
+        .order_by(LyricLine.line_number)
+    )
+    lines = result.scalars().all()
+    if not lines:
+        return {"success": True, "detections": []}
+        
+    text_lines = [l.final_version or l.user_input for l in lines]
+    
+    avoided = _vocab_manager.avoided_words
+    detector = ClicheDetector()
+    detections = detector.detect(text_lines, avoided)
+    
+    return {
+        "success": True,
+        "detections": detections
+    }
+
+
+@router.get("/learning/staleness", response_model=dict)
+async def check_vocabulary_staleness(db: AsyncSession = Depends(get_db)):
+    """Check if the user's vocabulary growth is stagnating"""
+    from ..models import LyricSession, LyricLine
+    from ..services.vocabulary_analyzer import VocabularyAnalyzer
+    
+    sessions_result = await db.execute(select(LyricSession))
+    sessions = sessions_result.scalars().all()
+    
+    sessions_data = []
+    for s in sessions:
+        lines_result = await db.execute(
+            select(LyricLine)
+            .where(LyricLine.session_id == s.id)
+            .order_by(LyricLine.line_number)
+        )
+        lines = [l.final_version or l.user_input for l in lines_result.scalars().all()]
+        sessions_data.append({
+            "session_id": s.id,
+            "lines": lines,
+            "created_at": s.created_at.isoformat() if s.created_at else ""
+        })
+        
+    analyzer = VocabularyAnalyzer()
+    evolution = analyzer.get_vocabulary_evolution(sessions_data)
+    staleness_report = analyzer.check_staleness(evolution)
+    
+    return {
+        "success": True,
+        "staleness": staleness_report
+    }
+

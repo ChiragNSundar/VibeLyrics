@@ -7,6 +7,7 @@ This `.md` file provides direct system instructions, rigid coding conventions, a
 - **Frontend Design:** Tailwind CSS 4, Framer Motion 12, Zustand 5.
 - **Backend Core:** FastAPI (Python 3.11+), Pydantic schemas.
 - **Backend Database:** SQLAlchemy 2.0 (Async), AIOSQLite (`vibelyrics.db`).
+- **Backend Cache:** Persistent DB Cache (`CacheEntry` model) with In-Memory TTL fallback.
 - **Environment:** Unified project running locally.
 
 ## 🚀 2. Local Environment & Execution

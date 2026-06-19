@@ -7,6 +7,7 @@ Advanced Analysis Services
 """
 from typing import List, Dict, Optional
 import re
+from .syllable_utils import count_syllables as _shared_count_syllables
 
 
 class PunchlineEngine:
@@ -401,30 +402,50 @@ class ComplexityScorer:
         }
     
     def _count_syllables(self, word: str) -> int:
-        """Count syllables in a word"""
-        vowels = 'aeiouy'
-        count = 0
-        prev_vowel = False
-        
-        for char in word.lower():
-            is_vowel = char in vowels
-            if is_vowel and not prev_vowel:
-                count += 1
-            prev_vowel = is_vowel
-        
-        return max(1, count)
+        """Count syllables in a word (delegates to shared utility)"""
+        return _shared_count_syllables(word)
 
 
 class ImageryAnalyzer:
     """Analyze imagery density in lyrics"""
     
-    # Imagery categories
+    # Expanded Imagery categories (200+ words total)
     IMAGERY_WORDS = {
-        "visual": ["see", "look", "watch", "shine", "bright", "dark", "color", "gold", "silver"],
-        "auditory": ["hear", "sound", "loud", "quiet", "ring", "beat", "bass"],
-        "tactile": ["feel", "touch", "cold", "hot", "smooth", "rough"],
-        "olfactory": ["smell", "scent", "fresh", "stink"],
-        "gustatory": ["taste", "sweet", "bitter", "sour"],
+        "visual": [
+            "see", "look", "watch", "shine", "bright", "dark", "color", "gold", "silver", "neon",
+            "shadow", "glow", "gleam", "sparkle", "glisten", "flash", "glare", "view", "observe", "stare",
+            "glimpse", "sight", "light", "shade", "dim", "crimson", "scarlet", "azure", "emerald", "violet",
+            "blind", "clear", "cloudy", "hazy", "pale", "radiant", "luminous", "brilliant", "crystal", "mirage",
+            "horizon", "fade", "flare", "beam"
+        ],
+        "auditory": [
+            "hear", "sound", "loud", "quiet", "ring", "beat", "bass", "echo", "noise", "silence",
+            "shout", "whisper", "scream", "cry", "sing", "clap", "snap", "crackle", "rumble", "thunder",
+            "boom", "melody", "tune", "rhythm", "vocal", "screech", "howl", "growl", "hiss", "buzz",
+            "hum", "whistle", "clatter", "crash", "bang", "thud", "rattle", "chime", "harmony", "pitch",
+            "deafening", "mute", "muffle"
+        ],
+        "tactile": [
+            "feel", "touch", "cold", "hot", "smooth", "rough", "sharp", "soft", "hard", "warm",
+            "chill", "freeze", "burn", "wet", "dry", "slippery", "sticky", "greasy", "prickly", "itchy",
+            "scratchy", "fuzzy", "hairy", "slimy", "damp", "moist", "heavy", "light", "solid", "liquid",
+            "gas", "numb", "sore", "pain", "ache", "stiff", "tender", "silk", "velvet", "sandpaper",
+            "icy", "lukewarm", "scalding"
+        ],
+        "olfactory": [
+            "smell", "scent", "fresh", "stink", "odor", "aroma", "perfume", "fragrance", "musk", "reek",
+            "fume", "stench", "sniff", "whiff", "inhale", "breathe", "damp", "musty", "moldy", "smoky",
+            "stale", "rotten", "decay", "sweet", "spicy", "minty", "pine", "citrus", "floral", "herbal",
+            "earthy", "pungent", "sharp", "sour", "acid", "rancid", "putrid", "burnt", "chemical", "gasoline",
+            "breeze"
+        ],
+        "gustatory": [
+            "taste", "sweet", "bitter", "sour", "salty", "spicy", "savory", "delicious", "yummy", "tasty",
+            "flavor", "bite", "chew", "swallow", "lick", "suck", "sip", "drink", "eat", "food",
+            "beverage", "meal", "hot", "cold", "fresh", "stale", "burnt", "raw", "cooked", "ripe",
+            "rotten", "juicy", "dry", "creamy", "crispy", "crunchy", "greasy", "tangy", "acidic", "peppery",
+            "minty", "zesty", "honey", "sugar"
+        ],
     }
     
     def analyze_imagery(self, lines: List[str]) -> Dict:
@@ -449,3 +470,44 @@ class ImageryAnalyzer:
             "by_category": counts,
             "dominant_sense": max(counts, key=counts.get) if total > 0 else None
         }
+
+    def get_balance_radar(self, lines: List[str]) -> Dict:
+        """
+        Calculate imagery distribution radar data:
+        Normalized 0-100 scores per sense, balance score, neglected/overused senses.
+        """
+        analysis = self.analyze_imagery(lines)
+        total = analysis["total_imagery_words"]
+        counts = analysis["by_category"]
+
+        # Calculate relative percentages (0-100) per sense
+        scores = {}
+        for cat, count in counts.items():
+            scores[cat] = round((count / total * 100) if total > 0 else 0, 1)
+
+        # Calculate balance score (variance from perfect 20% even split)
+        # Max variance occurs when one sense is 100% and others are 0%:
+        # Variance = ((100-20)^2 + 4*(0-20)^2) / 5 = 1600.
+        if total > 0:
+            variance = sum((p - 20.0) ** 2 for p in scores.values()) / 5
+            balance_score = round(100.0 - (variance / 1600.0) * 100.0)
+        else:
+            balance_score = 0
+
+        # Identify overused and neglected senses
+        neglected = []
+        overused = []
+        for cat, pct in scores.items():
+            if total == 0 or pct < 10.0:
+                neglected.append(cat)
+            elif pct > 35.0:
+                overused.append(cat)
+
+        return {
+            "scores": scores,
+            "balance_score": balance_score,
+            "neglected_senses": neglected,
+            "overused_senses": overused,
+            "total_imagery_words": total
+        }
+

@@ -7,6 +7,7 @@ Vocabulary Analyzer Service
 import re
 from typing import List, Dict
 from datetime import datetime
+from .syllable_utils import count_syllables as _shared_count_syllables
 
 
 class VocabularyAnalyzer:
@@ -160,26 +161,8 @@ class VocabularyAnalyzer:
         return [w for w in words if len(w) > 1]
     
     def _count_syllables(self, word: str) -> int:
-        """Count syllables in a word"""
-        word = word.lower().strip()
-        if not word:
-            return 1
-        
-        vowels = 'aeiouy'
-        count = 0
-        prev_vowel = False
-        
-        for char in word:
-            is_vowel = char in vowels
-            if is_vowel and not prev_vowel:
-                count += 1
-            prev_vowel = is_vowel
-        
-        # Adjust for silent 'e'
-        if word.endswith('e') and count > 1:
-            count -= 1
-        
-        return max(1, count)
+        """Count syllables in a word (delegates to shared utility)"""
+        return _shared_count_syllables(word)
     
     def _count_sentences(self, text: str) -> int:
         """Count sentences (or lines) in lyrics — each line is treated as a sentence"""
@@ -205,3 +188,48 @@ class VocabularyAnalyzer:
             "sentences": 0,
             "date": date
         }
+
+    def check_staleness(
+        self, evolution_data: List[Dict], threshold_sessions: int = 3, threshold_new_words: int = 5
+    ) -> Dict:
+        """
+        Check if user's vocabulary growth has plateaued in recent sessions.
+        Returns stale state, consecutive sessions since last growth, and suggestion.
+        """
+        if len(evolution_data) < threshold_sessions:
+            return {
+                "is_stale": False,
+                "sessions_since_growth": 0,
+                "suggestion": "Keep writing to analyze vocabulary evolution."
+            }
+
+        # Calculate consecutive sessions with low/no growth
+        sessions_since_growth = 0
+        for session in reversed(evolution_data):
+            if session.get("new_words_introduced", 0) < threshold_new_words:
+                sessions_since_growth += 1
+            else:
+                break
+
+        # Check if the sum of new words in the last N sessions is less than threshold
+        recent_sessions = evolution_data[-threshold_sessions:]
+        recent_new_words = sum(s.get("new_words_introduced", 0) for s in recent_sessions)
+        is_stale = recent_new_words < threshold_new_words
+
+        if is_stale:
+            suggestion = (
+                "Your vocabulary growth has plateaued. Try introducing some new words "
+                "or slang from your seeding library to keep your style fresh."
+            )
+        else:
+            suggestion = (
+                "Your vocabulary is growing healthy! Keep experimenting with new rhyme "
+                "schemes and diverse word choices."
+            )
+
+        return {
+            "is_stale": is_stale,
+            "sessions_since_growth": sessions_since_growth,
+            "suggestion": suggestion
+        }
+
