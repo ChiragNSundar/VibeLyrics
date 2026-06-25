@@ -100,3 +100,74 @@ class TestDoppelreimEngine:
             assert results[0]["syllable_count"] == 3
             
         await engine.dispose()
+
+    @pytest.mark.asyncio
+    async def test_combinatorial_search_three_words(self):
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from backend.database import Base
+        
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+        async_session = async_sessionmaker(engine, expire_on_commit=False)
+        
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            
+        async with async_session() as session:
+            detector = RhymeDetector()
+            
+            # Pre-populate database with words for a 3-word combo
+            # "EH-EH-AH-OW" -> "next" (EH) + "level" (EH-AH) + "go" (OW)
+            word1 = MultisyllabicWord(word="next", language="en", syllable_count=1, vowel_sequence="EH", exact_rhyme_key="EH-K-S-T", upvotes=5)
+            word2 = MultisyllabicWord(word="level", language="en", syllable_count=2, vowel_sequence="EH-AH", exact_rhyme_key="EH-V-AH-L", upvotes=5)
+            word3 = MultisyllabicWord(word="go", language="en", syllable_count=1, vowel_sequence="OW", exact_rhyme_key="OW", upvotes=5)
+            session.add_all([word1, word2, word3])
+            await session.commit()
+            
+            results = await detector.find_combinatorial_rhymes(session, "EH-EH-AH-OW", "en", allow_slang=True)
+            assert len(results) > 0
+            assert results[0]["word"] == "next level go"
+            assert results[0]["syllable_count"] == 4
+            
+        await engine.dispose()
+
+    @pytest.mark.asyncio
+    async def test_cross_language_syllable_filtering(self):
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from backend.database import Base
+        
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+        async_session = async_sessionmaker(engine, expire_on_commit=False)
+        
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            
+        async with async_session() as session:
+            detector = RhymeDetector()
+            
+            # Extract source IPA dynamically to be environment-agnostic (CMUDict vs fallback)
+            src_vowels, _, src_syls = detector.extract_vowels("fire", "en")
+            src_ipa = detector._normalize_to_ipa_key(src_vowels, "en")
+            
+            src_parts = src_ipa.split("-")
+            near_ipa = "-".join(src_parts[:-1] + ["near"]) if src_parts else "near"
+            
+            # Target words:
+            # 1. Hindi "shaayar" (syllable_count same, exact matching ipa_key) -> exact match
+            # 2. Hindi "nearmatch" (syllable_count same, near matching ipa_key) -> near match (distance 1)
+            # 3. Hindi "bahut-bada" (syllable_count + 2, different ipa_key) -> out of syllable range (+/-1)
+            
+            w1 = MultisyllabicWord(word="shaayar", language="hi", syllable_count=src_syls, vowel_sequence="i-e", exact_rhyme_key="ar", upvotes=5, ipa_key=src_ipa)
+            w2 = MultisyllabicWord(word="nearmatch", language="hi", syllable_count=src_syls, vowel_sequence="i-a", exact_rhyme_key="ch", upvotes=5, ipa_key=near_ipa)
+            w3 = MultisyllabicWord(word="bahut-bada", language="hi", syllable_count=src_syls + 2, vowel_sequence="a-u-a-aa", exact_rhyme_key="aa", upvotes=5, ipa_key="ʌ-ʊ-ʌ-aː")
+            session.add_all([w1, w2, w3])
+            await session.commit()
+            
+            results = await detector.find_cross_language_rhymes(session, "fire", source_lang="en", target_lang="hi")
+            
+            words = [r["word"] for r in results]
+            assert "shaayar" in words
+            assert "nearmatch" in words
+            # Should NOT match bahut-bada (too many syllables)
+            assert "bahut-bada" not in words
+
+        await engine.dispose()

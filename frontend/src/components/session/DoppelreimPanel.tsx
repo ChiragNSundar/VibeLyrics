@@ -34,6 +34,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
     const [flowAligned, setFlowAligned] = useState(false);
     const [targetSyllables, setTargetSyllables] = useState<number | undefined>(undefined);
     const [targetStress, setTargetStress] = useState<string>('');
+    const [enableSemanticReranking, setEnableSemanticReranking] = useState(false);
 
     const { activeRhymeWord, setActiveRhymeWord, lines, selectedLineId } = useSessionStore();
 
@@ -94,6 +95,18 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
         }
     }, [flowAligned, selectedLineId, lines]);
 
+    const getContextText = useCallback(() => {
+        if (!selectedLineId) return '';
+        const activeIndex = lines.findIndex(l => l.id === selectedLineId);
+        if (activeIndex === -1) return '';
+        const contextLines = [];
+        if (activeIndex > 0) {
+            contextLines.push(lines[activeIndex - 1].final_version || lines[activeIndex - 1].user_input);
+        }
+        contextLines.push(lines[activeIndex].final_version || lines[activeIndex].user_input);
+        return contextLines.filter(Boolean).join('\n');
+    }, [selectedLineId, lines]);
+
     const buildLookupPayload = useCallback(() => {
         const payload: any = {
             word: searchTerm.trim(),
@@ -101,7 +114,11 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
             mode,
             allow_slang: allowSlang,
             max_results: 30,
+            enable_semantic_reranking: enableSemanticReranking,
         };
+        if (enableSemanticReranking) {
+            payload.context_text = getContextText();
+        }
         if (flowAligned && targetSyllables) {
             payload.target_syllables = targetSyllables;
         }
@@ -109,7 +126,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
             payload.target_stress = targetStress;
         }
         return payload;
-    }, [searchTerm, language, mode, allowSlang, flowAligned, targetSyllables, targetStress]);
+    }, [searchTerm, language, mode, allowSlang, flowAligned, targetSyllables, targetStress, enableSemanticReranking, getContextText]);
 
     const handleSearch = useCallback(async () => {
         const cleanTerm = searchTerm.trim();
@@ -154,7 +171,11 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                         mode,
                         allow_slang: allowSlang,
                         max_results: 30,
+                        enable_semantic_reranking: enableSemanticReranking,
                     };
+                    if (enableSemanticReranking) {
+                        payload.context_text = getContextText();
+                    }
                     if (flowAligned && targetSyllables) {
                         payload.target_syllables = targetSyllables;
                     }
@@ -178,7 +199,7 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
             triggerSearch();
             setActiveRhymeWord(null);
         }
-    }, [activeRhymeWord, language, mode, allowSlang, setActiveRhymeWord, flowAligned, targetSyllables, targetStress]);
+    }, [activeRhymeWord, language, mode, allowSlang, setActiveRhymeWord, flowAligned, targetSyllables, targetStress, enableSemanticReranking, getContextText]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSearch();
@@ -389,6 +410,24 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                                             <span className="slider round"></span>
                                         </label>
                                     </div>
+
+                                    {/* Semantic Reranking Toggle */}
+                                    <div className="filter-row semantic-reranking-row">
+                                        <div className="filter-label-group">
+                                            <span className="filter-label">🧠 Semantic Reranking</span>
+                                            <span className="filter-hint">
+                                                {enableSemanticReranking ? 'Rerank suggestions with LLM context' : 'Rank phonetically only'}
+                                            </span>
+                                        </div>
+                                        <label className="switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={enableSemanticReranking}
+                                                onChange={(e) => setEnableSemanticReranking(e.target.checked)}
+                                            />
+                                            <span className="slider round"></span>
+                                        </label>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
@@ -489,6 +528,11 @@ export const DoppelreimPanel: React.FC<DoppelreimPanelProps> = ({
                                                         {flowAligned && item.rhythmic_score !== undefined && (
                                                             <span className={`rhythm-score-badge ${item.rhythmic_score >= 0 ? 'good' : 'weak'}`}>
                                                                 ♪ {item.rhythmic_score >= 0 ? '+' : ''}{item.rhythmic_score.toFixed(1)}
+                                                            </span>
+                                                        )}
+                                                        {enableSemanticReranking && (item as any).semantic_score !== undefined && (
+                                                            <span className="rhythm-score-badge good">
+                                                                🧠 {(item as any).semantic_score.toFixed(1)}
                                                             </span>
                                                         )}
                                                     </div>

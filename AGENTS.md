@@ -73,7 +73,7 @@ As an AI, you must abide by these rules without exception:
 3. **Absolute Imports over Relative:** In Python, use `from .database import ...` or `from ..services import ...`. In Vite/React, refer to the path clearly.
 4. **No Skeleton Code:** Write the FULL code for a file structure. Avoid dumping `// TODO: Implement logic here` inside classes/functions.
 5. **Linting Awareness (Fake Imports):** The Pyre2 linter may struggle to map global system Python packages dynamically. You will see fake lint errors like `Could not find import fastapi...`. **Ignore these.** Do not inject `sys.path.append()` hacks to fix IDE ghosts.
-6. **Database Schema Changes:** We rely on `Base.metadata.create_all()` on startup and do not use Alembic. If you add a new column or table, you must inform the user to either run a manual SQL `ALTER TABLE` or delete `data/vibelyrics.db` and restart to recreate the schema.
+6. **Database Schema Changes:** We rely on `Base.metadata.create_all()` on startup and do not use Alembic. For incremental migrations, we implement checks on startup in `backend/main.py` using raw connection-level SQL statements (such as checking column existence and running `ALTER TABLE`), along with async background tasks to backfill values. If a completely breaking schema modification is made, inform the user to either run a manual SQL query or delete `data/vibelyrics.db` and restart to recreate the schema.
 7. **Quality Assurance:** If building new core features, remember we have `backend/tests/` (Pytest) and frontend tests (Vitest/Playwright). Ensure your code is testable and robust.
 
 ---

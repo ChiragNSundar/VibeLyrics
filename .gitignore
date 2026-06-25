@@ -64,3 +64,11 @@ backend_*.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Graphify temporary and cache files
+graphify-out/.graphify_*
+!graphify-out/.graphify_labels.json
+!graphify-out/.graphify_root
+!graphify-out/.graphify_python
+graphify-out/cost.json
+graphify-out/cache/

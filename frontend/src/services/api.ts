@@ -117,6 +117,8 @@ export interface DoppelreimLookupData {
     max_results?: number;
     target_syllables?: number;
     target_stress?: string;
+    enable_semantic_reranking?: boolean;
+    context_text?: string;
 }
 
 export interface DoppelreimResult {

@@ -99,6 +99,8 @@ class DoppelreimLookup(BaseModel):
     max_results: int = 30
     target_syllables: Optional[int] = None
     target_stress: Optional[str] = None
+    enable_semantic_reranking: bool = False
+    context_text: Optional[str] = None
 
 
 class RhymeVoteSchema(BaseModel):
@@ -112,7 +114,9 @@ async def lookup_doppelreim(data: DoppelreimLookup, db: AsyncSession = Depends(g
     """Advanced multisyllabic lookup (Classic, Slant, Multi-word)"""
     results = await _rhyme_detector.find_doppelreim_rhymes(
         db, data.word, data.language, data.mode, data.allow_slang, data.max_results,
-        data.target_syllables, data.target_stress
+        data.target_syllables, data.target_stress,
+        enable_semantic_reranking=data.enable_semantic_reranking,
+        context_text=data.context_text
     )
     return {
         "success": True,
@@ -145,8 +149,12 @@ async def vote_rhyme(data: RhymeVoteSchema, db: AsyncSession = Depends(get_db)):
         db.add(fb)
         
     diff = 1 if data.is_valid_rhyme else -1
+    target_words = [data.target_word.lower()]
+    if " " in data.target_word:
+        target_words.extend([w.strip().lower() for w in data.target_word.split(" ") if w.strip()])
+        
     up_query = select(MultisyllabicWord).where(
-        func.lower(MultisyllabicWord.word) == data.target_word.lower()
+        func.lower(MultisyllabicWord.word).in_(target_words)
     )
     res_w = await db.execute(up_query)
     words = res_w.scalars().all()
@@ -190,11 +198,14 @@ async def register_word_phonetics(data: PhoneticRegister, db: AsyncSession = Dep
     res = await db.execute(query)
     word_entry = res.scalar_one_or_none()
     
+    ipa_key = _rhyme_detector._normalize_to_ipa_key(data.vowel_sequence.strip(), data.language)
+    
     if word_entry:
         word_entry.vowel_sequence = data.vowel_sequence.strip()
         word_entry.exact_rhyme_key = data.exact_key.strip()
         word_entry.syllable_count = data.syllable_count
         word_entry.is_slang = data.is_slang
+        word_entry.ipa_key = ipa_key
     else:
         word_entry = MultisyllabicWord(
             word=data.word.strip(),
@@ -203,7 +214,8 @@ async def register_word_phonetics(data: PhoneticRegister, db: AsyncSession = Dep
             exact_rhyme_key=data.exact_key.strip(),
             syllable_count=data.syllable_count,
             is_slang=data.is_slang,
-            upvotes=1
+            upvotes=1,
+            ipa_key=ipa_key
         )
         db.add(word_entry)
         

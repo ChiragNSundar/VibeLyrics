@@ -2,6 +2,23 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.6.0] - 2026-06-25
+
+### 🎙️ Doppelreim Engine Optimization & Contextual Reranking
+
+#### ⚡ Batched & 3-Word Combinatorial Search
+- **Batched Database Queries** — Replaced the $N+1$ query loop in combinatorial lookups with a single, highly efficient SQL `IN` query for all sequence segments.
+- **3-Word Combination Depth** — Extended phonetic matching to support 3-word combinations for long vowel sequences ($\ge 4$ syllables), capped at the top 10 candidates per segment.
+
+#### 🌐 Syllable-Range Filtered Cross-Language Lookup
+- **Syllable-Range Constraints** — Upgraded cross-language phonetic search to restrict database queries to words within a $\pm 1$ syllable range of the source word.
+- **IPA-Key Database Indexes** — Added a precomputed, indexed `ipa_key` column to `MultisyllabicWord` with startup auto-migration support, resolving IPA keys on-the-fly and eliminating dynamic string normalizations.
+
+#### 🧠 Optional Contextual Semantic Reranking
+- **LLM Contextual Reranking** — Integrated Gemini-based semantic relevance grading (0.0 to 10.0) that compares doppelreim suggestions to the user's active lyric context.
+- **UI Settings Panel & Badges** — Added an interactive toggle to the Doppelreim settings drawer and a brain score badge (🧠 `score`) next to reranked results.
+- **Feedback Upvote Splitting** — Extended the upvote feedback system to split multi-word suggestions and credit/debit voting weight to each constituent word in the database.
+
 ## [3.5.0] - 2026-06-25
 
 ### 🧠 Permanent Learning State Retention & Scraper Isolation

@@ -356,7 +356,8 @@ class RhymeDetector:
                 vowel_sequence=vowel_seq,
                 exact_rhyme_key=exact_key,
                 is_slang=False,
-                upvotes=1
+                upvotes=1,
+                ipa_key=self._normalize_to_ipa_key(vowel_seq, language)
             )
             session.add(new_word)
             try:
@@ -378,41 +379,60 @@ class RhymeDetector:
         if n < 2:
             return []
             
+        # Collect all unique vowel sequence segments needed for 2-word and 3-word combinations
+        needed_segments = set()
+        
+        # 2-word splits: split at index k, where 1 <= k < n
+        for k in range(1, n):
+            needed_segments.add("-".join(vparts[:k]))
+            needed_segments.add("-".join(vparts[k:]))
+            
+        # 3-word splits: only if n >= 4. Split at indices i and j, where 1 <= i < j < n
+        if n >= 4:
+            for i in range(1, n):
+                for j in range(i + 1, n):
+                    needed_segments.add("-".join(vparts[:i]))
+                    needed_segments.add("-".join(vparts[i:j]))
+                    needed_segments.add("-".join(vparts[j:]))
+                    
+        # Single query to fetch all candidates for the segments in one database batch call
+        query = select(MultisyllabicWord).where(
+            MultisyllabicWord.language == language,
+            MultisyllabicWord.vowel_sequence.in_(needed_segments)
+        )
+        if not allow_slang:
+            query = query.where(MultisyllabicWord.is_slang == False)
+            
+        # Execute query
+        res = await session.execute(query)
+        words = res.scalars().all()
+        
+        # Group candidates by vowel sequence and cap to the top 10 by upvotes descending
+        candidates_by_seq = {}
+        for w in words:
+            candidates_by_seq.setdefault(w.vowel_sequence, []).append(w)
+            
+        for seq in candidates_by_seq:
+            candidates_by_seq[seq].sort(key=lambda x: x.upvotes, reverse=True)
+            candidates_by_seq[seq] = candidates_by_seq[seq][:10]
+            
         results = []
         seen = set()
         
-        # Split target vowel sequence into two back-to-back word templates
+        # Build 2-word combinations
         for k in range(1, n):
             part_a = "-".join(vparts[:k])
             part_b = "-".join(vparts[k:])
             
-            # Match part A
-            query_a = select(MultisyllabicWord).where(
-                MultisyllabicWord.language == language,
-                MultisyllabicWord.vowel_sequence == part_a
-            )
-            if not allow_slang:
-                query_a = query_a.where(MultisyllabicWord.is_slang == False)
-            query_a = query_a.order_by(MultisyllabicWord.upvotes.desc()).limit(15)
-            res_a = await session.execute(query_a)
-            words_a = res_a.scalars().all()
-            
-            # Match part B
-            query_b = select(MultisyllabicWord).where(
-                MultisyllabicWord.language == language,
-                MultisyllabicWord.vowel_sequence == part_b
-            )
-            if not allow_slang:
-                query_b = query_b.where(MultisyllabicWord.is_slang == False)
-            query_b = query_b.order_by(MultisyllabicWord.upvotes.desc()).limit(15)
-            res_b = await session.execute(query_b)
-            words_b = res_b.scalars().all()
+            words_a = candidates_by_seq.get(part_a, [])
+            words_b = candidates_by_seq.get(part_b, [])
             
             for wa in words_a:
                 for wb in words_b:
                     combo = f"{wa.word} {wb.word}"
-                    if combo.lower() not in seen:
-                        seen.add(combo.lower())
+                    combo_lower = combo.lower()
+                    if combo_lower not in seen:
+                        seen.add(combo_lower)
                         results.append({
                             "word": combo,
                             "syllable_count": wa.syllable_count + wb.syllable_count,
@@ -421,6 +441,33 @@ class RhymeDetector:
                             "is_slang": wa.is_slang or wb.is_slang
                         })
                         
+        # Build 3-word combinations (only if n >= 4)
+        if n >= 4:
+            for i in range(1, n):
+                for j in range(i + 1, n):
+                    part_a = "-".join(vparts[:i])
+                    part_b = "-".join(vparts[i:j])
+                    part_c = "-".join(vparts[j:])
+                    
+                    words_a = candidates_by_seq.get(part_a, [])
+                    words_b = candidates_by_seq.get(part_b, [])
+                    words_c = candidates_by_seq.get(part_c, [])
+                    
+                    for wa in words_a:
+                        for wb in words_b:
+                            for wc in words_c:
+                                combo = f"{wa.word} {wb.word} {wc.word}"
+                                combo_lower = combo.lower()
+                                if combo_lower not in seen:
+                                    seen.add(combo_lower)
+                                    results.append({
+                                        "word": combo,
+                                        "syllable_count": wa.syllable_count + wb.syllable_count + wc.syllable_count,
+                                        "vowel_sequence": f"{wa.vowel_sequence}-{wb.vowel_sequence}-{wc.vowel_sequence}",
+                                        "upvotes": wa.upvotes + wb.upvotes + wc.upvotes,
+                                        "is_slang": wa.is_slang or wb.is_slang or wc.is_slang
+                                    })
+                                    
         results.sort(key=lambda x: x["upvotes"], reverse=True)
         return results[:max_results]
 
@@ -472,14 +519,15 @@ class RhymeDetector:
     async def find_doppelreim_rhymes(
         self, session: AsyncSession, word: str, language: str = 'en', 
         mode: str = 'vowel', allow_slang: bool = True, max_results: int = 30,
-        target_syllables: Optional[int] = None, target_stress: Optional[str] = None
+        target_syllables: Optional[int] = None, target_stress: Optional[str] = None,
+        enable_semantic_reranking: bool = False, context_text: Optional[str] = None
     ) -> List[dict]:
         """Main entrypoint for advanced multisyllabic lookup with rhythmic ranking options"""
         word = word.strip()
         if not word:
             return []
             
-        cache_key = (word.lower(), language, mode, allow_slang, max_results, target_syllables, target_stress)
+        cache_key = (word.lower(), language, mode, allow_slang, max_results, target_syllables, target_stress, enable_semantic_reranking, context_text)
         if cache_key in self._cache:
             self._cache.move_to_end(cache_key)
             return self._cache[cache_key]
@@ -507,67 +555,101 @@ class RhymeDetector:
             return score
 
         if mode == 'multi':
-            res = await self.find_combinatorial_rhymes(session, vowel_seq, language, allow_slang, max_results)
+            results = await self.find_combinatorial_rhymes(session, vowel_seq, language, allow_slang, max_results)
             # Add stress pattern to combinatorial results
-            for r in res:
-                r["stress_pattern"] = self.get_detailed_stress_layout(r["word"], language)
-                if target_syllables is not None or target_stress:
-                    r["rhythmic_score"] = calculate_rhythmic_score(r["syllable_count"], r["stress_pattern"])
-            
-            if target_syllables is not None or target_stress:
-                res.sort(key=lambda x: (x.get("rhythmic_score", 0.0), x["upvotes"]), reverse=True)
-                
-            final_res = res[:max_results]
-            self._cache[cache_key] = final_res
-            if len(self._cache) > self._cache_max_size:
-                self._cache.popitem(last=False)
-            return final_res
-            
-        query = select(MultisyllabicWord).where(MultisyllabicWord.language == language)
-        
-        if mode == 'classic':
-            query = query.where(MultisyllabicWord.exact_rhyme_key == exact_key)
-        else:  # vowel / slant / inspiration
-            query = query.where(MultisyllabicWord.vowel_sequence == vowel_seq)
-            
-        if not allow_slang:
-            query = query.where(MultisyllabicWord.is_slang == False)
-            
-        query = query.order_by(MultisyllabicWord.upvotes.desc()).limit(max_results)
-        res = await session.execute(query)
-        words = res.scalars().all()
-        
-        results = []
-        for w in words:
-            if w.word.lower() != word.lower():
-                cand_stress = self.get_detailed_stress_layout(w.word, language)
-                results.append({
-                    "word": w.word,
-                    "syllable_count": w.syllable_count,
-                    "vowel_sequence": w.vowel_sequence,
-                    "exact_key": w.exact_rhyme_key,
-                    "upvotes": w.upvotes,
-                    "is_slang": w.is_slang,
-                    "stress_pattern": cand_stress
-                })
-                
-        # Classic fallback to Vowel/Slant when perfect matches are sparse
-        if mode == 'classic' and len(results) < 5:
-            vowel_results = await self.find_doppelreim_rhymes(
-                session, word, language, 'vowel', allow_slang, max_results, target_syllables, target_stress
-            )
-            existing = {r["word"].lower() for r in results}
-            for r in vowel_results:
-                if r["word"].lower() not in existing:
-                    results.append(r)
-                    
-        # Apply rhythmic score and re-sort if targets are specified
-        if target_syllables is not None or target_stress:
             for r in results:
-                if "stress_pattern" not in r:
-                    r["stress_pattern"] = self.get_detailed_stress_layout(r["word"], language)
+                r["stress_pattern"] = self.get_detailed_stress_layout(r["word"], language)
+        else:
+            query = select(MultisyllabicWord).where(MultisyllabicWord.language == language)
+            
+            if mode == 'classic':
+                query = query.where(MultisyllabicWord.exact_rhyme_key == exact_key)
+            else:  # vowel / slant / inspiration
+                query = query.where(MultisyllabicWord.vowel_sequence == vowel_seq)
+                
+            if not allow_slang:
+                query = query.where(MultisyllabicWord.is_slang == False)
+                
+            query = query.order_by(MultisyllabicWord.upvotes.desc()).limit(max_results)
+            res = await session.execute(query)
+            words = res.scalars().all()
+            
+            results = []
+            for w in words:
+                if w.word.lower() != word.lower():
+                    cand_stress = self.get_detailed_stress_layout(w.word, language)
+                    results.append({
+                        "word": w.word,
+                        "syllable_count": w.syllable_count,
+                        "vowel_sequence": w.vowel_sequence,
+                        "exact_key": w.exact_rhyme_key,
+                        "upvotes": w.upvotes,
+                        "is_slang": w.is_slang,
+                        "stress_pattern": cand_stress
+                    })
+                    
+            # Classic fallback to Vowel/Slant when perfect matches are sparse
+            if mode == 'classic' and len(results) < 5:
+                vowel_results = await self.find_doppelreim_rhymes(
+                    session, word, language, 'vowel', allow_slang, max_results, target_syllables, target_stress
+                )
+                existing = {r["word"].lower() for r in results}
+                for r in vowel_results:
+                    if r["word"].lower() not in existing:
+                        results.append(r)
+                        
+        # Apply rhythmic score to all candidates
+        for r in results:
+            if "rhythmic_score" not in r:
                 r["rhythmic_score"] = calculate_rhythmic_score(r["syllable_count"], r["stress_pattern"])
+
+        # Apply semantic reranking if requested
+        if enable_semantic_reranking and results:
+            cands = [r["word"] for r in results[:max_results]]
+            if cands:
+                try:
+                    from .ai_provider import get_ai_provider
+                    import json
+                    ai_provider = get_ai_provider()
+                    if ai_provider.is_available():
+                        prompt = f"""You are Vibe, an expert lyricist and ghostwriter. Rerank these candidate words based on how well they fit the context and tone of the lyric line(s) below.
+
+Lyric Context:
+"{context_text or ''}"
+
+Candidate Words:
+{", ".join(cands)}
+
+For each candidate word, assign a semantic relevance score between 0.0 and 10.0 (where 10.0 means perfect thematic fit, creative/unexpected slang, or poetic style, and 0.0 means completely out of place or generic filler).
+
+Return ONLY a raw JSON array of objects, where each object has "word" (string) and "semantic_score" (float). Do NOT wrap in markdown formatting, and do NOT include any extra text.
+Format:
+[
+  {{"word": "example", "semantic_score": 8.5}}
+]"""
+                        raw_res = await ai_provider.answer_question(prompt, None)
+                        raw_res = raw_res.strip().strip("`").strip()
+                        if raw_res.startswith("json"):
+                            raw_res = raw_res[4:].strip()
+                        score_list = json.loads(raw_res)
+                        
+                        score_map = {}
+                        for item in score_list:
+                            if isinstance(item, dict) and "word" in item and "semantic_score" in item:
+                                score_map[item["word"].lower()] = float(item["semantic_score"])
+                                
+                        for r in results:
+                            r["semantic_score"] = score_map.get(r["word"].lower(), 5.0)
+                except Exception as e:
+                    print(f"[Doppelreim Engine] Semantic reranking failed: {e}")
+
+        # Sort results
+        if enable_semantic_reranking:
+            results.sort(key=lambda x: (x.get("semantic_score", 5.0), x.get("rhythmic_score", 0.0), x["upvotes"]), reverse=True)
+        elif target_syllables is not None or target_stress:
             results.sort(key=lambda x: (x.get("rhythmic_score", 0.0), x["upvotes"]), reverse=True)
+        else:
+            results.sort(key=lambda x: x["upvotes"], reverse=True)
             
         final_results = results[:max_results]
         self._cache[cache_key] = final_results
@@ -619,7 +701,8 @@ class RhymeDetector:
                         "vowel_sequence": vowel_seq,
                         "exact_rhyme_key": exact_key,
                         "is_slang": False,
-                        "upvotes": 5
+                        "upvotes": 5,
+                        "ipa_key": self._normalize_to_ipa_key(vowel_seq, "en")
                     })
         except Exception as e:
             print(f"[!] English seeding failed: {e}")
@@ -643,7 +726,8 @@ class RhymeDetector:
                 "vowel_sequence": vseq,
                 "exact_rhyme_key": ekey,
                 "is_slang": False,
-                "upvotes": 5
+                "upvotes": 5,
+                "ipa_key": self._normalize_to_ipa_key(vseq, "hi")
             })
             
         # 3. Kannada Vocabulary Seed
@@ -665,7 +749,8 @@ class RhymeDetector:
                 "vowel_sequence": vseq,
                 "exact_rhyme_key": ekey,
                 "is_slang": False,
-                "upvotes": 5
+                "upvotes": 5,
+                "ipa_key": self._normalize_to_ipa_key(vseq, "kn")
             })
         
         # 4. Romanized Hindi (Hinglish) Vocabulary Seed
@@ -673,7 +758,7 @@ class RhymeDetector:
             "apna", "sapna", "pyaar", "yaar", "dil", "mahaan", "khatka", "sabka", "kehna", "rehna",
             "zindagi", "maut", "dost", "dushman", "raasta", "manzil", "aasmaan", "dharti", "duniya", "insaan",
             "khuda", "rab", "dua", "salaam", "kaam", "naam", "daam", "shaam", "subah", "raat",
-            "din", "baat", "haath", "saath", "maath", "aaj", "kal", "pal", "chal", "bal",
+            "दिन", "baat", "haath", "saath", "maath", "aaj", "kal", "pal", "chal", "bal",
             "ghar", "par", "dar", "sar", "har", "kar", "bhar", "mar", "sharr", "shaayar", "kavita", "gaane",
             "ishq", "mohabbat", "dard", "khushi", "gham", "aansu", "rona", "hasna", "jeena", "marna",
             "taqdeer", "kismat", "naseeb", "imtihaan", "safar", "musafir", "raahi", "manzilen",
@@ -702,7 +787,8 @@ class RhymeDetector:
                 "vowel_sequence": vseq,
                 "exact_rhyme_key": ekey,
                 "is_slang": False,
-                "upvotes": 5
+                "upvotes": 5,
+                "ipa_key": self._normalize_to_ipa_key(vseq, "hi")
             })
             
         # 5. Romanized Kannada (Kanglish) Vocabulary Seed
@@ -735,7 +821,8 @@ class RhymeDetector:
                 "vowel_sequence": vseq,
                 "exact_rhyme_key": ekey,
                 "is_slang": False,
-                "upvotes": 5
+                "upvotes": 5,
+                "ipa_key": self._normalize_to_ipa_key(vseq, "kn")
             })
 
         # 6. English Slang Seeding (37 hip-hop terms)
@@ -786,7 +873,8 @@ class RhymeDetector:
                 "vowel_sequence": vseq,
                 "exact_rhyme_key": ekey,
                 "is_slang": True,
-                "upvotes": 10
+                "upvotes": 10,
+                "ipa_key": self._normalize_to_ipa_key(vseq, "en")
             })
 
         # Chunk bulk insertion to keep SQLite transactions light
@@ -1680,16 +1768,18 @@ class RhymeDetector:
         if not src_ipa:
             return []
 
-        # Query target language words from DB
+        # Query target language words from DB within +/- 1 syllable count
         query = select(MultisyllabicWord).where(
-            MultisyllabicWord.language == target_lang
-        ).limit(500)
+            MultisyllabicWord.language == target_lang,
+            MultisyllabicWord.syllable_count.between(src_syls - 1, src_syls + 1)
+        ).order_by(MultisyllabicWord.upvotes.desc()).limit(500)
         res = await session.execute(query)
         target_words = res.scalars().all()
 
         results = []
         for tw in target_words:
-            tw_ipa = self._normalize_to_ipa_key(tw.vowel_sequence, target_lang)
+            # Use precomputed ipa_key, with fallback
+            tw_ipa = tw.ipa_key or self._normalize_to_ipa_key(tw.vowel_sequence, target_lang)
             if not tw_ipa:
                 continue
 

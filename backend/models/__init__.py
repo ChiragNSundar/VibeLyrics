@@ -199,6 +199,7 @@ class MultisyllabicWord(Base):
     exact_rhyme_key: Mapped[str] = mapped_column(String(200), index=True)  # e.g. "EH-V-AH-L"
     is_slang: Mapped[bool] = mapped_column(Boolean, default=False)
     upvotes: Mapped[int] = mapped_column(Integer, default=0)
+    ipa_key: Mapped[Optional[str]] = mapped_column(String(200), index=True, nullable=True)
 
     def to_dict(self):
         return {
@@ -209,7 +210,8 @@ class MultisyllabicWord(Base):
             "vowel_sequence": self.vowel_sequence,
             "exact_rhyme_key": self.exact_rhyme_key,
             "is_slang": self.is_slang,
-            "upvotes": self.upvotes
+            "upvotes": self.upvotes,
+            "ipa_key": self.ipa_key
         }
 
 

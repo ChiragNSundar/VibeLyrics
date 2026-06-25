@@ -17,10 +17,28 @@ from .routers import sessions, lines, ai, rhymes, journal, stats, user_settings,
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     import asyncio
+    from sqlalchemy import text
+    
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print("[OK] Database tables created")
+        
+        # Automatic SQLite migration to add ipa_key column if it doesn't exist
+        def check_and_add_ipa_key(connection):
+            try:
+                res = connection.execute(text("PRAGMA table_info(multisyllabic_words)"))
+                columns = [row[1] for row in res.fetchall()]
+                if "ipa_key" not in columns:
+                    print("[INFO] Adding ipa_key column to multisyllabic_words table...")
+                    connection.execute(text("ALTER TABLE multisyllabic_words ADD COLUMN ipa_key VARCHAR(200)"))
+                    connection.execute(text("CREATE INDEX ix_multisyllabic_words_ipa_key ON multisyllabic_words (ipa_key)"))
+                    print("[OK] Column ipa_key and index added successfully")
+            except Exception as e:
+                print(f"[WARNING] Migration for ipa_key failed or already applied: {e}")
+        
+        await conn.run_sync(check_and_add_ipa_key)
+        
+    print("[OK] Database tables created and migrated")
     
     # Seed database in background
     from .database import async_session
@@ -30,6 +48,28 @@ async def lifespan(app: FastAPI):
         async with async_session() as session:
             detector = RhymeDetector()
             await detector.seed_phonetic_database(session)
+            
+            # Incremental migration of null ipa_key values for existing words
+            from .models import MultisyllabicWord
+            from sqlalchemy import select
+            
+            has_more = True
+            while has_more:
+                try:
+                    q = select(MultisyllabicWord).where(MultisyllabicWord.ipa_key == None).limit(5000)
+                    res = await session.execute(q)
+                    words = res.scalars().all()
+                    if not words:
+                        has_more = False
+                        break
+                    
+                    print(f"[*] Migrating ipa_key for {len(words)} words...")
+                    for w in words:
+                        w.ipa_key = detector._normalize_to_ipa_key(w.vowel_sequence, w.language)
+                    await session.commit()
+                except Exception as e:
+                    print(f"[WARNING] Background ipa_key migration error: {e}")
+                    has_more = False
             
     asyncio.create_task(run_seeder())
     
