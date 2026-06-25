@@ -126,14 +126,14 @@ class StyleExtractor:
                 fav = self.style_data["vocabulary"]["favorite_words"]
                 if word not in fav:
                     fav.append(word)
-                    self.style_data["vocabulary"]["favorite_words"] = fav[-2000:]
+                    self.style_data["vocabulary"]["favorite_words"] = fav
         
         # Track common phrases (bigrams/trigrams) as potential favorites
         fav_phrases = self.style_data["vocabulary"].setdefault("favorite_phrases", [])
         for phrase in analysis.get("common_bigrams", []) + analysis.get("common_trigrams", []):
             if phrase not in fav_phrases:
                 fav_phrases.append(phrase)
-        self.style_data["vocabulary"]["favorite_phrases"] = fav_phrases[-1000:]
+        self.style_data["vocabulary"]["favorite_phrases"] = fav_phrases
 
         self.save_style()
 
@@ -245,7 +245,7 @@ class VocabularyManager:
             "favorites": list(self.favorite_words),
             "slangs": list(self.favorite_slangs),
             "avoided": list(self.avoided_words),
-            "frequency": dict(self.word_frequency.most_common(10000))
+            "frequency": dict(self.word_frequency)
         }
         with open(self.DATA_FILE, 'w') as f:
             json.dump(data, f, indent=2)
@@ -473,7 +473,7 @@ class CorrectionTracker:
         """Save corrections"""
         os.makedirs(os.path.dirname(self.DATA_FILE), exist_ok=True)
         with open(self.DATA_FILE, 'w') as f:
-            json.dump(self.corrections[-100:], f, indent=2)  # Keep last 100
+            json.dump(self.corrections, f, indent=2)
     
     def track_correction(self, original: str, corrected: str):
         """Track a correction"""

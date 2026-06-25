@@ -53,7 +53,7 @@ class SuggestionTracker:
     def _save(self):
         os.makedirs(os.path.dirname(self.DATA_FILE), exist_ok=True)
         with open(self.DATA_FILE, "w") as f:
-            json.dump(self.suggestions[-500:], f, indent=2)
+            json.dump(self.suggestions, f, indent=2)
 
     def log_suggestion(
         self,
@@ -157,7 +157,7 @@ class MicroFeedbackTracker:
     def _save(self):
         os.makedirs(os.path.dirname(self.DATA_FILE), exist_ok=True)
         with open(self.DATA_FILE, "w") as f:
-            json.dump(self.feedback[-1000:], f, indent=2)
+            json.dump(self.feedback, f, indent=2)
 
     def log_feedback(self, suggestion_id: str, feedback_type: str,
                      original_text: str, context: str = "") -> str:
@@ -352,7 +352,7 @@ class RLHFTracker:
     def _save(self):
         os.makedirs(os.path.dirname(self.DATA_FILE) or ".", exist_ok=True)
         with open(self.DATA_FILE, "w") as f:
-            json.dump(self.matches[-500:], f, indent=2)
+            json.dump(self.matches, f, indent=2)
 
     def log_vote(self, prompt: str, variants: List[str],
                  chosen_index: int, session_id: int = 0) -> str:

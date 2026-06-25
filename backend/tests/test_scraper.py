@@ -25,9 +25,11 @@ def test_search_and_scrape_no_results(mock_ddgs, scraper):
     result = scraper.search_and_scrape("Artist", "Song")
     assert result is None
 
+@patch('backend.services.scraper.get_scraped_urls', return_value=set())
+@patch('backend.services.scraper.save_scraped_url')
 @patch('backend.services.scraper.DDGS')
 @patch('backend.services.scraper.requests.get')
-def test_search_and_scrape_success(mock_get, mock_ddgs, scraper):
+def test_search_and_scrape_success(mock_get, mock_ddgs, mock_save, mock_get_urls, scraper):
     scraper.ddgs = mock_ddgs.return_value
     # Mock search results
     mock_ddgs.return_value.text.return_value = [
@@ -51,3 +53,4 @@ def test_search_and_scrape_success(mock_get, mock_ddgs, scraper):
     assert result is not None
     assert result['lyrics'] == "La la la\n            Lyrics here"
     assert result['source'] == "https://www.azlyrics.com/lyrics/artist/song.html"
+    mock_save.assert_called_once_with("https://www.azlyrics.com/lyrics/artist/song.html")
