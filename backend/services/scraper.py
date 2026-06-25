@@ -73,14 +73,14 @@ class LyricsScraper:
         Yields progress messages and final results for Server-Sent Events (SSE).
         """
         era_term = f" {era}" if era else ""
-        query = f"\"{artist}\"{era_term} lyrics site:azlyrics.com/{artist.lower().replace(' ', '')}"
+        query = f"\"{artist}\"{era_term} lyrics site:azlyrics.com"
         
         results_out = []
         yield {"type": "progress", "msg": f"Searching DuckDuckGo for: {query}"}
         
         try:
             # Search using DuckDuckGo
-            results = list(self.ddgs.text(query, max_results=max_songs + 3))
+            results = list(self.ddgs.text(query, max_results=max_songs + 10))
             
             if not results:
                 yield {"type": "error", "msg": "No search results found on AZLyrics."}
@@ -89,13 +89,15 @@ class LyricsScraper:
             yield {"type": "progress", "msg": f"Found potential matches. Beginning extraction..."}
             
             seen_urls = set()
+            artist_slug = re.sub(r'[^a-z0-9]', '', artist.lower())
             for result in results:
                 if len(results_out) >= max_songs:
                     break
                     
                 url = result.get('link') or result.get('href', '')
                 if 'azlyrics.com/lyrics' in url and url not in seen_urls:
-                    seen_urls.add(url)
+                    if f'/lyrics/{artist_slug}/' in url.lower():
+                        seen_urls.add(url)
                     
                     title_match = re.search(r'/([^/]+)\.html$', url)
                     title = title_match.group(1).replace('', ' ').title() if title_match else "Unknown Track"

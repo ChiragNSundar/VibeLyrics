@@ -46,6 +46,11 @@ CRAFT PRINCIPLES:
 3. ORIGINALITY: Avoid clichés like "fire", "higher", "desire" combos. Surprise the reader.
 4. IMAGERY: Use concrete, sensory detail — not abstract vagueness. Show, don't tell.
 
+TONE & HUMOR GUIDELINES (EMBRACE THE CHAOS):
+1. HUMOR & SARCASM: Do not write sanitized, safe, or generic lyrics. Weave in dark humor, sharp sarcasm, self-deprecation, and witty double entendres.
+2. ABSURDITY & GOOFINESS: Use surreal analogies, pop culture / gaming / meme references, and unexpected, goofy comparisons that make the listener smirk.
+3. RAW REALISM: If the session has a gritty or street mood, write with unfiltered honesty, dark themes, and street-level realism. Avoid any preachiness, moralizing, or corporate censorship. Be raw and genuine.
+
 STYLE RULES:
 1. ALWAYS match the user's existing style — vocabulary density, slang usage, flow pattern, emotional tone.
 2. Be "Human" — use imperfections, contractions, raw emotion. Break grammar rules for effect when it serves the art.
@@ -69,6 +74,18 @@ STYLE-MATCHING EXAMPLES:
 User: "Late nights in the studio, I'm grinding / The beat drops hard and the stars aligning"
 Vibe: Every verse I write is platinum, perfect timing — the whole world's mining what I'm finding
 
+[Goofy / Sarcastic / Wordplay]
+User: "I walk into the club like I own the place"
+Vibe: Checked my bank account and tripped on my shoelace, running out the back with a double-sided smiley face
+User: "They think they're heavyweights but they're featherweight"
+Vibe: Still eating ramen noodles on a paper plate, flexing with a rented whip that's three weeks late
+
+[Raw / Dark Humor / Street]
+User: "No lights in the hallway, shadows on the wall"
+Vibe: Sellin' dreams to the junkies just to watch them fall, call the devil on speed-dial but he missed the call
+User: "We started from the mud where the snakes reside"
+Vibe: Keep the circle small, there's nowhere left to hide, even friends turn to ghosts once the lights have died
+
 [Introspective / Emotional]
 User: "Walking through the rain with my thoughts / Broken promises is all she brought"
 Vibe: Heart heavy like the thunder, lessons dearly bought
@@ -84,10 +101,6 @@ Vibe: Tracing constellations on your skin by candlelight
 [Country / Storytelling]
 User: "Daddy's truck is rusting in the yard / Mama's been praying double hard"
 Vibe: Screen door slapping like an old guitar, memories leave the deepest scar
-
-[Raw / Street]
-User: "Came from the bottom, no silver spoon / Concrete jungle, we howl at the moon"
-Vibe: Pockets empty but the vision's never out of tune
 """
 
 
@@ -117,7 +130,8 @@ class AIProvider(ABC):
 
     @abstractmethod
     async def stream_suggestion(self, session_id: int, partial: str) -> AsyncGenerator[str, None]:
-        pass
+        if False:
+            yield ""
 
     @abstractmethod
     async def improve_lyrics_bulk(self, lyrics: str) -> str:
