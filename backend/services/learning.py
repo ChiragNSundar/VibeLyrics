@@ -126,14 +126,14 @@ class StyleExtractor:
                 fav = self.style_data["vocabulary"]["favorite_words"]
                 if word not in fav:
                     fav.append(word)
-                    self.style_data["vocabulary"]["favorite_words"] = fav[-50:]
+                    self.style_data["vocabulary"]["favorite_words"] = fav[-2000:]
         
         # Track common phrases (bigrams/trigrams) as potential favorites
         fav_phrases = self.style_data["vocabulary"].setdefault("favorite_phrases", [])
         for phrase in analysis.get("common_bigrams", []) + analysis.get("common_trigrams", []):
             if phrase not in fav_phrases:
                 fav_phrases.append(phrase)
-        self.style_data["vocabulary"]["favorite_phrases"] = fav_phrases[-30:]
+        self.style_data["vocabulary"]["favorite_phrases"] = fav_phrases[-1000:]
 
         self.save_style()
 
@@ -245,7 +245,7 @@ class VocabularyManager:
             "favorites": list(self.favorite_words),
             "slangs": list(self.favorite_slangs),
             "avoided": list(self.avoided_words),
-            "frequency": dict(self.word_frequency.most_common(500))
+            "frequency": dict(self.word_frequency.most_common(10000))
         }
         with open(self.DATA_FILE, 'w') as f:
             json.dump(data, f, indent=2)

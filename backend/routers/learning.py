@@ -247,6 +247,29 @@ async def force_reset_brain(db: AsyncSession = Depends(get_db)):
     _style_extractor.reset()
     _vocab_manager.reset()
     
+    import os
+    # Clear all learned/scraped state logs and configs
+    files_to_remove = [
+        "data/scraped_songs.json",
+        "data/co_occurrences.json",
+        "data/corrections.json",
+        "data/suggestion_log.json",
+        "data/micro_feedback.json",
+        "data/rlhf_log.json",
+        "data/continual_buffer.json",
+        "data/continual_config.json",
+        "data/training/dataset.json",
+        "data/training/dpo_dataset.json",
+        "data/training/metadata.json"
+    ]
+    for file_path in files_to_remove:
+        full_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), file_path)
+        if os.path.exists(full_path):
+            try:
+                os.remove(full_path)
+            except Exception:
+                pass
+
     from ..database import engine, Base
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -256,7 +279,7 @@ async def force_reset_brain(db: AsyncSession = Depends(get_db)):
     detector = RhymeDetector()
     await detector.seed_phonetic_database(db)
     
-    return {"success": True, "message": "All writing sessions, lines, vocabulary, caches, and phonetic databases have been force reset."}
+    return {"success": True, "message": "All writing sessions, lines, vocabulary, caches, scraped tracks history, and phonetic databases have been force reset."}
 
 
 @router.delete("/learning/vocabulary")
