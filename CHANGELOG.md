@@ -2,6 +2,18 @@
 
 All notable changes to the **VibeLyrics** project will be documented in this file.
 
+## [3.5.0] - 2026-06-25
+
+### 🧠 Permanent Learning State Retention & Scraper Isolation
+
+#### 🎓 Permanent Style and Vocabulary Learning
+- **No sliding-window truncation** — Removed length caps on `favorite_words` (formerly limited to 2000) and `favorite_phrases` (formerly limited to 1000) in `StyleExtractor` so all extracted style characteristics remain permanently.
+- **Full vocabulary frequency persistence** — Replaced the `most_common(10000)` constraint with the complete `word_frequency` dictionary serialization in `VocabularyManager` to preserve the user's entire written/scraped vocabulary.
+- **Uncapped interaction tracking** — Removed memory caps on user corrections (formerly capped at 100), suggestion logs (formerly 500), micro-feedback logs (formerly 1000), and AI Arena RLHF matches (formerly 500) to maintain an exhaustive historical record.
+
+#### 🧪 Robust Test Isolation
+- **Isolated Scraper Tests** — Patched `get_scraped_urls` and `save_scraped_url` in the scraper tests to prevent any read/write dependencies on the local `data/scraped_songs.json` file, ensuring reliable test suite execution.
+
 ## [3.4.0] - 2026-06-19
 
 ### 📖 Kannada Dictionary, Header Spacing Optimization & Caret Highlight Polish

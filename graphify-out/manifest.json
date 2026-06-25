@@ -45,9 +45,9 @@
     "semantic_hash": "6abcc8abed6642aef535519299621708"
   },
   "backend/routers/learning.py": {
-    "mtime": 1781882787.0206583,
-    "ast_hash": "c1dc1aaf51cdef2493c6ee3ce3ad1194",
-    "semantic_hash": "c1dc1aaf51cdef2493c6ee3ce3ad1194"
+    "mtime": 1782398652.769406,
+    "ast_hash": "77520a183a2f707e59b5a1dcd73507ee",
+    "semantic_hash": "77520a183a2f707e59b5a1dcd73507ee"
   },
   "backend/routers/lines.py": {
     "mtime": 1781881432.334416,
@@ -120,9 +120,9 @@
     "semantic_hash": "46a5ffd910c15fc7ebfc798a075b75b6"
   },
   "backend/services/ai_provider.py": {
-    "mtime": 1781884049.2189524,
-    "ast_hash": "45c5c93fa2fe8b4da56a8574265b7c95",
-    "semantic_hash": "45c5c93fa2fe8b4da56a8574265b7c95"
+    "mtime": 1782398087.9977942,
+    "ast_hash": "c03a4b9498ae9aaf5fbc73da79470459",
+    "semantic_hash": "c03a4b9498ae9aaf5fbc73da79470459"
   },
   "backend/services/audio.py": {
     "mtime": 1781883198.2876296,
@@ -145,9 +145,9 @@
     "semantic_hash": "3ca51e02eed15cc7457c7c089b892ddd"
   },
   "backend/services/learning.py": {
-    "mtime": 1781883206.693501,
-    "ast_hash": "0f62b49383de585f2c7e6f356bdedda9",
-    "semantic_hash": "0f62b49383de585f2c7e6f356bdedda9"
+    "mtime": 1782399203.598783,
+    "ast_hash": "6bcbd265918915e490eda2349ceb25ce",
+    "semantic_hash": "6bcbd265918915e490eda2349ceb25ce"
   },
   "backend/services/nlp_analysis.py": {
     "mtime": 1781883108.3661275,
@@ -165,9 +165,9 @@
     "semantic_hash": "4b0f0c81ab5fa14a180abb60d04c0208"
   },
   "backend/services/scraper.py": {
-    "mtime": 1781883218.097978,
-    "ast_hash": "07e690ca2ca03df0f2c21fb5449b09a5",
-    "semantic_hash": "07e690ca2ca03df0f2c21fb5449b09a5"
+    "mtime": 1782399070.7002428,
+    "ast_hash": "0346296c873cc765307b6e7109fab637",
+    "semantic_hash": "0346296c873cc765307b6e7109fab637"
   },
   "backend/services/syllable_utils.py": {
     "mtime": 1781880777.0167568,
@@ -175,9 +175,9 @@
     "semantic_hash": "72b2d05353a5b0e0c5cb07ceb1bcdaf7"
   },
   "backend/services/training_data.py": {
-    "mtime": 1781883224.8180583,
-    "ast_hash": "4ba6a70c410a6ff64414d1e1798bb872",
-    "semantic_hash": "4ba6a70c410a6ff64414d1e1798bb872"
+    "mtime": 1782399217.5064313,
+    "ast_hash": "8ac7f3406fe673448f0b4c2acfed6d64",
+    "semantic_hash": "8ac7f3406fe673448f0b4c2acfed6d64"
   },
   "backend/services/vector_search.py": {
     "mtime": 1781774756.761695,
@@ -245,9 +245,9 @@
     "semantic_hash": "ed0499854675050bd8a20b2fad10dbaf"
   },
   "backend/tests/test_scraper.py": {
-    "mtime": 1781883128.372468,
-    "ast_hash": "81d4697fe3822596cf09c6da8981d8c1",
-    "semantic_hash": "81d4697fe3822596cf09c6da8981d8c1"
+    "mtime": 1782399289.855018,
+    "ast_hash": "85c42f624d4978b8f1566ca0f1519705",
+    "semantic_hash": "85c42f624d4978b8f1566ca0f1519705"
   },
   "backend/tests/test_sessions.py": {
     "mtime": 1781774756.80433,
@@ -270,7 +270,7 @@
     "semantic_hash": "29b61ca5d78b994036b555ab38e76ffd"
   },
   "data/kannada_dictionary_index.json": {
-    "mtime": 1781883955.8030407,
+    "mtime": 1782397815.084795,
     "ast_hash": "ef27825c3ca18d766a677639c7983525",
     "semantic_hash": "ef27825c3ca18d766a677639c7983525"
   },
@@ -280,7 +280,7 @@
     "semantic_hash": "0c5d53f2d482e652eb6da0ebd8189ec1"
   },
   "data/training/kannada_dictionary_sft.json": {
-    "mtime": 1781883956.088531,
+    "mtime": 1782397815.3002162,
     "ast_hash": "6aba88635dae8613fd8965727dc3ea36",
     "semantic_hash": "6aba88635dae8613fd8965727dc3ea36"
   },
@@ -640,9 +640,9 @@
     "semantic_hash": "41f5742be7f9054c247e0e2dd1a0fbde"
   },
   "scripts/ingest_kannada_dictionary.py": {
-    "mtime": 1782376927.635157,
-    "ast_hash": "3143f721c28708ff4c804d04b8f90d64",
-    "semantic_hash": "3143f721c28708ff4c804d04b8f90d64"
+    "mtime": 1782397623.8308554,
+    "ast_hash": "4626b992391b055cb242c8adc6defe2b",
+    "semantic_hash": "4626b992391b055cb242c8adc6defe2b"
   },
   "AGENTS.md": {
     "mtime": 1782377056.3119004,
@@ -688,11 +688,6 @@
     "mtime": 1781774756.8098433,
     "ast_hash": "befa786b1fb88f90e73ebc0e19c607e5",
     "semantic_hash": "befa786b1fb88f90e73ebc0e19c607e5"
-  },
-  "docs/TRAINING_SETUP.md": {
-    "mtime": 1781774756.8118446,
-    "ast_hash": "6b15da63bae43d9029a8720c306bfbd9",
-    "semantic_hash": "6b15da63bae43d9029a8720c306bfbd9"
   },
   "frontend/README.md": {
     "mtime": 1781774756.8904574,
@@ -793,5 +788,15 @@
     "mtime": 1781774758.7656603,
     "ast_hash": "f0402b67b6ce880f65666bb49e841696",
     "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "data/scraped_songs.json": {
+    "mtime": 1782399095.6853316,
+    "ast_hash": "d4b46242de77e79e72f54cfb904bac5f",
+    "semantic_hash": "d4b46242de77e79e72f54cfb904bac5f"
+  },
+  "scripts/scrape_and_learn_artists.py": {
+    "mtime": 1782398588.3819485,
+    "ast_hash": "e14c8281db678ea1d854c452c0c99f92",
+    "semantic_hash": "e14c8281db678ea1d854c452c0c99f92"
   }
 }
