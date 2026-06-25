@@ -24,6 +24,7 @@ DB_PATH = os.path.join(ROOT_DIR, "data", "vibelyrics.db")
 INDEX_PATH = os.path.join(ROOT_DIR, "data", "kannada_dictionary_index.json")
 SFT_DIR = os.path.join(ROOT_DIR, "data", "training")
 SFT_PATH = os.path.join(SFT_DIR, "kannada_dictionary_sft.json")
+PROGRESS_PATH = os.path.join(ROOT_DIR, "data", "ingest_progress.json")
 
 def parse_dictionary():
     print(f"[*] Opening PDF: {PDF_PATH}")
@@ -31,9 +32,22 @@ def parse_dictionary():
         print(f"[!] PDF not found at {PDF_PATH}")
         return []
 
-    print("[*] Extracting pages and parsing entries (this may take 1-2 minutes)...")
-    
     parsed_entries = []
+    start_page = 3
+
+    if os.path.exists(PROGRESS_PATH):
+        try:
+            with open(PROGRESS_PATH, "r", encoding="utf-8") as f:
+                progress = json.load(f)
+                start_page = progress.get("last_processed_page", 2) + 1
+                parsed_entries = progress.get("parsed_entries", [])
+                print(f"[*] Resuming parsing from page {start_page}. Loaded {len(parsed_entries)} entries from progress file.")
+        except Exception as e:
+            print(f"[!] Failed to load progress file: {e}. Starting from page 3.")
+            start_page = 3
+            parsed_entries = []
+
+    print("[*] Extracting pages and parsing entries (this may take 1-2 minutes)...")
     
     # Boundary lookahead to identify starts of entries:
     # 1. Optional bullet symbol
@@ -53,8 +67,18 @@ def parse_dictionary():
         total_pages = len(reader.pages)
         print(f"[*] Total PDF pages detected: {total_pages}")
         
-        # We start scanning from page 3 to skip preface/intro, though lookahead handles it anyway
-        for p in range(3, total_pages):
+        if start_page >= total_pages:
+            print(f"[*] All pages (up to {total_pages-1}) already processed.")
+            if os.path.exists(PROGRESS_PATH):
+                try:
+                    os.remove(PROGRESS_PATH)
+                    print("[*] Progress file cleaned up.")
+                except Exception as e:
+                    print(f"[!] Failed to remove progress file: {e}")
+            return parsed_entries
+
+        # We start scanning from start_page
+        for p in range(start_page, total_pages):
             if p % 100 == 0 or p == total_pages - 1:
                 print(f"  -> Processing page {p}/{total_pages}...")
             
@@ -109,8 +133,31 @@ def parse_dictionary():
             except Exception as e:
                 print(f"[!] Error parsing page {p}: {e}")
                 
+            # Save progress every 20 pages or on the last page
+            if (p - start_page + 1) % 20 == 0 or p == total_pages - 1:
+                try:
+                    os.makedirs(os.path.dirname(PROGRESS_PATH), exist_ok=True)
+                    with open(PROGRESS_PATH, "w", encoding="utf-8") as pf:
+                        json.dump({
+                            "last_processed_page": p,
+                            "parsed_entries": parsed_entries
+                        }, pf, ensure_ascii=False, indent=2)
+                    print(f"  [+] Saved progress: page {p}/{total_pages} ({len(parsed_entries)} entries)")
+                except Exception as e:
+                    print(f"[!] Warning: Failed to save progress at page {p}: {e}")
+                    
     print(f"[OK] Extraction complete. Successfully parsed {len(parsed_entries)} dictionary entries.")
+    
+    # Remove progress file on success
+    if os.path.exists(PROGRESS_PATH):
+        try:
+            os.remove(PROGRESS_PATH)
+            print("[*] Progress file cleaned up.")
+        except Exception as e:
+            print(f"[!] Failed to remove progress file: {e}")
+            
     return parsed_entries
+
 
 def seed_sqlite_database(entries):
     print(f"[*] Opening SQLite database: {DB_PATH}")
