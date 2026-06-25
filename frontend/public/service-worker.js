@@ -1,11 +1,12 @@
-const CACHE_NAME = 'vibelyrics-v5';
+const CACHE_NAME = 'vibelyrics-v6';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/manifest.json',
-    '/favicon.ico',
-    // We would list main CSS/JS bundles here, 
-    // but Vite injects them dynamically or we cache them as they are requested
+    '/icon.svg',
+    '/icon-192.png',
+    '/icon-512.png',
+    '/apple-touch-icon.png'
 ];
 
 // Install Event
@@ -57,8 +58,8 @@ self.addEventListener('fetch', (event) => {
                 return cachedResponse;
             }
             return fetch(event.request).then((networkResponse) => {
-                // Don't cache bad responses
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                // Don't cache bad responses. Allow 'basic' (same origin) and 'cors' (cross origin like Google Fonts)
+                if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
                     return networkResponse;
                 }
                 const responseToCache = networkResponse.clone();

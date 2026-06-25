@@ -29,6 +29,18 @@
             transparent 100%);
 }
 
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
 /* ═══════════════════════════════════════════════════════════
    🎵 BRAND
    ═══════════════════════════════════════════════════════════ */
@@ -58,6 +70,107 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ⚡ CONNECTIVITY BADGE
+   ═══════════════════════════════════════════════════════════ */
+
+.status-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--border-radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: all var(--transition-normal);
+}
+
+.status-pill.online {
+    background: rgba(16, 185, 129, 0.08);
+    color: var(--accent-success);
+    border-color: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.05);
+}
+
+.status-pill.offline {
+    background: rgba(245, 158, 11, 0.08);
+    color: var(--accent-warning);
+    border-color: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.05);
+}
+
+.pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.status-pill.online .pulse-dot {
+    background-color: var(--accent-success);
+    box-shadow: 0 0 8px var(--accent-success);
+    animation: status-pulse-green 2s infinite;
+}
+
+.status-pill.offline .pulse-dot {
+    background-color: var(--accent-warning);
+    box-shadow: 0 0 8px var(--accent-warning);
+    animation: status-pulse-amber 2s infinite;
+}
+
+@keyframes status-pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+@keyframes status-pulse-amber {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📥 PWA INSTALL BUTTON
+   ═══════════════════════════════════════════════════════════ */
+
+.btn-install {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.815rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-install:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+.btn-install:active {
+    transform: translateY(0);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -121,6 +234,23 @@
 @media (max-width: 768px) {
     .navbar {
         padding: 0.75rem 1rem;
+    }
+
+    .nav-left {
+        gap: 0.75rem;
+    }
+
+    .nav-right {
+        gap: 0.5rem;
+    }
+
+    .status-text,
+    .btn-install .install-text {
+        display: none;
+    }
+
+    .btn-install {
+        padding: 0.5rem;
     }
 
     .nav-links {
