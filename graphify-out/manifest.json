@@ -650,9 +650,9 @@
     "semantic_hash": "bc799b3d182c16f80e4a55030442774b"
   },
   "CHANGELOG.md": {
-    "mtime": 1781886740.7590554,
-    "ast_hash": "43c8a2c7b96c69ae847c53d95626ed5a",
-    "semantic_hash": "43c8a2c7b96c69ae847c53d95626ed5a"
+    "mtime": 1782399528.5029714,
+    "ast_hash": "2b51efbf9fa842045191a91e40c58d92",
+    "semantic_hash": "2b51efbf9fa842045191a91e40c58d92"
   },
   "CLAUDE.md": {
     "mtime": 1781886771.2616224,
@@ -660,9 +660,9 @@
     "semantic_hash": "6c218e34010bb1a927fe1f107f28ae0e"
   },
   "README.md": {
-    "mtime": 1782377050.4345186,
-    "ast_hash": "30dd62353f1e99576b88e60f4b70b6dd",
-    "semantic_hash": "30dd62353f1e99576b88e60f4b70b6dd"
+    "mtime": 1782399552.6586804,
+    "ast_hash": "843eb86716b3e832cb12fb7a23f553e2",
+    "semantic_hash": "843eb86716b3e832cb12fb7a23f553e2"
   },
   "backend/services/ai_provider_explanation.txt": {
     "mtime": 1781774756.7436771,
