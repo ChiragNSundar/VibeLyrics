@@ -4,7 +4,6 @@ import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { Skeleton } from './components/ui/Skeleton';
-import './styles/global.css';
 
 // Lazy load pages for code splitting
 const WorkspacePage = lazy(() => import('./pages/WorkspacePage').then(m => ({ default: m.WorkspacePage })));

@@ -1,6 +1,8 @@
 /* VibeLyrics Design System - Enhanced CSS Variables */
 
 :root {
+    color-scheme: dark;
+
     /* ═══════════════════════════════════════════════════════════
        🎨 COLOR PALETTE
        ═══════════════════════════════════════════════════════════ */
