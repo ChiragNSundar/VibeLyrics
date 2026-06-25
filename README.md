@@ -13,7 +13,10 @@
 - **Left-Side Split Panels**: New intuitive layout with floating toggles for **RhymeWave** (rhyme dictionary), **AI Help**, and the **Kannada-English Dictionary**.
 - **Real-Time AI Streaming**: Ghost text streams in instantly as you type (like ChatGPT).
 - **Power Tools**: Undo/Redo history (`Ctrl+Z`), Keyboard Shortcuts, and Lazy Loading.
-- **Offline Support**: Full functionality offline via Service Workers.
+- **PWA & Offline Integration**: Full Progressive Web App (PWA) support including:
+  - Offline capability powered by an enhanced Service Worker caching strategy.
+  - Local database updates queued and auto-synced using IndexedDB (`offlineStore.ts`).
+  - Live **Online/Offline connectivity badge** and browser-integrated **PWA Installation prompt** styled with our premium dreamy glassmorphism theme.
 - **Smart Dictionary**: Right-click *any* word for 6-layer analysis (Rhymes, Synonyms, Slang).
 - **Multi-Language Rhymes**: Native support for **English, Hindi (Hinglish), and Kannada (Kanglish)** phonetic rhymes, integrated with a seeded database of **31,020** entries from a Kannada-to-English dictionary for automated translation, insertion, and vocabulary-aware LLM suggestions.
 - **Stress & Flow Timeline**: Interactive syllable-level stress pattern timeline (`/` and `x` overrides) displayed below active lines, collapsible on clicking empty spaces in lyric lines.
@@ -237,7 +240,7 @@ graph TD
 ```text
 vibelyrics/
 ├── backend/                # FastAPI Application
-│   ├── tests/              # Pytest Unit & Integration Tests
+│   ├── tests/              # Pytest Unit & Integration Tests (including mocks)
 │   ├── main.py             # App Entry Point & Middleware
 │   ├── config.py           # Configuration & Settings
 │   ├── database.py         # Async Database Connection
@@ -249,7 +252,7 @@ vibelyrics/
 │   ├── schemas/            # Pydantic Data Schemas
 │   └── services/           # Core Business Logic
 │       ├── ai_provider.py      # LLM Integration
-│       ├── cache.py            # Redis Caching Service
+│       ├── cache.py            # Caching Service
 │       ├── scraper.py          # Lyrics Scraper Logic
 │       └── rhyme_detector.py   # Phonetic Rhyme Engine
 ├── frontend/               # React Frontend (Vite)
@@ -264,8 +267,12 @@ vibelyrics/
 │   │   │   └── stats/          # Analysis Components
 │   │   │       └── StyleDashboard.tsx  # Radar Charts
 │   │   ├── styles/         # Global Styles (Dreamy Theme)
+│   │   └── main.tsx        # App entry & service worker setup
+│   ├── public/             # Static PWA assets (manifest.json, service-worker.js, icons)
 │   └── vite.config.ts      # Vite Configuration
-├── data/                   # Local Persistence
+├── data/                   # Local Persistence (sqlite db, indices, streaks, RAG data)
+├── scripts/                # Unified Build/Ingestion Scripts (icon generator, dict seeder)
+├── uploads/                # Local uploads store (uploaded audio tracks)
 └── requirements.txt        # Python Dependencies
 ```
 

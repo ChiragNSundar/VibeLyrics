@@ -82,6 +82,13 @@ As an AI, you must abide by these rules without exception:
 
 When you need to know where a specific piece of logic lives:
 
+### Root level build/seeding scripts
+```text
+scripts/
+ ├── generate_png_icons.py       # Creates fallback PWA icons using Pillow
+ └── ingest_kannada_dictionary.py # Seeding pipeline (parses PDF dictionary to SQLite/RAG index)
+```
+
 ### Backend structure (`frontend` omitted here)
 ```text
 backend/
@@ -101,10 +108,12 @@ backend/
 ### Frontend structure
 ```text
 frontend/
- ├── index.html
+ ├── index.html          # HTML entry with PWA manifest/meta configurations
+ ├── public/             # Static folder (manifest.json, service-worker.js, icons)
  ├── src/
  │   ├── App.tsx         # Main entry, global UI wrappers
  │   ├── components/     # UI
+ │   │   ├── layout/     # Navbar (contains connection badge & install trigger)
  │   │   ├── session/    # LineRow (Timeline), BeatTimer, DoppelreimPanel, RhymeMap3D
  │   │   └── stats/      # Charts (Recharts), Dashboards
  │   ├── pages/          # Full screen routable views (SessionPage, LearningPage cockpit)
